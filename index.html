@@ -2,238 +2,202 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>⚡ FRANCIS TERMINAL PRO V2</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Francis Terminal PRO</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 body{
     margin:0;
-    background:#020305;
-    color:#eaeaea;
+    background:#02040a;
+    color:#fff;
     font-family:Arial;
 }
 
-/* HEADER */
-.header{
+header{
+    padding:14px;
     text-align:center;
-    padding:12px;
     font-size:20px;
-    background:#05070c;
-    border-bottom:1px solid #111;
+    background:#050816;
+    border-bottom:1px solid #1a2a5a;
+    letter-spacing:1px;
 }
 
-/* FLOW BAR */
-.flowbar{
-    display:flex;
-    justify-content:space-around;
-    padding:10px;
-    background:#03050a;
-    border-bottom:1px solid #111;
-}
-
-.flowbox{
-    text-align:center;
-    font-size:13px;
-}
-
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd400;}
-
-/* GRID */
-.grid{
+.top{
     display:grid;
     grid-template-columns:repeat(4,1fr);
-    gap:12px;
-    padding:12px;
+    gap:10px;
+    padding:10px;
 }
 
-.card{
-    background:#06090f;
-    border:1px solid #111;
+.box{
+    background:#050816;
+    border:1px solid #1a2a5a;
     border-radius:10px;
     padding:12px;
     text-align:center;
 }
 
 .value{
-    font-size:20px;
-    font-weight:bold;
+    font-size:18px;
+    margin-top:5px;
 }
 
-/* CHARTS */
-.charts{
+.green{color:#00ffa6;}
+.red{color:#ff4d4d;}
+.yellow{color:#ffd000;}
+
+.grid{
     display:grid;
     grid-template-columns:repeat(2,1fr);
-    gap:12px;
-    padding:12px;
+    gap:10px;
+    padding:10px;
 }
 
-.chart{
-    height:320px;
+.card{
+    background:#050816;
+    border:1px solid #1a2a5a;
     border-radius:10px;
-    overflow:hidden;
+    padding:5px;
+}
+
+.panel{
+    position:fixed;
+    right:10px;
+    top:60px;
+    width:230px;
+    background:#050816;
+    border:1px solid #1a2a5a;
+    border-radius:10px;
+    padding:12px;
+    font-size:13px;
+    box-shadow:0 0 15px rgba(0,255,150,0.05);
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL PRO</div>
+<header>⚡ FRANCIS TERMINAL PRO V2</header>
 
-<!-- FLOW TABLE -->
-<div class="flowbar">
-    <div class="flowbox">USDT.D <div id="usdt_arrow"></div></div>
-    <div class="flowbox">ETHBTC <div id="ethbtc_arrow"></div></div>
-    <div class="flowbox">BTC.D <div id="btcd_arrow"></div></div>
-    <div class="flowbox">TOTAL <div id="total_arrow"></div></div>
+<div class="top">
+    <div class="box">USDT.D<div id="usdt" class="value"></div></div>
+    <div class="box">ETHBTC<div id="ethbtc" class="value"></div></div>
+    <div class="box">BTC.D<div id="btc" class="value"></div></div>
+    <div class="box">TOTAL<div id="total" class="value"></div></div>
 </div>
 
-<!-- BTC ENGINE -->
 <div class="grid">
-
-<div class="card">
-<div>BTC Spot Vol</div>
-<div id="spot" class="value">--</div>
+    <div class="card"><div id="c1"></div></div>
+    <div class="card"><div id="c2"></div></div>
+    <div class="card"><div id="c3"></div></div>
+    <div class="card"><div id="c4"></div></div>
 </div>
 
-<div class="card">
-<div>BTC Perp Vol</div>
-<div id="perp" class="value">--</div>
-</div>
+<div class="panel">
+<b>⚡ ELITE FLOW</b><br><br>
 
-<div class="card">
-<div>Open Interest</div>
-<div id="oi" class="value">--</div>
-</div>
+USDT.D: <span id="p1"></span><br>
+ETHBTC: <span id="p2"></span><br>
+BTC.D: <span id="p3"></span><br>
+TOTAL: <span id="p4"></span><br><br>
 
-<div class="card">
-<div>Pressure</div>
-<div id="pressure" class="value yellow">--</div>
-</div>
-
-</div>
-
-<!-- CHARTS -->
-<div class="charts">
-
-<div>
-<div style="padding:5px;color:#888;">USDT.D</div>
-<div id="chart1" class="chart"></div>
-</div>
-
-<div>
-<div style="padding:5px;color:#888;">ETHBTC (ALT vs BTC)</div>
-<div id="chart2" class="chart"></div>
-</div>
-
-<div>
-<div style="padding:5px;color:#888;">BTC.D</div>
-<div id="chart3" class="chart"></div>
-</div>
-
-<div>
-<div style="padding:5px;color:#888;">TOTAL</div>
-<div id="chart4" class="chart"></div>
-</div>
-
+<b>SIGNAL</b><br>
+<span id="signal"></span>
 </div>
 
 <script>
 
-// ===== ARROW FUNCTION =====
-function getArrow(change){
-    if(change > 0.1) return ["▲","green"];
-    if(change < -0.1) return ["▼","red"];
-    return ["➜","yellow"];
+// ===== DATA STORAGE =====
+let prev = {btc:null, ethbtc:null}
+
+// ===== ARROW ENGINE =====
+function arrow(change){
+    if(change > 0.3) return '<span class="green">🟢 ▲</span>';
+    if(change < -0.3) return '<span class="red">🔴 ▼</span>';
+    return '<span class="yellow">🟡 →</span>';
 }
 
-// ===== FETCH DATA =====
-async function loadData(){
+// ===== FETCH REAL DATA =====
+async function load(){
 
-// BTC REAL DATA
-let spot = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
-let perp = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
-let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
+    let btc = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT").then(r=>r.json());
+    let ethbtc = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json());
 
-document.getElementById("spot").innerText = (spot.quoteVolume/1e9).toFixed(2)+"B";
-document.getElementById("perp").innerText = (perp.quoteVolume/1e9).toFixed(2)+"B";
-document.getElementById("oi").innerText = (oi.openInterest/1000).toFixed(2)+"K";
+    let btcVal = parseFloat(btc.price);
+    let ethbtcVal = parseFloat(ethbtc.price);
 
-// pressure
-if(perp.quoteVolume > spot.quoteVolume){
-    document.getElementById("pressure").innerHTML="BUY ▲";
-    document.getElementById("pressure").className="value green";
-}else{
-    document.getElementById("pressure").innerHTML="SELL ▼";
-    document.getElementById("pressure").className="value red";
+    let btcChange = prev.btc ? ((btcVal-prev.btc)/prev.btc)*100 : 0;
+    let ethChange = prev.ethbtc ? ((ethbtcVal-prev.ethbtc)/prev.ethbtc)*100 : 0;
+
+    // DISPLAY
+    document.getElementById("btc").innerHTML = arrow(btcChange);
+    document.getElementById("ethbtc").innerHTML = arrow(ethChange);
+
+    document.getElementById("p3").innerHTML = arrow(btcChange);
+    document.getElementById("p2").innerHTML = arrow(ethChange);
+
+    // STATIC (from charts visually)
+    document.getElementById("usdt").innerHTML = "Live";
+    document.getElementById("total").innerHTML = "Live";
+    document.getElementById("p1").innerHTML = "Live";
+    document.getElementById("p4").innerHTML = "Live";
+
+    // ===== SMART SIGNAL ENGINE =====
+    let signal;
+
+    if(ethChange > 0.3 && btcChange < 0){
+        signal = '<span class="green">ALT SEASON 🚀</span>';
+    }
+    else if(btcChange > 0.3 && ethChange < 0){
+        signal = '<span class="yellow">BTC DOMINANCE 🟡</span>';
+    }
+    else if(btcChange < 0 && ethChange < 0){
+        signal = '<span class="red">RISK OFF 🔴</span>';
+    }
+    else{
+        signal = '<span class="yellow">SIDEWAYS ⚖️</span>';
+    }
+
+    document.getElementById("signal").innerHTML = signal;
+
+    prev.btc = btcVal;
+    prev.ethbtc = ethbtcVal;
 }
 
-// ===== ARROWS (REAL CHANGE) =====
-let pairs = {
-    usdt: "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT",
-    ethbtc: "https://api.binance.com/api/v3/ticker/24hr?symbol=ETHBTC"
-};
-
-for(let key in pairs){
-    let data = await fetch(pairs[key]).then(r=>r.json());
-    let change = parseFloat(data.priceChangePercent);
-    let a = getArrow(change);
-
-    document.getElementById(key+"_arrow").innerHTML =
-        "<span class='"+a[1]+"'>"+a[0]+"</span>";
-}
-
-// STATIC (no free API)
-document.getElementById("btcd_arrow").innerHTML="<span class='yellow'>➜</span>";
-document.getElementById("total_arrow").innerHTML="<span class='yellow'>➜</span>";
-
-}
+// RUN
+load();
+setInterval(load,5000);
 
 // ===== CHARTS =====
-function loadCharts(){
-
 new TradingView.widget({
-    container_id:"chart1",
+    container_id:"c1",
     symbol:"CRYPTOCAP:USDT.D",
     interval:"15",
-    theme:"dark",
-    style:"1",
-    allow_symbol_change:false
+    theme:"dark"
 });
 
 new TradingView.widget({
-    container_id:"chart2",
-    symbol:"BINANCE:ETHBTC", // ✅ EXACT
+    container_id:"c2",
+    symbol:"BINANCE:ETHBTC",
     interval:"15",
-    theme:"dark",
-    allow_symbol_change:false
+    theme:"dark"
 });
 
 new TradingView.widget({
-    container_id:"chart3",
+    container_id:"c3",
     symbol:"CRYPTOCAP:BTC.D",
     interval:"15",
-    theme:"dark",
-    allow_symbol_change:false
+    theme:"dark"
 });
 
 new TradingView.widget({
-    container_id:"chart4",
+    container_id:"c4",
     symbol:"CRYPTOCAP:TOTAL",
     interval:"15",
-    theme:"dark",
-    allow_symbol_change:false
+    theme:"dark"
 });
-
-}
-
-// INIT
-loadCharts();
-loadData();
-setInterval(loadData,5000);
 
 </script>
 
