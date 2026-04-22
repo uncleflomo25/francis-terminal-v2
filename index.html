@@ -2,29 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V5</title>
+<title>⚡ FRANCIS TERMINAL V5 — ELITE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
+
+/* ===== GLOBAL ===== */
 body{
     margin:0;
-    background:#04060c;
-    color:#fff;
-    font-family:Arial;
+    background: radial-gradient(circle at 20% 20%, #0a0f1f, #020409 80%);
+    color:#e6edf3;
+    font-family:'Segoe UI', Arial, sans-serif;
 }
 
-/* HEADER */
+/* ===== HEADER ===== */
 .header{
     text-align:center;
-    padding:12px;
+    padding:14px;
     font-size:20px;
-    background:#0a0f1f;
-    border-bottom:1px solid #1c2b4a;
+    background: linear-gradient(90deg,#0a0f1f,#060b18);
+    border-bottom:1px solid #1f2f55;
+    letter-spacing:1px;
 }
 
-/* TOP BAR */
+/* ===== TOP BAR ===== */
 .topbar{
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -33,33 +36,33 @@ body{
 }
 
 .box{
-    background:#0a0f1f;
-    border:1px solid #1c2b4a;
-    border-radius:8px;
-    padding:10px;
+    background: linear-gradient(145deg,#0b1224,#060a16);
+    border:1px solid #1a2a4a;
+    border-radius:12px;
+    padding:12px;
     text-align:center;
+
+    box-shadow:
+        0 0 10px rgba(0,150,255,0.05),
+        inset 0 0 10px rgba(0,150,255,0.03);
+
+    transition:0.2s;
 }
 
-.symbol{
-    font-size:13px;
-    color:#aaa;
+.box:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 25px rgba(0,150,255,0.15);
 }
 
-.value{
-    font-size:16px;
-    margin-top:4px;
-}
+.value{font-size:18px;}
+.arrow{font-size:16px;}
 
-.arrow{
-    font-size:18px;
-    margin-top:5px;
-}
+/* ===== COLORS ===== */
+.green{color:#00ffa3;}
+.red{color:#ff4d6d;}
+.yellow{color:#ffd166;}
 
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd700;}
-
-/* GRID */
+/* ===== GRID ===== */
 .grid{
     display:grid;
     grid-template-columns:repeat(2,1fr);
@@ -68,47 +71,48 @@ body{
 }
 
 .chart{
-    height:320px;
-    border:1px solid #13203a;
-    border-radius:8px;
+    height:300px;
+    border-radius:12px;
+    border:1px solid #1a2a4a;
+    background: linear-gradient(145deg,#050812,#02040a);
+    box-shadow: 0 0 15px rgba(0,150,255,0.04);
 }
+
+/* ===== FLOW PANEL ===== */
+.panel{
+    position:absolute;
+    right:10px;
+    top:120px;
+    width:260px;
+    padding:14px;
+    background: linear-gradient(145deg,#0b1224,#050812);
+    border:1px solid #1a2a4a;
+    border-radius:12px;
+    box-shadow:0 0 20px rgba(0,150,255,0.08);
+}
+
+.line{
+    display:flex;
+    justify-content:space-between;
+    margin:6px 0;
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL V5 — REAL FLOW ENGINE</div>
+<div class="header">⚡ FRANCIS TERMINAL V5 — ELITE FLOW ENGINE</div>
 
-<!-- TOP STATUS -->
+<!-- ===== TOP STATUS ===== -->
 <div class="topbar">
-
-    <div class="box">
-        <div class="symbol">USDT.D</div>
-        <div id="usdtVol" class="value"></div>
-        <div id="usdtDir" class="arrow"></div>
-    </div>
-
-    <div class="box">
-        <div class="symbol">ETHBTC</div>
-        <div id="ethbtcVol" class="value"></div>
-        <div id="ethbtcDir" class="arrow"></div>
-    </div>
-
-    <div class="box">
-        <div class="symbol">BTC.D</div>
-        <div id="btcdVol" class="value"></div>
-        <div id="btcdDir" class="arrow"></div>
-    </div>
-
-    <div class="box">
-        <div class="symbol">TOTAL</div>
-        <div id="totalVol" class="value"></div>
-        <div id="totalDir" class="arrow"></div>
-    </div>
-
+    <div class="box">USDT.D<br><span id="usdt" class="value"></span><br><span id="usdtA" class="arrow"></span></div>
+    <div class="box">ETHBTC<br><span id="ethbtc" class="value"></span><br><span id="ethbtcA" class="arrow"></span></div>
+    <div class="box">BTC.D<br><span id="btcd" class="value"></span><br><span id="btcdA" class="arrow"></span></div>
+    <div class="box">TOTAL<br><span id="total" class="value"></span><br><span id="totalA" class="arrow"></span></div>
 </div>
 
-<!-- CHARTS -->
+<!-- ===== CHARTS ===== -->
 <div class="grid">
     <div id="c1" class="chart"></div>
     <div id="c2" class="chart"></div>
@@ -116,61 +120,103 @@ body{
     <div id="c4" class="chart"></div>
 </div>
 
+<!-- ===== FLOW ENGINE ===== -->
+<div class="panel">
+<b>⚡ FLOW ENGINE</b><br><br>
+
+<div class="line">Spot Vol <span id="spotVol"></span></div>
+<div class="line">Perp Vol <span id="perpVol"></span></div>
+<div class="line">Open Interest <span id="oi"></span></div>
+<div class="line">Delta <span id="delta"></span></div>
+
+<hr>
+
+<div class="line">Market State <span id="state"></span></div>
+</div>
+
 <script>
 
-/* FORMAT */
+/* ===== FORMAT ===== */
 function fmt(v){
     if(v>1e9) return (v/1e9).toFixed(2)+"B";
     if(v>1e6) return (v/1e6).toFixed(2)+"M";
     return v.toFixed(2);
 }
 
-/* DIRECTION LOGIC */
-function direction(current, prev){
-    let diff = current - prev;
-
-    if(diff > 0){
-        return `<span class="green">▲</span>`;
+/* ===== DIRECTION LOGIC ===== */
+function getDirection(change){
+    if(change > 0.2){
+        return {arrow:"▲", cls:"green"};
     }
-    else if(diff < 0){
-        return `<span class="red">▼</span>`;
+    else if(change < -0.2){
+        return {arrow:"▼", cls:"red"};
     }
     else{
-        return `<span class="yellow">▶</span>`;
+        return {arrow:"➜", cls:"yellow"};
     }
 }
 
-/* FETCH BINANCE (proxy for volume activity) */
-async function getData(symbol){
-    let r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=15m&limit=2`);
-    return await r.json();
+/* ===== FAKE DOMINANCE (visual) ===== */
+function fakeUpdate(idVal,idArrow){
+    let val = (Math.random()*10).toFixed(2);
+    let change = (Math.random()*2-1);
+
+    let d = getDirection(change);
+
+    document.getElementById(idVal).innerText = val;
+    document.getElementById(idArrow).innerHTML =
+        `<span class="${d.cls}">${d.arrow}</span>`;
 }
 
-/* UPDATE */
+/* ===== FLOW DATA ===== */
+async function getData(){
+    let spot = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+    let perp = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+    let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
+    return {spot, perp, oi};
+}
+
+/* ===== UPDATE ===== */
 async function update(){
 
-    let btc = await getData("BTCUSDT");
-    let eth = await getData("ETHUSDT");
+    // TOP BAR (visual only)
+    fakeUpdate("usdt","usdtA");
+    fakeUpdate("ethbtc","ethbtcA");
+    fakeUpdate("btcd","btcdA");
+    fakeUpdate("total","totalA");
 
-    let curr = parseFloat(btc[1][5]);
-    let prev = parseFloat(btc[0][5]);
+    // FLOW ENGINE
+    let {spot, perp, oi} = await getData();
 
-    let ethCurr = parseFloat(eth[1][5]);
-    let ethPrev = parseFloat(eth[0][5]);
+    let spotVol = parseFloat(spot.quoteVolume);
+    let perpVol = parseFloat(perp.quoteVolume);
+    let openInt = parseFloat(oi.openInterest);
+    let delta = spotVol - perpVol;
 
-    /* Assign (approx logic for now) */
-    document.getElementById("usdtVol").innerText = fmt(curr);
-    document.getElementById("btcdVol").innerText = fmt(curr);
-    document.getElementById("totalVol").innerText = fmt(curr);
-    document.getElementById("ethbtcVol").innerText = fmt(ethCurr);
+    document.getElementById("spotVol").innerText = fmt(spotVol);
+    document.getElementById("perpVol").innerText = fmt(perpVol);
+    document.getElementById("oi").innerText = fmt(openInt);
 
-    document.getElementById("usdtDir").innerHTML = direction(curr, prev);
-    document.getElementById("btcdDir").innerHTML = direction(curr, prev);
-    document.getElementById("totalDir").innerHTML = direction(curr, prev);
-    document.getElementById("ethbtcDir").innerHTML = direction(ethCurr, ethPrev);
+    document.getElementById("delta").innerHTML =
+        delta > 0
+        ? `<span class="green">+${fmt(delta)}</span>`
+        : `<span class="red">-${fmt(Math.abs(delta))}</span>`;
+
+    // MARKET STATE
+    let state="SIDEWAYS", color="yellow";
+
+    if(spotVol > perpVol && delta > 0){
+        state="SMART MONEY BUYING"; color="green";
+    }
+    else if(perpVol > spotVol && delta < 0){
+        state="SHORT PRESSURE"; color="red";
+    }
+
+    document.getElementById("state").innerHTML =
+        `<span class="${color}">${state}</span>`;
 }
 
-/* CHARTS */
+/* ===== CHARTS ===== */
 new TradingView.widget({container_id:"c1",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
 new TradingView.widget({container_id:"c2",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
 new TradingView.widget({container_id:"c3",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
