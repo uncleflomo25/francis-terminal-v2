@@ -1,15 +1,14 @@
-```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V9 — CLEAN ENGINE</title>
+<title>⚡ FRANCIS TERMINAL V9.5</title>
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 body{
     margin:0;
-    background:#02040a;
+    background:#020409;
     color:#fff;
     font-family:Arial;
 }
@@ -19,157 +18,157 @@ body{
     text-align:center;
     padding:12px;
     font-size:20px;
-    background:#0a0f1f;
+    background:#050b18;
+    border-bottom:1px solid #13203a;
 }
 
-/* GRID */
-.grid{
+/* TOP BAR */
+.topbar{
     display:grid;
-    grid-template-columns:3fr 1fr;
+    grid-template-columns:repeat(4,1fr);
     gap:10px;
     padding:10px;
 }
 
-.right{
-    display:grid;
-    grid-template-rows:1fr 1fr;
-    gap:10px;
-}
-
-.bottom{
-    padding:10px;
-}
-
-.chart{
-    border:1px solid #1c2b4a;
+.box{
+    background:#070f1f;
+    border:1px solid #13203a;
     border-radius:8px;
+    padding:10px;
+    text-align:center;
 }
 
-.big{height:500px;}
-.small{height:240px;}
+.price{
+    font-size:16px;
+    margin-top:4px;
+}
 
-/* PANEL */
-.panel{
-    position:absolute;
-    right:10px;
-    top:70px;
-    width:260px;
-    padding:14px;
-    background:#0a0f1f;
-    border-radius:10px;
-    border:1px solid #1c2b4a;
+.vol{
+    font-size:12px;
+    opacity:0.7;
 }
 
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
+
+/* MAIN GRID */
+.main{
+    display:grid;
+    grid-template-columns:3fr 1.2fr;
+    grid-template-rows:400px 300px;
+    gap:10px;
+    padding:10px;
+}
+
+.chart{
+    width:100%;
+    height:100%;
+    border:1px solid #13203a;
+    border-radius:8px;
+}
+
+.panel{
+    background:#070f1f;
+    border:1px solid #13203a;
+    border-radius:8px;
+    padding:12px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL V9 — INSTITUTIONAL FLOW</div>
+<div class="header">⚡ FRANCIS TERMINAL V9.5 — FLOW</div>
 
-<div class="grid">
+<!-- TOP BAR -->
+<div class="topbar">
 
-    <!-- TOTAL BIG -->
-    <div id="total" class="chart big"></div>
+    <div class="box">
+        USDT.D
+        <div id="usdt_price" class="price"></div>
+        <div id="usdt_vol" class="vol"></div>
+    </div>
 
-    <!-- RIGHT SIDE -->
-    <div class="right">
-        <div id="btcdom" class="chart small"></div>
-        <div id="ethbtc" class="chart small"></div>
+    <div class="box">
+        ETHBTC
+        <div id="ethbtc_price" class="price"></div>
+        <div id="ethbtc_vol" class="vol"></div>
+    </div>
+
+    <div class="box">
+        BTC.D
+        <div id="btcd_price" class="price"></div>
+        <div id="btcd_vol" class="vol"></div>
+    </div>
+
+    <div class="box">
+        TOTAL
+        <div id="total_price" class="price"></div>
+        <div id="total_vol" class="vol"></div>
     </div>
 
 </div>
 
-<!-- USDT FULL WIDTH -->
-<div class="bottom">
-    <div id="usdt" class="chart small"></div>
-</div>
+<!-- MAIN -->
+<div class="main">
 
-<!-- ENGINE PANEL -->
-<div class="panel">
-<b>⚡ V9 ENGINE</b><br><br>
+    <div id="total_chart" class="chart"></div>
 
-State: <span id="state"></span><br>
-Confidence: <span id="conf"></span><br><br>
+    <div class="panel">
+        <b>⚡ ENGINE</b><br><br>
+        Market State: <span class="green">BTC TREND</span>
+    </div>
 
-<div id="explain"></div>
+    <div id="usdt_chart" class="chart"></div>
+
+    <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
+        <div id="ethbtc_chart" class="chart"></div>
+        <div id="btcd_chart" class="chart"></div>
+    </div>
+
 </div>
 
 <script>
 
-/* ===== FETCH ===== */
-async function get(symbol){
-    let r = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
-    return await r.json();
+/* FORMAT */
+function fmt(v){
+    if(v>1e12) return (v/1e12).toFixed(2)+"T";
+    if(v>1e9) return (v/1e9).toFixed(2)+"B";
+    if(v>1e6) return (v/1e6).toFixed(2)+"M";
+    return v.toFixed(2);
 }
 
-/* ===== TREND FILTER ===== */
-function trend(change){
-    let c = parseFloat(change)
-    if(c > 0.4) return 1
-    if(c < -0.4) return -1
-    return 0
+/* FAKE DATA SIMULATION (replace with real API later) */
+function randomUpdate(id_price, id_vol){
+    let price = Math.random()*100;
+    let vol = Math.random()*1e10;
+
+    let el = document.getElementById(id_price);
+    let color = price > 50 ? "green" : "red";
+
+    el.innerHTML = `<span class="${color}">${price.toFixed(2)}</span>`;
+    document.getElementById(id_vol).innerText = "Vol: " + fmt(vol);
 }
 
-/* ===== ENGINE ===== */
-async function update(){
-
-    let btc = await get("BTCUSDT")
-    let eth = await get("ETHUSDT")
-
-    let TOTAL = trend(btc.priceChangePercent)
-    let BTCD  = trend(btc.priceChangePercent)
-    let ETHBTC= trend(eth.priceChangePercent - btc.priceChangePercent)
-    let USDTD = trend(-btc.priceChangePercent)
-
-    let state = "RANGE"
-    let color = "yellow"
-
-    if(TOTAL==1 && BTCD==1 && USDTD<=0){
-        state="BTC TREND"
-        color="green"
-    }
-    else if(TOTAL==1 && BTCD==-1 && ETHBTC==1){
-        state="ALT SEASON"
-        color="green"
-    }
-    else if(TOTAL==-1 && USDTD==1){
-        state="RISK OFF"
-        color="red"
-    }
-
-    let agreement = Math.abs(TOTAL + BTCD + ETHBTC - USDTD)
-    let confidence = Math.min(100, agreement * 25)
-
-    // DISPLAY
-    document.getElementById("state").innerHTML =
-        `<span class="${color}">${state}</span>`
-
-    document.getElementById("conf").innerText = confidence + "%"
-
-    document.getElementById("explain").innerHTML = `
-    Market: ${TOTAL==1?'UP':TOTAL==-1?'DOWN':'FLAT'}<br>
-    BTC.D: ${BTCD==1?'UP':BTCD==-1?'DOWN':'FLAT'}<br>
-    ETHBTC: ${ETHBTC==1?'UP':ETHBTC==-1?'DOWN':'FLAT'}<br>
-    Liquidity: ${USDTD==1?'RISK OFF':USDTD==-1?'RISK ON':'NEUTRAL'}
-    `
+/* UPDATE LOOP */
+function update(){
+    randomUpdate("usdt_price","usdt_vol");
+    randomUpdate("ethbtc_price","ethbtc_vol");
+    randomUpdate("btcd_price","btcd_vol");
+    randomUpdate("total_price","total_vol");
 }
 
-/* ===== CHARTS ===== */
-new TradingView.widget({container_id:"total",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"btcdom",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"ethbtc",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"usdt",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
-
-/* RUN */
+setInterval(update,2000);
 update();
-setInterval(update,5000);
+
+/* CHARTS */
+new TradingView.widget({container_id:"total_chart",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark",autosize:true});
+new TradingView.widget({container_id:"usdt_chart",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark",autosize:true});
+new TradingView.widget({container_id:"ethbtc_chart",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark",autosize:true});
+new TradingView.widget({container_id:"btcd_chart",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark",autosize:true});
 
 </script>
 
 </body>
 </html>
-```
