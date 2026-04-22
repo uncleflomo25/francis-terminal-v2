@@ -2,20 +2,29 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V10 — SMART ENGINE</title>
+<title>⚡ FRANCIS TERMINAL V10 — SMART FLOW</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
-body{margin:0;background:#020409;color:#fff;font-family:Arial;}
+body{
+    margin:0;
+    background:radial-gradient(circle at top,#050b18,#02040a);
+    color:#fff;
+    font-family:Arial;
+}
 
+/* HEADER */
 .header{
     text-align:center;
     padding:12px;
-    font-size:20px;
-    background:#050b18;
-    border-bottom:1px solid #13203a;
+    font-size:18px;
+    background:#070f1f;
+    border-bottom:1px solid #1a2a4a;
 }
 
+/* TOP BAR */
 .topbar{
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -24,129 +33,207 @@ body{margin:0;background:#020409;color:#fff;font-family:Arial;}
 }
 
 .box{
-    background:#070f1f;
-    border:1px solid #13203a;
-    border-radius:8px;
+    background:#0a1326;
+    border:1px solid #1c2b4a;
+    border-radius:10px;
     padding:10px;
     text-align:center;
 }
+
+.value{font-size:18px;}
+.vol{font-size:11px;color:#888;}
 
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
 
-.main{
+/* GRID */
+.grid{
     display:grid;
     grid-template-columns:2fr 1fr;
-    grid-template-rows:350px 350px auto;
+    grid-template-rows:450px 250px;
     gap:10px;
     padding:10px;
 }
 
 .chart{
-    width:100%;
-    height:100%;
     border:1px solid #13203a;
-    border-radius:8px;
+    border-radius:10px;
 }
 
+/* ENGINE PANEL */
 .panel{
-    background:#070f1f;
-    border:1px solid #13203a;
-    border-radius:8px;
-    padding:12px;
+    background:#0a1326;
+    border:1px solid #1c2b4a;
+    border-radius:10px;
+    padding:14px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL V10 — SMART FLOW ENGINE</div>
+<div class="header">⚡ FRANCIS TERMINAL V10 — SMART SIGNAL ENGINE</div>
 
-<!-- TOP -->
+<!-- TOP BAR -->
 <div class="topbar">
-    <div class="box">USDT.D <div id="usdt"></div></div>
-    <div class="box">ETHBTC <div id="ethbtc"></div></div>
-    <div class="box">BTC.D <div id="btcd"></div></div>
-    <div class="box">TOTAL <div id="total"></div></div>
+    <div class="box">
+        USDT.D
+        <div id="usdt" class="value"></div>
+        <div id="usdtVol" class="vol"></div>
+    </div>
+
+    <div class="box">
+        ETHBTC
+        <div id="ethbtc" class="value"></div>
+        <div id="ethbtcVol" class="vol"></div>
+    </div>
+
+    <div class="box">
+        BTC.D
+        <div id="btc" class="value"></div>
+        <div id="btcVol" class="vol"></div>
+    </div>
+
+    <div class="box">
+        TOTAL
+        <div id="total" class="value"></div>
+        <div id="totalVol" class="vol"></div>
+    </div>
 </div>
 
-<div class="main">
+<!-- GRID -->
+<div class="grid">
 
-    <div id="total_chart" class="chart"></div>
-    <div id="ethbtc_chart" class="chart"></div>
-    <div id="usdt_chart" class="chart"></div>
-    <div id="btcd_chart" class="chart"></div>
+    <!-- MAIN TOTAL -->
+    <div id="chart_total" class="chart"></div>
 
+    <!-- ENGINE -->
     <div class="panel">
-        <b>⚡ V10 ENGINE</b><br><br>
+        <b>⚡ V10 ENGINE (HTF CONFIRM)</b><br><br>
 
-        Score: <span id="score"></span><br><br>
+        TF: 1D (Higher Timeframe)<br><br>
 
-        State: <span id="state"></span><br><br>
+        Market State: <span id="state"></span><br>
+        Confidence: <span id="conf"></span><br><br>
 
-        Liquidity: <span id="liq"></span><br>
-        BTC Control: <span id="btc_ctrl"></span><br>
-        Rotation: <span id="rotation"></span>
+        BTC.D: <span id="btcState"></span><br>
+        ETHBTC: <span id="ethState"></span><br>
+        USDT.D: <span id="usdtState"></span><br><br>
 
+        Liquidity: <span id="liq"></span>
+    </div>
+
+    <!-- USDT.D -->
+    <div id="chart_usdt" class="chart"></div>
+
+    <!-- RIGHT SIDE -->
+    <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
+        <div id="chart_ethbtc" class="chart"></div>
+        <div id="chart_btc" class="chart"></div>
     </div>
 
 </div>
 
 <script>
 
-/* ===== MOCK DATA (replace later with real) ===== */
-function randTrend(){
-    return Math.random() > 0.5 ? 1 : -1;
+/* FORMAT */
+function fmt(v){
+    if(v>1e9) return (v/1e9).toFixed(2)+"B";
+    if(v>1e6) return (v/1e6).toFixed(2)+"M";
+    return v.toFixed(2);
 }
 
-/* ===== ENGINE ===== */
-function runEngine(){
+/* MOCK HTF DATA (you can replace with API later) */
+function randomTrend(){
+    return Math.random()>0.5 ? 1 : -1;
+}
 
-    let usdt = randTrend();   // down = good
-    let btcd = randTrend();   // up = good
-    let ethbtc = randTrend(); // up = good
-    let total = randTrend();  // up = good
+/* ENGINE LOGIC (V10) */
+function updateEngine(){
 
-    let score = 0;
+    let btcTrend = randomTrend();
+    let ethTrend = randomTrend();
+    let usdtTrend = randomTrend();
 
-    if(total > 0) score += 25;
-    if(usdt < 0) score += 25;
-    if(btcd > 0) score += 25;
-    if(ethbtc > 0) score += 25;
+    // STATES
+    let btcState = btcTrend>0 ? "UP" : "DOWN";
+    let ethState = ethTrend>0 ? "UP" : "DOWN";
+    let usdtState = usdtTrend>0 ? "RISK OFF" : "RISK ON";
 
-    // STATE
-    let state = "";
-    let color = "";
+    document.getElementById("btcState").innerHTML =
+        `<span class="${btcTrend>0?'green':'red'}">${btcState}</span>`;
 
-    if(score >= 75){ state="🚀 STRONG BULL"; color="green";}
-    else if(score >=55){ state="📈 BULL"; color="green";}
-    else if(score >=45){ state="⚖️ SIDEWAYS"; color="yellow";}
-    else if(score >=25){ state="📉 BEAR"; color="red";}
-    else{ state="💥 STRONG BEAR"; color="red";}
+    document.getElementById("ethState").innerHTML =
+        `<span class="${ethTrend>0?'green':'red'}">${ethState}</span>`;
 
-    // UI
-    document.getElementById("score").innerHTML = `<span class="${color}">${score}</span>`;
-    document.getElementById("state").innerHTML = `<span class="${color}">${state}</span>`;
+    document.getElementById("usdtState").innerHTML =
+        `<span class="${usdtTrend>0?'red':'green'}">${usdtState}</span>`;
+
+    // MASTER LOGIC
+    let state = "SIDEWAYS";
+    let conf = "40%";
+    let color = "yellow";
+
+    if(btcTrend>0 && ethTrend>0 && usdtTrend<0){
+        state = "ALT BULL RUN";
+        conf = "90%";
+        color="green";
+    }
+    else if(btcTrend>0 && ethTrend<0){
+        state = "BTC DOMINANCE";
+        conf = "80%";
+        color="yellow";
+    }
+    else if(btcTrend<0 && usdtTrend>0){
+        state = "RISK OFF";
+        conf = "85%";
+        color="red";
+    }
+
+    document.getElementById("state").innerHTML =
+        `<span class="${color}">${state}</span>`;
+
+    document.getElementById("conf").innerHTML =
+        `<span class="${color}">${conf}</span>`;
 
     document.getElementById("liq").innerHTML =
-        usdt < 0 ? `<span class="green">RISK ON</span>` : `<span class="red">RISK OFF</span>`;
-
-    document.getElementById("btc_ctrl").innerHTML =
-        btcd > 0 ? `<span class="green">BTC DOMINANT</span>` : `<span class="red">ALTS DOMINANT</span>`;
-
-    document.getElementById("rotation").innerHTML =
-        ethbtc > 0 ? `<span class="green">ETH STRONG</span>` : `<span class="red">ETH WEAK</span>`;
+        `<span class="${usdtTrend>0?'red':'green'}">${usdtTrend>0?'EXITING':'ENTERING'}</span>`;
 }
 
-setInterval(runEngine,3000);
-runEngine();
+/* TOP BAR (mock volume) */
+function updateTop(){
 
-/* ===== CHARTS ===== */
-new TradingView.widget({container_id:"total_chart",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"ethbtc_chart",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"usdt_chart",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"btcd_chart",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
+    let usdt = Math.random()*10;
+    let btc = Math.random()*60;
+    let eth = Math.random()*0.05;
+    let total = Math.random()*3;
+
+    document.getElementById("usdt").innerText = usdt.toFixed(2);
+    document.getElementById("btc").innerText = btc.toFixed(2);
+    document.getElementById("ethbtc").innerText = eth.toFixed(5);
+    document.getElementById("total").innerText = total.toFixed(2)+"T";
+
+    document.getElementById("usdtVol").innerText = "Vol: "+fmt(Math.random()*1e9);
+    document.getElementById("btcVol").innerText = "Vol: "+fmt(Math.random()*1e9);
+    document.getElementById("ethbtcVol").innerText = "Vol: "+fmt(Math.random()*1e9);
+    document.getElementById("totalVol").innerText = "Vol: "+fmt(Math.random()*1e9);
+}
+
+/* CHARTS */
+new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_usdt",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_btc",symbol:"CRYPTOCAP:BTC.D",interval:"D",theme:"dark"});
+
+/* RUN */
+updateTop();
+updateEngine();
+
+setInterval(()=>{
+    updateTop();
+    updateEngine();
+},5000);
 
 </script>
 
