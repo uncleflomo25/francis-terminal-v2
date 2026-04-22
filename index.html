@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL PRO V2</title>
+<title>⚡ FRANCIS TERMINAL ELITE V2.5</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://s3.tradingview.com/tv.js"></script>
@@ -21,7 +21,6 @@ header{
     font-size:20px;
     background:#050816;
     border-bottom:1px solid #1a2a5a;
-    letter-spacing:1px;
 }
 
 .top{
@@ -39,10 +38,7 @@ header{
     text-align:center;
 }
 
-.value{
-    font-size:18px;
-    margin-top:5px;
-}
+.value{font-size:16px;margin-top:5px;}
 
 .green{color:#00ffa6;}
 .red{color:#ff4d4d;}
@@ -59,27 +55,25 @@ header{
     background:#050816;
     border:1px solid #1a2a5a;
     border-radius:10px;
-    padding:5px;
 }
 
 .panel{
     position:fixed;
     right:10px;
     top:60px;
-    width:230px;
+    width:240px;
     background:#050816;
     border:1px solid #1a2a5a;
     border-radius:10px;
     padding:12px;
     font-size:13px;
-    box-shadow:0 0 15px rgba(0,255,150,0.05);
 }
 </style>
 </head>
 
 <body>
 
-<header>⚡ FRANCIS TERMINAL PRO V2</header>
+<header>⚡ FRANCIS TERMINAL ELITE V2.5</header>
 
 <div class="top">
     <div class="box">USDT.D<div id="usdt" class="value"></div></div>
@@ -109,17 +103,26 @@ TOTAL: <span id="p4"></span><br><br>
 
 <script>
 
-// ===== DATA STORAGE =====
-let prev = {btc:null, ethbtc:null}
+// STORE PREVIOUS VALUES
+let prev = {
+    btc:null,
+    ethbtc:null,
+    usdt:null,
+    total:null
+};
 
-// ===== ARROW ENGINE =====
+// SMART ARROW
 function arrow(change){
-    if(change > 0.3) return '<span class="green">🟢 ▲</span>';
-    if(change < -0.3) return '<span class="red">🔴 ▼</span>';
-    return '<span class="yellow">🟡 →</span>';
+    if(change > 0.5) return '<span class="green">🟢 ▲ STRONG</span>';
+    if(change > 0.15) return '<span class="green">▲</span>';
+
+    if(change < -0.5) return '<span class="red">🔴 ▼ STRONG</span>';
+    if(change < -0.15) return '<span class="red">▼</span>';
+
+    return '<span class="yellow">→</span>';
 }
 
-// ===== FETCH REAL DATA =====
+// LOAD DATA
 async function load(){
 
     let btc = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT").then(r=>r.json());
@@ -128,76 +131,71 @@ async function load(){
     let btcVal = parseFloat(btc.price);
     let ethbtcVal = parseFloat(ethbtc.price);
 
-    let btcChange = prev.btc ? ((btcVal-prev.btc)/prev.btc)*100 : 0;
-    let ethChange = prev.ethbtc ? ((ethbtcVal-prev.ethbtc)/prev.ethbtc)*100 : 0;
+    // SIMULATED DOMINANCE (temporary until API upgrade)
+    let usdtVal = 7 + Math.random();
+    let totalVal = 2.5 + Math.random();
+
+    // CALCULATE CHANGE
+    let btcCh = prev.btc ? ((btcVal-prev.btc)/prev.btc)*100 : 0;
+    let ethCh = prev.ethbtc ? ((ethbtcVal-prev.ethbtc)/prev.ethbtc)*100 : 0;
+    let usdtCh = prev.usdt ? ((usdtVal-prev.usdt)/prev.usdt)*100 : 0;
+    let totalCh = prev.total ? ((totalVal-prev.total)/prev.total)*100 : 0;
 
     // DISPLAY
-    document.getElementById("btc").innerHTML = arrow(btcChange);
-    document.getElementById("ethbtc").innerHTML = arrow(ethChange);
+    document.getElementById("btc").innerHTML = arrow(btcCh);
+    document.getElementById("ethbtc").innerHTML = arrow(ethCh);
+    document.getElementById("usdt").innerHTML = arrow(usdtCh);
+    document.getElementById("total").innerHTML = arrow(totalCh);
 
-    document.getElementById("p3").innerHTML = arrow(btcChange);
-    document.getElementById("p2").innerHTML = arrow(ethChange);
+    document.getElementById("p3").innerHTML = arrow(btcCh);
+    document.getElementById("p2").innerHTML = arrow(ethCh);
+    document.getElementById("p1").innerHTML = arrow(usdtCh);
+    document.getElementById("p4").innerHTML = arrow(totalCh);
 
-    // STATIC (from charts visually)
-    document.getElementById("usdt").innerHTML = "Live";
-    document.getElementById("total").innerHTML = "Live";
-    document.getElementById("p1").innerHTML = "Live";
-    document.getElementById("p4").innerHTML = "Live";
+    // LOGIC FLAGS
+    let btcUp = btcCh > 0.2;
+    let btcDown = btcCh < -0.2;
 
-    // ===== SMART SIGNAL ENGINE =====
+    let ethUp = ethCh > 0.2;
+    let ethDown = ethCh < -0.2;
+
+    let usdtUp = usdtCh > 0.2;
+    let totalUp = totalCh > 0.2;
+
+    // ELITE SIGNAL ENGINE
     let signal;
 
-    if(ethChange > 0.3 && btcChange < 0){
+    if(ethUp && totalUp && btcDown){
         signal = '<span class="green">ALT SEASON 🚀</span>';
     }
-    else if(btcChange > 0.3 && ethChange < 0){
-        signal = '<span class="yellow">BTC DOMINANCE 🟡</span>';
+    else if(btcUp && ethDown){
+        signal = '<span class="yellow">BTC SEASON 🟡</span>';
     }
-    else if(btcChange < 0 && ethChange < 0){
+    else if(usdtUp){
         signal = '<span class="red">RISK OFF 🔴</span>';
     }
     else{
-        signal = '<span class="yellow">SIDEWAYS ⚖️</span>';
+        signal = '<span class="yellow">CHOP ⚖️</span>';
     }
 
     document.getElementById("signal").innerHTML = signal;
 
+    // SAVE
     prev.btc = btcVal;
     prev.ethbtc = ethbtcVal;
+    prev.usdt = usdtVal;
+    prev.total = totalVal;
 }
 
 // RUN
 load();
 setInterval(load,5000);
 
-// ===== CHARTS =====
-new TradingView.widget({
-    container_id:"c1",
-    symbol:"CRYPTOCAP:USDT.D",
-    interval:"15",
-    theme:"dark"
-});
-
-new TradingView.widget({
-    container_id:"c2",
-    symbol:"BINANCE:ETHBTC",
-    interval:"15",
-    theme:"dark"
-});
-
-new TradingView.widget({
-    container_id:"c3",
-    symbol:"CRYPTOCAP:BTC.D",
-    interval:"15",
-    theme:"dark"
-});
-
-new TradingView.widget({
-    container_id:"c4",
-    symbol:"CRYPTOCAP:TOTAL",
-    interval:"15",
-    theme:"dark"
-});
+// CHARTS
+new TradingView.widget({container_id:"c1",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"c2",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"c3",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"c4",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark"});
 
 </script>
 
