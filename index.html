@@ -2,284 +2,141 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V15 FINAL FLOW TERMINAL</title>
+<title>⚡ V16 REAL FLOW ENGINE</title>
 
 <style>
-body{
-    margin:0;
-    background:#02050c;
-    color:#fff;
-    font-family:Arial;
-}
+body{background:#02050c;color:#fff;font-family:Arial;margin:0}
+.header{padding:12px;background:#060d1f;color:#ffb347;font-weight:bold}
 
-/* HEADER */
-.header{
-    padding:14px;
-    font-size:20px;
-    color:#ffcc00;
-}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:10px}
+.box{background:#0a1326;padding:10px;border-radius:6px;border:1px solid #1c2b4a}
 
-/* GRID */
-.grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:12px;
-    padding:12px;
-}
+.green{color:#00ff9c}
+.red{color:#ff4d4d}
+.yellow{color:#ffd700}
 
-/* CARD */
-.card{
-    background:#081226;
-    border:1px solid #13203a;
-    padding:12px;
-    border-radius:8px;
-}
-
-.title{
-    font-size:12px;
-    color:#aaa;
-}
-
-.value{
-    font-size:20px;
-    margin-top:4px;
-}
-
-/* COLORS */
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffcc00;}
-
-/* ROW */
-.row{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
-    padding:10px;
-}
-
-/* SIGNAL */
-.signal{
-    margin:10px;
-    padding:12px;
-    background:#081226;
-    border-left:4px solid #ffcc00;
-    border-radius:6px;
-}
+.big{font-size:18px;font-weight:bold}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V15 — INSTITUTIONAL FLOW TERMINAL</div>
+<div class="header">⚡ V16 — REAL INSTITUTIONAL FLOW (FREE DATA)</div>
 
-<!-- MACRO -->
 <div class="grid">
-
-<div class="card">
-<div class="title">BTC.D</div>
-<div id="btcVal" class="value"></div>
-<div id="btcVol" class="title"></div>
+<div class="box">BTC.D<br><span id="btcd" class="big"></span><br><span id="btcVol"></span></div>
+<div class="box">USDT.D<br><span id="usdt" class="big"></span><br><span id="usdtVol"></span></div>
+<div class="box">TOTAL<br><span id="total" class="big"></span><br><span id="totalVol"></span></div>
+<div class="box">Delta<br><span id="delta" class="big"></span></div>
+<div class="box">Market<br><span id="state" class="big"></span></div>
 </div>
 
-<div class="card">
-<div class="title">USDT.D</div>
-<div id="usdtVal" class="value"></div>
-<div id="usdtVol" class="title"></div>
-</div>
-
-<div class="card">
-<div class="title">ETHBTC</div>
-<div id="ethVal" class="value"></div>
-<div id="ethVol" class="title"></div>
-</div>
-
-<div class="card">
-<div class="title">TOTAL</div>
-<div id="totalVal" class="value"></div>
-<div id="totalVol" class="title"></div>
-</div>
-
-<div class="card">
-<div class="title">Market State</div>
-<div id="state" class="value"></div>
-</div>
-
-</div>
-
-<!-- FLOW -->
-<div class="row">
-
-<div class="card">
-<div class="title">Spot Buy</div>
-<div id="spotBuy" class="value green"></div>
-</div>
-
-<div class="card">
-<div class="title">Spot Sell</div>
-<div id="spotSell" class="value red"></div>
-</div>
-
-<div class="card">
-<div class="title">Perp Buy</div>
-<div id="perpBuy" class="value green"></div>
-</div>
-
-<div class="card">
-<div class="title">Perp Sell</div>
-<div id="perpSell" class="value red"></div>
-</div>
-
-</div>
-
-<div class="row">
-
-<div class="card">
-<div class="title">Delta</div>
-<div id="delta" class="value"></div>
-</div>
-
-<div class="card">
-<div class="title">Open Interest</div>
-<div id="oi" class="value"></div>
-</div>
-
-<div class="card">
-<div class="title">Market Pressure</div>
-<div id="pressure" class="value"></div>
-</div>
-
-</div>
-
-<!-- SIGNAL -->
-<div class="signal">
-<div id="signalText"></div>
-<div id="strength"></div>
+<div class="grid">
+<div class="box">Spot Buy<br><span id="spotBuy"></span></div>
+<div class="box">Spot Sell<br><span id="spotSell"></span></div>
+<div class="box">Perp Buy<br><span id="perpBuy"></span></div>
+<div class="box">Perp Sell<br><span id="perpSell"></span></div>
+<div class="box">Open Interest<br><span id="oi"></span></div>
 </div>
 
 <script>
 
-/* FORMAT */
+// ===== FORMAT =====
 function fmt(v){
-    if(v >= 1e9) return (v/1e9).toFixed(2)+"B";
-    if(v >= 1e6) return (v/1e6).toFixed(2)+"M";
-    if(v >= 1e3) return (v/1e3).toFixed(2)+"K";
-    return v.toFixed(2);
+ if(v>1e9) return (v/1e9).toFixed(2)+"B";
+ if(v>1e6) return (v/1e6).toFixed(2)+"M";
+ return v.toFixed(2);
 }
 
-/* ARROW */
-function arrow(change){
-    if(change > 0.1) return "<span class='green'>▲</span>";
-    if(change < -0.1) return "<span class='red'>▼</span>";
-    return "<span class='yellow'>→</span>";
+// ===== STATE =====
+let spotBuy=0, spotSell=0, perpBuy=0, perpSell=0;
+
+// ===== BINANCE SPOT =====
+let spotWS = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
+
+spotWS.onmessage = (e)=>{
+ let t = JSON.parse(e.data);
+ let vol = parseFloat(t.q);
+
+ if(t.m){ // seller
+  spotSell += vol;
+ }else{
+  spotBuy += vol;
+ }
+
+ update();
 }
 
-/* ENGINE */
+// ===== BINANCE PERP =====
+let perpWS = new WebSocket("wss://fstream.binance.com/ws/btcusdt@trade");
+
+perpWS.onmessage = (e)=>{
+ let t = JSON.parse(e.data);
+ let vol = parseFloat(t.q);
+
+ if(t.m){
+  perpSell += vol;
+ }else{
+  perpBuy += vol;
+ }
+
+ update();
+}
+
+// ===== OPEN INTEREST =====
+async function getOI(){
+ let res = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT");
+ let d = await res.json();
+ document.getElementById("oi").innerText = fmt(parseFloat(d.openInterest));
+}
+setInterval(getOI,5000);
+
+// ===== COINGECKO DOMINANCE =====
+async function getMacro(){
+ let res = await fetch("https://api.coingecko.com/api/v3/global");
+ let d = await res.json();
+
+ let btc = d.data.market_cap_percentage.btc;
+ let total = d.data.total_market_cap.usd;
+ let usdt = d.data.market_cap_percentage.usdt || 0;
+
+ document.getElementById("btcd").innerText = btc.toFixed(2)+"%";
+ document.getElementById("usdt").innerText = usdt.toFixed(2)+"%";
+ document.getElementById("total").innerText = fmt(total);
+
+ document.getElementById("btcVol").innerText = "LIVE";
+ document.getElementById("usdtVol").innerText = "LIVE";
+ document.getElementById("totalVol").innerText = "LIVE";
+}
+setInterval(getMacro,10000);
+getMacro();
+
+// ===== ENGINE =====
 function update(){
 
-    // DAILY CHANGE SIMULATION
-    let btcD = (Math.random()*2 - 1);
-    let usdtD = (Math.random()*2 - 1);
-    let ethD = (Math.random()*2 - 1);
-    let totalD = (Math.random()*2 - 1);
+ document.getElementById("spotBuy").innerText = fmt(spotBuy);
+ document.getElementById("spotSell").innerText = fmt(spotSell);
+ document.getElementById("perpBuy").innerText = fmt(perpBuy);
+ document.getElementById("perpSell").innerText = fmt(perpSell);
 
-    // VALUES
-    let btc = 55 + btcD;
-    let usdt = 6 + usdtD;
-    let eth = 0.05 + ethD/100;
-    let total = 2.5 + totalD/10;
+ let delta = (spotBuy+perpBuy) - (spotSell+perpSell);
+ document.getElementById("delta").innerText = fmt(delta);
 
-    // DISPLAY
-    btcVal.innerHTML = btc.toFixed(2)+"% "+arrow(btcD);
-    usdtVal.innerHTML = usdt.toFixed(2)+"% "+arrow(usdtD);
-    ethVal.innerHTML = eth.toFixed(4)+" "+arrow(ethD);
-    totalVal.innerHTML = total.toFixed(2)+"T "+arrow(totalD);
+ let state = "NEUTRAL";
+ let color = "yellow";
 
-    // VOLUME
-    btcVol.innerHTML = "Vol: "+fmt(1e9 + Math.random()*1e9);
-    usdtVol.innerHTML = "Vol: "+fmt(5e8 + Math.random()*5e8);
-    ethVol.innerHTML = "Vol: "+fmt(3e8 + Math.random()*3e8);
-    totalVol.innerHTML = "Vol: "+fmt(2e9 + Math.random()*2e9);
+ if(delta > 0){
+  state = "BUY ▲";
+  color = "green";
+ }else if(delta < 0){
+  state = "SELL ▼";
+  color = "red";
+ }
 
-    // SPOT
-    let spotTotal = 1e9 + Math.random()*1e9;
-    let spotBuy = spotTotal * (0.5 + Math.random()*0.3);
-    let spotSell = spotTotal - spotBuy;
-
-    // PERP
-    let perpTotal = 2e9 + Math.random()*2e9;
-    let perpBuy = perpTotal * (0.5 + Math.random()*0.3);
-    let perpSell = perpTotal - perpBuy;
-
-    // DELTA
-    let delta = (spotBuy + perpBuy) - (spotSell + perpSell);
-
-    // DISPLAY FLOW
-    spotBuy.innerHTML = fmt(spotBuy) + " ▲";
-    spotSell.innerHTML = fmt(spotSell) + " ▼";
-    perpBuy.innerHTML = fmt(perpBuy) + " ▲";
-    perpSell.innerHTML = fmt(perpSell) + " ▼";
-
-    // DELTA COLOR
-    let deltaColor = "yellow";
-    if(delta > 0) deltaColor = "green";
-    if(delta < 0) deltaColor = "red";
-
-    document.getElementById("delta").innerHTML =
-        "<span class='"+deltaColor+"'>" + fmt(delta) + "</span>";
-
-    // OI
-    let oiVal = 1e9 + Math.random()*1e9;
-    document.getElementById("oi").innerHTML = fmt(oiVal);
-
-    // MARKET STATE
-    let state = "RANGE";
-    if(usdtD < 0 && ethD > 0) state = "RISK-ON";
-    else if(usdtD > 0) state = "RISK-OFF";
-    else if(btcD > 0 && ethD < 0) state = "BTC-LED";
-
-    document.getElementById("state").innerHTML = state;
-
-    // PRESSURE
-    let pressure = "NEUTRAL";
-    let color = "yellow";
-
-    if(delta > 0 && oiVal > 1.5e9){
-        pressure = "BUY";
-        color = "green";
-    }
-    else if(delta < 0 && oiVal > 1.5e9){
-        pressure = "SELL";
-        color = "red";
-    }
-
-    document.getElementById("pressure").innerHTML =
-        "<span class='"+color+"'>" + pressure + "</span>";
-
-    // SIGNAL
-    let signal = "No clear edge. Wait.";
-    let strength = 3;
-
-    if(state === "RISK-ON" && pressure === "BUY"){
-        signal = "HTF Risk-on: ETH strength + falling USDT.D supports longs.";
-        strength = 8;
-    }
-    else if(state === "RISK-OFF"){
-        signal = "HTF Risk-off: capital moving to stables.";
-        strength = 7;
-    }
-    else if(state === "BTC-LED"){
-        signal = "BTC dominance rising. Focus BTC.";
-        strength = 6;
-    }
-
-    document.getElementById("signalText").innerHTML = signal;
-    document.getElementById("strength").innerHTML = "Strength: "+strength+"/10";
-
+ let el = document.getElementById("state");
+ el.innerText = state;
+ el.className = "big " + color;
 }
-
-update();
-setInterval(update,60000);
 
 </script>
 
