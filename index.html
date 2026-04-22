@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL ELITE V2.5</title>
+<title>⚡ FRANCIS TERMINAL ELITE V3</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://s3.tradingview.com/tv.js"></script>
@@ -10,40 +10,57 @@
 <style>
 body{
     margin:0;
-    background:#02040a;
+    background:#05070d;
     color:#fff;
     font-family:Arial;
 }
 
-header{
-    padding:14px;
+/* HEADER */
+.header{
     text-align:center;
+    padding:12px;
     font-size:20px;
-    background:#050816;
-    border-bottom:1px solid #1a2a5a;
+    background:#0a0f1f;
+    border-bottom:1px solid #1c2b4a;
 }
 
-.top{
+/* TOP BAR */
+.topbar{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns: repeat(5,1fr);
     gap:10px;
     padding:10px;
 }
 
 .box{
-    background:#050816;
-    border:1px solid #1a2a5a;
-    border-radius:10px;
-    padding:12px;
+    background:#0a0f1f;
+    padding:10px;
+    border-radius:8px;
     text-align:center;
+    border:1px solid #13203a;
 }
 
-.value{font-size:16px;margin-top:5px;}
+/* TIMEFRAME */
+.tf{
+    text-align:center;
+    padding:10px;
+}
 
-.green{color:#00ffa6;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd000;}
+.tf button{
+    margin:4px;
+    padding:6px 12px;
+    background:#0a0f1f;
+    color:white;
+    border:1px solid #1c2b4a;
+    border-radius:6px;
+    cursor:pointer;
+}
 
+.tf button:hover{
+    background:#13203a;
+}
+
+/* GRID */
 .grid{
     display:grid;
     grid-template-columns:repeat(2,1fr);
@@ -51,151 +68,173 @@ header{
     padding:10px;
 }
 
-.card{
-    background:#050816;
-    border:1px solid #1a2a5a;
-    border-radius:10px;
+.chart{
+    height:300px;
+    border:1px solid #13203a;
+    border-radius:8px;
 }
 
-.panel{
-    position:fixed;
+/* COLORS */
+.green{color:#00ff9c;}
+.red{color:#ff4d4d;}
+.yellow{color:#ffd700;}
+
+/* ELITE TABLE */
+.elite{
+    position:absolute;
     right:10px;
     top:60px;
-    width:240px;
-    background:#050816;
-    border:1px solid #1a2a5a;
-    border-radius:10px;
-    padding:12px;
-    font-size:13px;
+    background:#0a0f1f;
+    border:1px solid #1c2b4a;
+    padding:10px;
+    border-radius:8px;
+    width:180px;
+    font-size:12px;
 }
 </style>
 </head>
 
 <body>
 
-<header>⚡ FRANCIS TERMINAL ELITE V2.5</header>
+<div class="header">⚡ FRANCIS TERMINAL ELITE V3</div>
 
-<div class="top">
-    <div class="box">USDT.D<div id="usdt" class="value"></div></div>
-    <div class="box">ETHBTC<div id="ethbtc" class="value"></div></div>
-    <div class="box">BTC.D<div id="btc" class="value"></div></div>
-    <div class="box">TOTAL<div id="total" class="value"></div></div>
+<!-- TIMEFRAME -->
+<div class="tf">
+    <button onclick="setTF('1')">1m</button>
+    <button onclick="setTF('5')">5m</button>
+    <button onclick="setTF('15')">15m</button>
+    <button onclick="setTF('60')">1H</button>
+    <button onclick="setTF('240')">4H</button>
+    <button onclick="setTF('D')">1D</button>
 </div>
 
+<!-- TOP STATUS -->
+<div class="topbar">
+    <div class="box" id="usdt">USDT.D</div>
+    <div class="box" id="ethbtc">ETHBTC</div>
+    <div class="box" id="btcd">BTC.D</div>
+    <div class="box" id="total">TOTAL</div>
+    <div class="box" id="signal">SIGNAL</div>
+</div>
+
+<!-- CHARTS -->
 <div class="grid">
-    <div class="card"><div id="c1"></div></div>
-    <div class="card"><div id="c2"></div></div>
-    <div class="card"><div id="c3"></div></div>
-    <div class="card"><div id="c4"></div></div>
+    <div id="chart1" class="chart"></div>
+    <div id="chart2" class="chart"></div>
+    <div id="chart3" class="chart"></div>
+    <div id="chart4" class="chart"></div>
 </div>
 
-<div class="panel">
-<b>⚡ ELITE FLOW</b><br><br>
-
-USDT.D: <span id="p1"></span><br>
-ETHBTC: <span id="p2"></span><br>
-BTC.D: <span id="p3"></span><br>
-TOTAL: <span id="p4"></span><br><br>
-
-<b>SIGNAL</b><br>
-<span id="signal"></span>
+<!-- ELITE FLOW -->
+<div class="elite" id="elite">
+    <b>⚡ ELITE FLOW</b><br><br>
+    USDT.D: <span id="e1"></span><br>
+    ETHBTC: <span id="e2"></span><br>
+    BTC.D: <span id="e3"></span><br>
+    TOTAL: <span id="e4"></span><br><br>
+    SIGNAL: <span id="e5"></span>
 </div>
 
 <script>
+let tf = "15";
 
-// STORE PREVIOUS VALUES
-let prev = {
-    btc:null,
-    ethbtc:null,
-    usdt:null,
-    total:null
-};
+/* CREATE CHARTS */
+function loadCharts(){
+    document.getElementById("chart1").innerHTML="";
+    document.getElementById("chart2").innerHTML="";
+    document.getElementById("chart3").innerHTML="";
+    document.getElementById("chart4").innerHTML="";
 
-// SMART ARROW
-function arrow(change){
-    if(change > 0.5) return '<span class="green">🟢 ▲ STRONG</span>';
-    if(change > 0.15) return '<span class="green">▲</span>';
+    new TradingView.widget({
+        container_id:"chart1",
+        symbol:"CRYPTOCAP:USDT.D",
+        interval:tf,
+        theme:"dark"
+    });
 
-    if(change < -0.5) return '<span class="red">🔴 ▼ STRONG</span>';
-    if(change < -0.15) return '<span class="red">▼</span>';
+    new TradingView.widget({
+        container_id:"chart2",
+        symbol:"BINANCE:ETHBTC",
+        interval:tf,
+        theme:"dark"
+    });
 
-    return '<span class="yellow">→</span>';
+    new TradingView.widget({
+        container_id:"chart3",
+        symbol:"CRYPTOCAP:BTC.D",
+        interval:tf,
+        theme:"dark"
+    });
+
+    new TradingView.widget({
+        container_id:"chart4",
+        symbol:"CRYPTOCAP:TOTAL",
+        interval:tf,
+        theme:"dark"
+    });
 }
 
-// LOAD DATA
-async function load(){
-
-    let btc = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT").then(r=>r.json());
-    let ethbtc = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json());
-
-    let btcVal = parseFloat(btc.price);
-    let ethbtcVal = parseFloat(ethbtc.price);
-
-    // SIMULATED DOMINANCE (temporary until API upgrade)
-    let usdtVal = 7 + Math.random();
-    let totalVal = 2.5 + Math.random();
-
-    // CALCULATE CHANGE
-    let btcCh = prev.btc ? ((btcVal-prev.btc)/prev.btc)*100 : 0;
-    let ethCh = prev.ethbtc ? ((ethbtcVal-prev.ethbtc)/prev.ethbtc)*100 : 0;
-    let usdtCh = prev.usdt ? ((usdtVal-prev.usdt)/prev.usdt)*100 : 0;
-    let totalCh = prev.total ? ((totalVal-prev.total)/prev.total)*100 : 0;
-
-    // DISPLAY
-    document.getElementById("btc").innerHTML = arrow(btcCh);
-    document.getElementById("ethbtc").innerHTML = arrow(ethCh);
-    document.getElementById("usdt").innerHTML = arrow(usdtCh);
-    document.getElementById("total").innerHTML = arrow(totalCh);
-
-    document.getElementById("p3").innerHTML = arrow(btcCh);
-    document.getElementById("p2").innerHTML = arrow(ethCh);
-    document.getElementById("p1").innerHTML = arrow(usdtCh);
-    document.getElementById("p4").innerHTML = arrow(totalCh);
-
-    // LOGIC FLAGS
-    let btcUp = btcCh > 0.2;
-    let btcDown = btcCh < -0.2;
-
-    let ethUp = ethCh > 0.2;
-    let ethDown = ethCh < -0.2;
-
-    let usdtUp = usdtCh > 0.2;
-    let totalUp = totalCh > 0.2;
-
-    // ELITE SIGNAL ENGINE
-    let signal;
-
-    if(ethUp && totalUp && btcDown){
-        signal = '<span class="green">ALT SEASON 🚀</span>';
-    }
-    else if(btcUp && ethDown){
-        signal = '<span class="yellow">BTC SEASON 🟡</span>';
-    }
-    else if(usdtUp){
-        signal = '<span class="red">RISK OFF 🔴</span>';
-    }
-    else{
-        signal = '<span class="yellow">CHOP ⚖️</span>';
-    }
-
-    document.getElementById("signal").innerHTML = signal;
-
-    // SAVE
-    prev.btc = btcVal;
-    prev.ethbtc = ethbtcVal;
-    prev.usdt = usdtVal;
-    prev.total = totalVal;
+/* TIMEFRAME CHANGE */
+function setTF(newTF){
+    tf = newTF;
+    loadCharts();
 }
 
-// RUN
-load();
-setInterval(load,5000);
+/* DIRECTION LOGIC (SIMULATED) */
+function randomTrend(){
+    let r = Math.random();
+    if(r > 0.66) return ["▲","green"];
+    if(r < 0.33) return ["▼","red"];
+    return ["→","yellow"];
+}
 
-// CHARTS
-new TradingView.widget({container_id:"c1",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"c2",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"c3",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"c4",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark"});
+/* UPDATE ELITE FLOW */
+function updateFlow(){
+    let a = randomTrend();
+    let b = randomTrend();
+    let c = randomTrend();
+    let d = randomTrend();
+
+    set("usdt", a);
+    set("ethbtc", b);
+    set("btcd", c);
+    set("total", d);
+
+    set("e1", a);
+    set("e2", b);
+    set("e3", c);
+    set("e4", d);
+
+    // SIGNAL LOGIC
+    let signal = "SIDEWAYS";
+    let color = "yellow";
+
+    if(a[1]=="green" && d[1]=="green"){
+        signal="STRONG";
+        color="green";
+    }
+    if(a[1]=="red" && c[1]=="red"){
+        signal="RISK OFF";
+        color="red";
+    }
+
+    document.getElementById("signal").innerHTML =
+        "<span class='"+color+"'>"+signal+"</span>";
+
+    document.getElementById("e5").innerHTML =
+        "<span class='"+color+"'>"+signal+"</span>";
+}
+
+/* SET TEXT */
+function set(id,data){
+    document.getElementById(id).innerHTML =
+        "<span class='"+data[1]+"'>"+data[0]+"</span>";
+}
+
+/* INIT */
+loadCharts();
+updateFlow();
+setInterval(updateFlow,4000);
 
 </script>
 
