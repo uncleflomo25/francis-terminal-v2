@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V6 — ULTRA ENGINE</title>
+<title>⚡ FRANCIS TERMINAL V7 — INSTITUTIONAL ENGINE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://s3.tradingview.com/tv.js"></script>
@@ -10,12 +10,11 @@
 <style>
 body{
     margin:0;
-    background:linear-gradient(180deg,#02030a,#050814,#02030a);
+    background:linear-gradient(180deg,#01020a,#040714,#01020a);
     color:#fff;
     font-family:Arial;
 }
 
-/* HEADER */
 .header{
     text-align:center;
     padding:14px;
@@ -24,7 +23,7 @@ body{
     border-bottom:1px solid #1f2d50;
 }
 
-/* TOP PANEL */
+/* TOP */
 .top{
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -38,33 +37,27 @@ body{
     border-radius:10px;
     padding:12px;
     text-align:center;
-    box-shadow:0 0 10px rgba(0,150,255,0.05);
 }
 
-.symbol{
-    font-size:13px;
-    color:#aaa;
-}
+.symbol{color:#aaa;font-size:13px;}
+.price{font-size:18px;margin-top:5px;}
+.arrow{font-size:18px;margin-top:5px;}
+.vol{font-size:12px;color:#888;}
 
-.price{
-    font-size:18px;
-    margin-top:5px;
-}
-
-.vol{
-    font-size:12px;
-    color:#888;
-}
-
-.arrow{
-    font-size:18px;
-    margin-top:5px;
-}
-
-/* COLORS */
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
+
+/* MARKET STATE PANEL */
+.stateBox{
+    margin:10px;
+    padding:14px;
+    background:#060d1f;
+    border:1px solid #1f2d50;
+    border-radius:10px;
+    text-align:center;
+    font-size:18px;
+}
 
 /* GRID */
 .grid{
@@ -84,40 +77,17 @@ body{
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL V6 — ULTRA FLOW ENGINE</div>
+<div class="header">⚡ FRANCIS TERMINAL V7 — INSTITUTIONAL ENGINE</div>
 
-<!-- TOP PANEL -->
 <div class="top">
-    <div class="box">
-        <div class="symbol">USDT.D</div>
-        <div class="price" id="p1">-</div>
-        <div class="arrow" id="a1"></div>
-        <div class="vol" id="v1"></div>
-    </div>
-
-    <div class="box">
-        <div class="symbol">ETHBTC</div>
-        <div class="price" id="p2">-</div>
-        <div class="arrow" id="a2"></div>
-        <div class="vol" id="v2"></div>
-    </div>
-
-    <div class="box">
-        <div class="symbol">BTC.D</div>
-        <div class="price" id="p3">-</div>
-        <div class="arrow" id="a3"></div>
-        <div class="vol" id="v3"></div>
-    </div>
-
-    <div class="box">
-        <div class="symbol">TOTAL</div>
-        <div class="price" id="p4">-</div>
-        <div class="arrow" id="a4"></div>
-        <div class="vol" id="v4"></div>
-    </div>
+    <div class="box"><div class="symbol">USDT.D</div><div id="p1" class="price"></div><div id="a1" class="arrow"></div><div id="v1" class="vol"></div></div>
+    <div class="box"><div class="symbol">ETHBTC</div><div id="p2" class="price"></div><div id="a2" class="arrow"></div><div id="v2" class="vol"></div></div>
+    <div class="box"><div class="symbol">BTC.D</div><div id="p3" class="price"></div><div id="a3" class="arrow"></div><div id="v3" class="vol"></div></div>
+    <div class="box"><div class="symbol">TOTAL</div><div id="p4" class="price"></div><div id="a4" class="arrow"></div><div id="v4" class="vol"></div></div>
 </div>
 
-<!-- CHART GRID -->
+<div class="stateBox" id="marketState">LOADING...</div>
+
 <div class="grid">
     <div id="c1" class="chart"></div>
     <div id="c2" class="chart"></div>
@@ -127,77 +97,94 @@ body{
 
 <script>
 
-/* ===== FORMAT ===== */
+/* FORMAT */
 function fmt(v){
     if(v>1e9) return (v/1e9).toFixed(2)+"B";
     if(v>1e6) return (v/1e6).toFixed(2)+"M";
     return v.toFixed(2);
 }
 
-/* ===== ARROW ENGINE (SMART) ===== */
-function getSignal(change){
-    if(change > 0.4) return {arrow:"▲", cls:"green"};
-    if(change < -0.4) return {arrow:"▼", cls:"red"};
-    return {arrow:"➜", cls:"yellow"};
+/* TREND ENGINE */
+function signal(change){
+    if(change > 0.5) return {arrow:"▲", cls:"green", dir:1};
+    if(change < -0.5) return {arrow:"▼", cls:"red", dir:-1};
+    return {arrow:"➜", cls:"yellow", dir:0};
 }
 
-/* ===== BINANCE DATA ===== */
-async function getBTC(){
-    let r = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT");
+/* DATA */
+async function get(symbol){
+    let r = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
     return await r.json();
 }
 
-async function getETHBTC(){
-    let r = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHBTC");
-    return await r.json();
-}
-
-/* ===== UPDATE ENGINE ===== */
 async function update(){
 
-    let btc = await getBTC();
-    let ethbtc = await getETHBTC();
+    let btc = await get("BTCUSDT");
+    let ethbtc = await get("ETHBTC");
 
-    let btcChange = parseFloat(btc.priceChangePercent);
-    let ethbtcChange = parseFloat(ethbtc.priceChangePercent);
+    let btcCh = parseFloat(btc.priceChangePercent);
+    let ethbtcCh = parseFloat(ethbtc.priceChangePercent);
 
-    let btcVol = parseFloat(btc.quoteVolume);
-    let ethbtcVol = parseFloat(ethbtc.volume);
+    let sBTC = signal(btcCh);
+    let sETHBTC = signal(ethbtcCh);
+    let sUSDT = signal(-btcCh); // inverse
+    let sTOTAL = signal(btcCh);
 
-    /* ===== APPLY ===== */
+    /* APPLY UI */
+    p1.innerText = (-btcCh).toFixed(2)+"%";
+    a1.innerHTML = `<span class="${sUSDT.cls}">${sUSDT.arrow}</span>`;
+    v1.innerText = "Liquidity";
 
-    // ETHBTC
-    let s2 = getSignal(ethbtcChange);
-    document.getElementById("p2").innerText = ethbtc.lastPrice;
-    document.getElementById("a2").innerHTML = `<span class="${s2.cls}">${s2.arrow}</span>`;
-    document.getElementById("v2").innerText = "Vol: " + fmt(ethbtcVol);
+    p2.innerText = ethbtc.lastPrice;
+    a2.innerHTML = `<span class="${sETHBTC.cls}">${sETHBTC.arrow}</span>`;
+    v2.innerText = "Vol: "+fmt(ethbtc.volume);
 
-    // BTC.D proxy (using BTC strength)
-    let s3 = getSignal(btcChange);
-    document.getElementById("p3").innerText = btcChange.toFixed(2)+"%";
-    document.getElementById("a3").innerHTML = `<span class="${s3.cls}">${s3.arrow}</span>`;
-    document.getElementById("v3").innerText = "Vol: " + fmt(btcVol);
+    p3.innerText = btcCh.toFixed(2)+"%";
+    a3.innerHTML = `<span class="${sBTC.cls}">${sBTC.arrow}</span>`;
+    v3.innerText = "Vol: "+fmt(btc.quoteVolume);
 
-    // TOTAL proxy
-    document.getElementById("p4").innerText = fmt(btcVol);
-    document.getElementById("a4").innerHTML = `<span class="${s3.cls}">${s3.arrow}</span>`;
-    document.getElementById("v4").innerText = "Market Flow";
+    p4.innerText = fmt(btc.quoteVolume);
+    a4.innerHTML = `<span class="${sTOTAL.cls}">${sTOTAL.arrow}</span>`;
+    v4.innerText = "Market Flow";
 
-    // USDT.D inverse of BTC
-    let inv = -btcChange;
-    let s1 = getSignal(inv);
-    document.getElementById("p1").innerText = inv.toFixed(2)+"%";
-    document.getElementById("a1").innerHTML = `<span class="${s1.cls}">${s1.arrow}</span>`;
-    document.getElementById("v1").innerText = "Liquidity";
+    /* ===== INSTITUTIONAL LOGIC ===== */
+    let state = "SIDEWAYS";
+    let cls = "yellow";
+
+    // BTC dominance phase
+    if(sBTC.dir === 1 && sETHBTC.dir === -1){
+        state = "BTC DOMINANCE 📈";
+        cls = "green";
+    }
+
+    // Alt rotation
+    else if(sETHBTC.dir === 1 && sTOTAL.dir === 1){
+        state = "ALT ROTATION 🚀";
+        cls = "green";
+    }
+
+    // Risk off
+    else if(sUSDT.dir === 1 && sTOTAL.dir === -1){
+        state = "RISK OFF 🔴";
+        cls = "red";
+    }
+
+    // Liquidity expansion
+    else if(sUSDT.dir === -1 && sTOTAL.dir === 1){
+        state = "RISK ON 💰";
+        cls = "green";
+    }
+
+    document.getElementById("marketState").innerHTML =
+        `<span class="${cls}">${state}</span>`;
 }
 
-/* ===== CHARTS ===== */
+/* CHARTS */
 new TradingView.widget({container_id:"c1",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
 new TradingView.widget({container_id:"c2",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
 new TradingView.widget({container_id:"c3",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
 new TradingView.widget({container_id:"c4",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark"});
 
-/* RUN */
 update();
 setInterval(update,5000);
 
