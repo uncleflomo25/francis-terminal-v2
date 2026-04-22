@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V5 REAL FLOW</title>
+<title>⚡ FRANCIS TERMINAL V5</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://s3.tradingview.com/tv.js"></script>
@@ -24,6 +24,41 @@ body{
     border-bottom:1px solid #1c2b4a;
 }
 
+/* TOP BAR */
+.topbar{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    padding:10px;
+}
+
+.box{
+    background:#0a0f1f;
+    border:1px solid #1c2b4a;
+    border-radius:8px;
+    padding:10px;
+    text-align:center;
+}
+
+.symbol{
+    font-size:13px;
+    color:#aaa;
+}
+
+.value{
+    font-size:16px;
+    margin-top:4px;
+}
+
+.arrow{
+    font-size:18px;
+    margin-top:5px;
+}
+
+.green{color:#00ff9c;}
+.red{color:#ff4d4d;}
+.yellow{color:#ffd700;}
+
 /* GRID */
 .grid{
     display:grid;
@@ -33,32 +68,10 @@ body{
 }
 
 .chart{
-    height:300px;
+    height:320px;
     border:1px solid #13203a;
     border-radius:8px;
 }
-
-/* ELITE TABLE */
-.panel{
-    position:absolute;
-    right:10px;
-    top:70px;
-    width:300px;
-    padding:16px;
-    background:#0a0f1f;
-    border:1px solid #1c2b4a;
-    border-radius:10px;
-}
-
-.line{
-    display:flex;
-    justify-content:space-between;
-    margin:6px 0;
-}
-
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd700;}
 </style>
 </head>
 
@@ -66,6 +79,36 @@ body{
 
 <div class="header">⚡ FRANCIS TERMINAL V5 — REAL FLOW ENGINE</div>
 
+<!-- TOP STATUS -->
+<div class="topbar">
+
+    <div class="box">
+        <div class="symbol">USDT.D</div>
+        <div id="usdtVol" class="value"></div>
+        <div id="usdtDir" class="arrow"></div>
+    </div>
+
+    <div class="box">
+        <div class="symbol">ETHBTC</div>
+        <div id="ethbtcVol" class="value"></div>
+        <div id="ethbtcDir" class="arrow"></div>
+    </div>
+
+    <div class="box">
+        <div class="symbol">BTC.D</div>
+        <div id="btcdVol" class="value"></div>
+        <div id="btcdDir" class="arrow"></div>
+    </div>
+
+    <div class="box">
+        <div class="symbol">TOTAL</div>
+        <div id="totalVol" class="value"></div>
+        <div id="totalDir" class="arrow"></div>
+    </div>
+
+</div>
+
+<!-- CHARTS -->
 <div class="grid">
     <div id="c1" class="chart"></div>
     <div id="c2" class="chart"></div>
@@ -73,92 +116,61 @@ body{
     <div id="c4" class="chart"></div>
 </div>
 
-<div class="panel">
-    <b>⚡ FLOW ENGINE</b><br><br>
-
-    <div class="line">Spot Vol <span id="spotVol"></span></div>
-    <div class="line">Perp Vol <span id="perpVol"></span></div>
-    <div class="line">Open Interest <span id="oi"></span></div>
-    <div class="line">Delta <span id="delta"></span></div>
-
-    <hr>
-
-    <div class="line">Market State <span id="state"></span></div>
-</div>
-
 <script>
 
-/* ===== FORMAT ===== */
+/* FORMAT */
 function fmt(v){
     if(v>1e9) return (v/1e9).toFixed(2)+"B";
     if(v>1e6) return (v/1e6).toFixed(2)+"M";
-    return v.toFixed(0);
+    return v.toFixed(2);
 }
 
-/* ===== FETCH ===== */
-async function getSpot(){
-    let r = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT");
+/* DIRECTION LOGIC */
+function direction(current, prev){
+    let diff = current - prev;
+
+    if(diff > 0){
+        return `<span class="green">▲</span>`;
+    }
+    else if(diff < 0){
+        return `<span class="red">▼</span>`;
+    }
+    else{
+        return `<span class="yellow">▶</span>`;
+    }
+}
+
+/* FETCH BINANCE (proxy for volume activity) */
+async function getData(symbol){
+    let r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=15m&limit=2`);
     return await r.json();
 }
 
-async function getPerp(){
-    let r = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT");
-    return await r.json();
-}
-
-async function getOI(){
-    let r = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT");
-    return await r.json();
-}
-
-/* ===== UPDATE ===== */
+/* UPDATE */
 async function update(){
 
-    let spot = await getSpot();
-    let perp = await getPerp();
-    let oi = await getOI();
+    let btc = await getData("BTCUSDT");
+    let eth = await getData("ETHUSDT");
 
-    let spotVol = parseFloat(spot.quoteVolume);
-    let perpVol = parseFloat(perp.quoteVolume);
-    let openInt = parseFloat(oi.openInterest);
+    let curr = parseFloat(btc[1][5]);
+    let prev = parseFloat(btc[0][5]);
 
-    // DELTA
-    let delta = spotVol - perpVol;
+    let ethCurr = parseFloat(eth[1][5]);
+    let ethPrev = parseFloat(eth[0][5]);
 
-    // DISPLAY
-    document.getElementById("spotVol").innerText = fmt(spotVol);
-    document.getElementById("perpVol").innerText = fmt(perpVol);
-    document.getElementById("oi").innerText = fmt(openInt);
+    /* Assign (approx logic for now) */
+    document.getElementById("usdtVol").innerText = fmt(curr);
+    document.getElementById("btcdVol").innerText = fmt(curr);
+    document.getElementById("totalVol").innerText = fmt(curr);
+    document.getElementById("ethbtcVol").innerText = fmt(ethCurr);
 
-    let deltaText = fmt(Math.abs(delta));
-    if(delta > 0){
-        document.getElementById("delta").innerHTML = `<span class="green">+${deltaText}</span>`;
-    }else{
-        document.getElementById("delta").innerHTML = `<span class="red">-${deltaText}</span>`;
-    }
-
-    // ===== SIGNAL ENGINE =====
-    let state = "SIDEWAYS";
-    let color = "yellow";
-
-    if(spotVol > perpVol && delta > 0){
-        state = "SMART MONEY BUYING";
-        color = "green";
-    }
-    else if(perpVol > spotVol && delta < 0){
-        state = "SHORT PRESSURE";
-        color = "red";
-    }
-    else if(openInt > 0 && perpVol > spotVol){
-        state = "LEVERAGE BUILDING";
-        color = "yellow";
-    }
-
-    document.getElementById("state").innerHTML =
-        `<span class="${color}">${state}</span>`;
+    document.getElementById("usdtDir").innerHTML = direction(curr, prev);
+    document.getElementById("btcdDir").innerHTML = direction(curr, prev);
+    document.getElementById("totalDir").innerHTML = direction(curr, prev);
+    document.getElementById("ethbtcDir").innerHTML = direction(ethCurr, ethPrev);
 }
 
-/* ===== CHARTS ===== */
+/* CHARTS */
 new TradingView.widget({container_id:"c1",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
 new TradingView.widget({container_id:"c2",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
 new TradingView.widget({container_id:"c3",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
