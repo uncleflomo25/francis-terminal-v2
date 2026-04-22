@@ -3,8 +3,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V8 — REAL ENGINE</title>
-
+<title>⚡ FRANCIS TERMINAL V9 — CLEAN ENGINE</title>
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -26,7 +25,7 @@ body{
 /* GRID */
 .grid{
     display:grid;
-    grid-template-columns:2fr 1fr;
+    grid-template-columns:3fr 1fr;
     gap:10px;
     padding:10px;
 }
@@ -37,8 +36,17 @@ body{
     gap:10px;
 }
 
-.chart{height:350px;border:1px solid #1c2b4a;border-radius:8px;}
-.small{height:170px;}
+.bottom{
+    padding:10px;
+}
+
+.chart{
+    border:1px solid #1c2b4a;
+    border-radius:8px;
+}
+
+.big{height:500px;}
+.small{height:240px;}
 
 /* PANEL */
 .panel{
@@ -60,129 +68,101 @@ body{
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL V8 — INSTITUTIONAL FLOW</div>
+<div class="header">⚡ FRANCIS TERMINAL V9 — INSTITUTIONAL FLOW</div>
 
 <div class="grid">
-    <div id="total" class="chart"></div>
 
+    <!-- TOTAL BIG -->
+    <div id="total" class="chart big"></div>
+
+    <!-- RIGHT SIDE -->
     <div class="right">
         <div id="btcdom" class="chart small"></div>
         <div id="ethbtc" class="chart small"></div>
     </div>
+
 </div>
 
-<div id="usdt" class="chart small"></div>
+<!-- USDT FULL WIDTH -->
+<div class="bottom">
+    <div id="usdt" class="chart small"></div>
+</div>
 
+<!-- ENGINE PANEL -->
 <div class="panel">
-<b>⚡ V8 FLOW ENGINE</b><br><br>
+<b>⚡ V9 ENGINE</b><br><br>
 
-Score: <span id="score"></span><br>
+State: <span id="state"></span><br>
 Confidence: <span id="conf"></span><br><br>
 
-State: <span id="state"></span><br><br>
-
-<div id="drivers"></div>
+<div id="explain"></div>
 </div>
 
 <script>
 
-/* ===== FORMAT ===== */
-function fmt(v){
-    if(v>1e9) return (v/1e9).toFixed(2)+"B";
-    if(v>1e6) return (v/1e6).toFixed(2)+"M";
-    return v.toFixed(2);
-}
-
-/* ===== FETCH BINANCE ===== */
-async function getData(symbol){
+/* ===== FETCH ===== */
+async function get(symbol){
     let r = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
     return await r.json();
 }
 
-/* ===== TREND DETECTION ===== */
+/* ===== TREND FILTER ===== */
 function trend(change){
-    return parseFloat(change) >= 0 ? 1 : -1;
+    let c = parseFloat(change)
+    if(c > 0.4) return 1
+    if(c < -0.4) return -1
+    return 0
 }
 
 /* ===== ENGINE ===== */
 async function update(){
 
-    // REAL DATA
-    let btc = await getData("BTCUSDT");
-    let eth = await getData("ETHUSDT");
+    let btc = await get("BTCUSDT")
+    let eth = await get("ETHUSDT")
 
-    // PROXY LOGIC (since TOTAL/BTC.D not in Binance API)
-    let TOTAL = trend(btc.priceChangePercent);      // market proxy
-    let BTCD  = trend(btc.priceChangePercent);      // btc strength proxy
-    let ETHBTC= trend(eth.priceChangePercent - btc.priceChangePercent);
-    let USDTD = trend(-btc.priceChangePercent);     // inverse risk proxy
+    let TOTAL = trend(btc.priceChangePercent)
+    let BTCD  = trend(btc.priceChangePercent)
+    let ETHBTC= trend(eth.priceChangePercent - btc.priceChangePercent)
+    let USDTD = trend(-btc.priceChangePercent)
 
-    // ===== SCORING =====
-    let score = 0;
+    let state = "RANGE"
+    let color = "yellow"
 
-    score += TOTAL * 2;
-    score += BTCD * 1;
-    score += ETHBTC * 1;
-    score += (USDTD * -2);
+    if(TOTAL==1 && BTCD==1 && USDTD<=0){
+        state="BTC TREND"
+        color="green"
+    }
+    else if(TOTAL==1 && BTCD==-1 && ETHBTC==1){
+        state="ALT SEASON"
+        color="green"
+    }
+    else if(TOTAL==-1 && USDTD==1){
+        state="RISK OFF"
+        color="red"
+    }
 
-    // ===== STATE =====
-    let state = "NEUTRAL";
-    let color = "yellow";
-
-    if(score >=3){state="STRONG BULL";color="green";}
-    else if(score >=1){state="BULLISH";color="green";}
-    else if(score <=-3){state="RISK OFF";color="red";}
-    else if(score <=-1){state="BEARISH";color="red";}
-
-    // SPECIAL
-    if(TOTAL==1 && BTCD==1) state="BTC TREND";
-    if(TOTAL==1 && BTCD==-1) state="ALT SEASON";
-
-    let conf = Math.min(100, Math.abs(score)*20);
+    let agreement = Math.abs(TOTAL + BTCD + ETHBTC - USDTD)
+    let confidence = Math.min(100, agreement * 25)
 
     // DISPLAY
-    document.getElementById("score").innerText = score;
-    document.getElementById("conf").innerText = conf+"%";
     document.getElementById("state").innerHTML =
-        `<span class="${color}">${state}</span>`;
+        `<span class="${color}">${state}</span>`
 
-    document.getElementById("drivers").innerHTML =
-        `
-        Market: ${TOTAL>0?'🟢':'🔴'}<br>
-        BTC: ${BTCD>0?'🟢':'🔴'}<br>
-        Alts: ${ETHBTC>0?'🟢':'🔴'}<br>
-        Liquidity: ${USDTD>0?'🔴':'🟢'}
-        `;
+    document.getElementById("conf").innerText = confidence + "%"
+
+    document.getElementById("explain").innerHTML = `
+    Market: ${TOTAL==1?'UP':TOTAL==-1?'DOWN':'FLAT'}<br>
+    BTC.D: ${BTCD==1?'UP':BTCD==-1?'DOWN':'FLAT'}<br>
+    ETHBTC: ${ETHBTC==1?'UP':ETHBTC==-1?'DOWN':'FLAT'}<br>
+    Liquidity: ${USDTD==1?'RISK OFF':USDTD==-1?'RISK ON':'NEUTRAL'}
+    `
 }
 
 /* ===== CHARTS ===== */
-new TradingView.widget({
-    container_id:"total",
-    symbol:"CRYPTOCAP:TOTAL",
-    interval:"15",
-    theme:"dark"
-});
-
-new TradingView.widget({
-    container_id:"btcdom",
-    symbol:"CRYPTOCAP:BTC.D",
-    interval:"15",
-    theme:"dark"
-});
-
-new TradingView.widget({
-    container_id:"ethbtc",
-    symbol:"BINANCE:ETHBTC",
-    interval:"15",
-    theme:"dark"
-});
-
-new TradingView.widget({
-    container_id:"usdt",
-    symbol:"CRYPTOCAP:USDT.D",
-    interval:"15",
-    theme:"dark"
-});
+new TradingView.widget({container_id:"total",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"btcdom",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"ethbtc",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"usdt",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
 
 /* RUN */
 update();
