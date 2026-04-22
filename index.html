@@ -2,40 +2,136 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Francis Terminal</title>
+<title>Francis Terminal PRO V2</title>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 body{
-    background:#0b0f1a;
-    color:white;
-    font-family:Arial;
-    text-align:center;
+margin:0;
+background:#050b1a;
+color:#fff;
+font-family:Arial;
 }
-.box{
-    background:#111827;
-    border-radius:16px;
-    padding:30px;
-    width:320px;
-    margin:100px auto;
+
+header{
+padding:15px;
+text-align:center;
+font-size:24px;
+background:#0d1428;
+border-bottom:1px solid #1f2a44;
 }
+
+.grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+padding:10px;
+}
+
+.card{
+background:#0d1428;
+padding:15px;
+border-radius:10px;
+text-align:center;
+}
+
 .value{
-    font-size:40px;
-    font-weight:bold;
+font-size:26px;
+margin-top:10px;
 }
+
 .green{color:#00ff95;}
 .red{color:#ff4d4d;}
-.yellow{color:#ffd166;}
-</style>
 
+.charts{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+padding:10px;
+}
+
+.chart{
+height:300px;
+}
+</style>
 </head>
 
 <body>
 
-<h1>Francis Terminal</h1>
+<header>Francis Terminal PRO V2</header>
 
-<div class="box">
-    WORKING ✅
+<div class="grid">
+
+<div class="card">
+BTC Spot Volume
+<div id="spot" class="value">Loading...</div>
 </div>
+
+<div class="card">
+BTC Perp Volume
+<div id="perp" class="value">Loading...</div>
+</div>
+
+<div class="card">
+BTC Open Interest
+<div id="oi" class="value">Loading...</div>
+</div>
+
+<div class="card">
+Market Pressure
+<div id="pressure" class="value">...</div>
+</div>
+
+</div>
+
+<div class="charts">
+
+<div id="btc" class="chart"></div>
+<div id="btcd" class="chart"></div>
+<div id="ethbtc" class="chart"></div>
+<div id="usdt" class="chart"></div>
+
+</div>
+
+<script>
+
+// ===== DATA =====
+async function loadData(){
+
+let spot = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+let perp = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
+
+let spotVol = (spot.quoteVolume/1e9).toFixed(2);
+let perpVol = (perp.quoteVolume/1e9).toFixed(2);
+let openI = (oi.openInterest/1000).toFixed(2);
+
+document.getElementById("spot").innerText = spotVol+"B";
+document.getElementById("perp").innerText = perpVol+"B";
+document.getElementById("oi").innerText = openI+"K";
+
+// pressure logic
+if(perpVol > spotVol){
+document.getElementById("pressure").innerText="BUY ▲";
+document.getElementById("pressure").className="value green";
+}else{
+document.getElementById("pressure").innerText="SELL ▼";
+document.getElementById("pressure").className="value red";
+}
+
+}
+
+loadData();
+setInterval(loadData,5000);
+
+// ===== CHARTS =====
+new TradingView.widget({container_id:"btc",symbol:"BINANCE:BTCUSDT",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"btcd",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"ethbtc",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"usdt",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
+
+</script>
 
 </body>
 </html>
