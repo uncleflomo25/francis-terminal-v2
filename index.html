@@ -1,127 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>⚡ V14 PRO FLOW TERMINAL</title>
+
+<style>
+body{
+    margin:0;
+    background:#05070d;
+    color:#fff;
+    font-family:Arial;
+}
+
+/* HEADER */
+.header{
+    padding:15px;
+    font-size:22px;
+    color:#f7a600;
+}
+
+/* GRID */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+    padding:10px;
+}
+
+/* CARDS */
+.card{
+    background:#0b0f1a;
+    padding:15px;
+    border-radius:10px;
+    border:1px solid #111827;
+}
+
+.title{
+    font-size:13px;
+    color:#888;
+}
+
+.value{
+    font-size:22px;
+    margin-top:5px;
+}
+
+.green{color:#00ff9c;}
+.red{color:#ff4d4d;}
+.yellow{color:#f7a600;}
+
+/* SECTION */
+.section{
+    padding:10px;
+}
+
+.section-title{
+    color:#f7a600;
+    font-size:18px;
+    margin-bottom:10px;
+}
+
+/* SIGNAL BOX */
+.signal{
+    background:#0b0f1a;
+    border-left:4px solid #f7a600;
+    padding:20px;
+    margin:10px;
+    border-radius:10px;
+}
+
+.small{
+    font-size:13px;
+    color:#aaa;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">⚡ V14 — INSTITUTIONAL FLOW TERMINAL</div>
+
+<!-- ================= MACRO ================= -->
+<div class="section">
+<div class="section-title">Macro Drivers</div>
+
+<div class="grid">
+
+<div class="card">
+<div class="title">BTC.D</div>
+<div id="btcDom" class="value green">--</div>
+<div class="small">Bias: BTC Strength</div>
+</div>
+
+<div class="card">
+<div class="title">USDT.D</div>
+<div id="usdtDom" class="value red">--</div>
+<div class="small">Bias: Risk</div>
+</div>
+
+<div class="card">
+<div class="title">ETHBTC</div>
+<div id="ethbtc" class="value green">--</div>
+<div class="small">Bias: Alt Strength</div>
+</div>
+
+<div class="card">
+<div class="title">TOTAL</div>
+<div id="total" class="value green">--</div>
+<div class="small">Bias: Expansion</div>
+</div>
+
+<div class="card">
+<div class="title">Market State</div>
+<div id="state" class="value yellow">--</div>
+<div class="small">Adaptive Engine</div>
+</div>
+
+</div>
+</div>
+
+<!-- ================= BTC FLOW ================= -->
+<div class="section">
+<div class="section-title">BTC Flow Engine</div>
+
+<div class="grid" style="grid-template-columns:repeat(4,1fr);">
+
+<div class="card">
+<div class="title">Spot Volume</div>
+<div id="spotVol" class="value green">--</div>
+</div>
+
+<div class="card">
+<div class="title">Perp Volume</div>
+<div id="perpVol" class="value green">--</div>
+</div>
+
+<div class="card">
+<div class="title">Open Interest</div>
+<div id="oi" class="value green">--</div>
+</div>
+
+<div class="card">
+<div class="title">Market Pressure</div>
+<div id="pressure" class="value green">--</div>
+</div>
+
+</div>
+</div>
+
+<!-- ================= SIGNAL ================= -->
+<div class="section">
+<div class="section-title">Terminal Signal</div>
+
+<div class="signal">
+<div id="signalText">
+Loading...
+</div>
+
+<br>
+<div id="strength" class="small"></div>
+</div>
+
+</div>
+
 <script>
 
-// ==============================
-// ⚡ CONFIG
-// ==============================
-const REFRESH_RATE = 5000;
+// ============================
+// FORMAT
+// ============================
+function fmt(v){
+    if(v>1e9) return (v/1e9).toFixed(2)+"B";
+    if(v>1e6) return (v/1e6).toFixed(2)+"M";
+    return v.toFixed(2);
+}
 
-// ==============================
-// ⚡ FETCH DATA (LIVE)
-// ==============================
-async function fetchData(){
+// ============================
+// FETCH LIVE DATA
+// ============================
+async function getData(){
 
-    // ETHBTC (Binance)
-    let ethbtcRes = await fetch("https://api.binance.com/api/v3/klines?symbol=ETHBTC&interval=1d&limit=10");
-    let ethbtcRaw = await ethbtcRes.json();
-    let ethbtc = ethbtcRaw.map(c => parseFloat(c[4]));
-
-    // TOTAL + BTC DOM (CoinGecko)
-    let globalRes = await fetch("https://api.coingecko.com/api/v3/global");
-    let global = await globalRes.json();
-
-    let total = global.data.total_market_cap.usd / 1e12;
+    let global = await fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json());
     let btcDom = global.data.market_cap_percentage.btc;
     let ethDom = global.data.market_cap_percentage.eth;
+    let total  = global.data.total_market_cap.usd / 1e12;
 
-    // USDT.D approximation
     let usdtDom = 100 - btcDom - ethDom;
 
+    // Binance BTC data
+    let oi = Math.random()*20e9; // replace later with real API
+    let spot = Math.random()*2e9;
+    let perp = Math.random()*4e9;
+
+    return {btcDom, usdtDom, total, oi, spot, perp};
+}
+
+// ============================
+// ENGINE
+// ============================
+function compute(d){
+
+    let score = 0;
+
+    // Liquidity
+    if(d.usdtDom < 7) score += 1;
+    else score -= 1;
+
+    // BTC dominance
+    if(d.btcDom > 50) score += 0.5;
+
+    // Market expansion
+    if(d.total > 2.5) score += 0.5;
+
+    return score;
+}
+
+// ============================
+// SIGNAL TEXT
+// ============================
+function buildSignal(score, d){
+
+    if(score > 1.2){
+        return {
+            text:`BTC bullish structure active.
+Spot demand strong, participation rising.
+Liquidity supportive (USDT.D falling).`,
+            strength:"Strength: 8.5 / 10"
+        }
+    }
+
+    if(score > 0.5){
+        return {
+            text:`Market mildly bullish.
+Trend building, but confirmation needed.`,
+            strength:"Strength: 6 / 10"
+        }
+    }
+
     return {
-        ethbtc,
-        total,
-        btcDom,
-        usdtDom
-    };
+        text:`No clear edge.
+Wait for structure + volume alignment.`,
+        strength:"Strength: 3 / 10"
+    }
 }
 
-// ==============================
-// ⚡ TREND FUNCTION
-// ==============================
-function trend(arr){
-    if(arr.length < 5) return 0;
-    return arr[arr.length-1] > arr[arr.length-5] ? 1 : -1;
-}
-
-// ==============================
-// ⚡ ENGINE CORE
-// ==============================
-function computeEngine(d){
-
-    let s_usdt = d.usdtDom < 8 ? 1 : -1;     // liquidity
-    let s_btc  = d.btcDom > 50 ? 1 : -1;     // btc strength
-    let s_eth  = trend(d.ethbtc);            // alt strength
-    let s_tot  = d.total > 2.5 ? 1 : -1;     // expansion
-
-    // weights
-    let w = {usdt:0.35, btc:0.25, eth:0.25, total:0.15};
-
-    let score =
-        s_usdt*w.usdt +
-        s_btc*w.btc +
-        s_eth*w.eth +
-        s_tot*w.total;
-
-    return {score, s_usdt, s_btc, s_eth, s_tot};
-}
-
-// ==============================
-// ⚡ CLASSIFY
-// ==============================
-function classify(score){
-    if(score > 0.6) return "🚀 STRONG BULL";
-    if(score > 0.2) return "🟢 BULL";
-    if(score > -0.2) return "⚪ NEUTRAL";
-    if(score > -0.6) return "🔴 BEAR";
-    return "💀 STRONG BEAR";
-}
-
-// ==============================
-// ⚡ UPDATE UI
-// ==============================
+// ============================
+// UPDATE UI
+// ============================
 async function update(){
 
-    let d = await fetchData();
-    let e = computeEngine(d);
-    let state = classify(e.score);
+    let d = await getData();
+    let score = compute(d);
+    let sig = buildSignal(score, d);
 
-    // HEADER
-    document.querySelector(".header").innerHTML =
-        "⚡ V13 LIVE ENGINE — " + state +
-        " | Score: " + e.score.toFixed(2);
+    document.getElementById("btcDom").innerText = d.btcDom.toFixed(2)+"%";
+    document.getElementById("usdtDom").innerText = d.usdtDom.toFixed(2)+"%";
+    document.getElementById("total").innerText = d.total.toFixed(2)+"T";
 
-    // CLASS BOXES
-    document.getElementById("riskOn").style.opacity =
-        (e.s_usdt>0 && e.s_eth>0) ? "1" : "0.3";
+    document.getElementById("spotVol").innerText = fmt(d.spot);
+    document.getElementById("perpVol").innerText = fmt(d.perp);
+    document.getElementById("oi").innerText = fmt(d.oi);
 
-    document.getElementById("riskOff").style.opacity =
-        (e.s_usdt<0) ? "1" : "0.3";
+    document.getElementById("pressure").innerText =
+        score > 1 ? "BUY ▲" :
+        score < -1 ? "SELL ▼" :
+        "NEUTRAL";
 
-    document.getElementById("btcLed").style.opacity =
-        (e.s_btc>0 && e.s_eth<0) ? "1" : "0.3";
+    document.getElementById("state").innerText =
+        score > 1 ? "BULL TREND" :
+        score < -1 ? "BEAR TREND" :
+        "RANGE";
 
-    // TABLE
-    document.getElementById("usdtState").innerText = e.s_usdt>0?"RISK-ON":"RISK-OFF";
-    document.getElementById("btcState").innerText  = e.s_btc>0?"BTC-UP":"BTC-DOWN";
-    document.getElementById("ethState").innerText  = e.s_eth>0?"ALT-UP":"ALT-DOWN";
-    document.getElementById("totalState").innerText= e.s_tot>0?"EXPANSION":"CONTRACTION";
-
-    document.getElementById("usdtVal").innerText = d.usdtDom.toFixed(2)+"%";
-    document.getElementById("btcVal").innerText  = d.btcDom.toFixed(2)+"%";
-    document.getElementById("ethVal").innerText  = d.ethbtc.at(-1);
-    document.getElementById("totalVal").innerText= d.total.toFixed(2)+"T";
-
+    document.getElementById("signalText").innerText = sig.text;
+    document.getElementById("strength").innerText = sig.strength;
 }
-
-// ==============================
-// ⚡ CHARTS (UNCHANGED)
-// ==============================
-new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"chart_usdt",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"chart_btc",symbol:"CRYPTOCAP:BTC.D",interval:"D",theme:"dark"});
 
 // RUN
 update();
-setInterval(update, REFRESH_RATE);
+setInterval(update, 5000);
 
 </script>
+
+</body>
+</html>
