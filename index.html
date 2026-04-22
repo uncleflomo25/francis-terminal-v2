@@ -2,92 +2,46 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V17 REAL FLOW ENGINE</title>
+<title>⚡ V100 INSTITUTIONAL FLOW ENGINE</title>
 
 <style>
-body{
-    background:#02050c;
-    color:#fff;
-    font-family:Arial;
-    margin:0;
-}
+body{background:#02050c;color:#fff;font-family:Arial;margin:0;}
+.header{padding:12px;text-align:center;background:#060d1f;border-bottom:1px solid #1a2a4a;font-size:18px;}
 
-/* HEADER */
-.header{
-    padding:12px;
-    text-align:center;
-    background:#060d1f;
-    border-bottom:1px solid #1a2a4a;
-    font-size:18px;
-}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:10px;}
+.card{background:#0a1326;border:1px solid #1c2b4a;border-radius:8px;padding:10px;}
 
-/* GRID */
-.grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:10px;
-    padding:10px;
-}
-
-/* CARD */
-.card{
-    background:#0a1326;
-    border:1px solid #1c2b4a;
-    border-radius:8px;
-    padding:10px;
-}
-
-/* COLORS */
 .up{color:#00ff9c;}
 .down{color:#ff4d4d;}
 .side{color:#ffcc00;}
 
-.small{font-size:12px;color:#888;}
+.signal{font-size:20px;font-weight:bold;}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V17 — REAL FREE FLOW ENGINE</div>
+<div class="header">⚡ V100 — INSTITUTIONAL FLOW ENGINE</div>
 
 <div class="grid">
-
-<div class="card">
-BTC.D<br>
-<span id="btc" class="value">--</span>
+<div class="card">BTC.D<br><span id="btc"></span></div>
+<div class="card">USDT.D<br><span id="usdt"></span></div>
+<div class="card">ETHBTC<br><span id="ethbtc"></span></div>
+<div class="card">TOTAL<br><span id="total"></span></div>
+<div class="card">Regime<br><span id="regime"></span></div>
 </div>
 
-<div class="card">
-USDT.D<br>
-<span id="usdt" class="value">--</span>
-</div>
-
-<div class="card">
-ETHBTC<br>
-<span id="ethbtc" class="value">--</span>
-</div>
-
-<div class="card">
-TOTAL<br>
-<span id="total" class="value">--</span>
-</div>
-
-<div class="card">
-Market<br>
-<span id="market">--</span>
-</div>
-
+<div class="grid">
+<div class="card">Spot Volume<br><span id="spot"></span></div>
+<div class="card">Perp Volume<br><span id="perp"></span></div>
+<div class="card">Open Interest<br><span id="oi"></span></div>
+<div class="card">Delta<br><span id="delta"></span></div>
+<div class="card signal">Signal<br><span id="signal"></span></div>
 </div>
 
 <script>
 
-/* STORE PREVIOUS VALUES */
-let prev = {
-    btc:null,
-    usdt:null,
-    ethbtc:null,
-    total:null
-}
+let prev = {btc:null, usdt:null, ethbtc:null, total:null, oi:null}
 
 /* FORMAT */
 function fmt(n){
@@ -96,81 +50,100 @@ function fmt(n){
     return n.toFixed(2);
 }
 
-/* DIRECTION ENGINE */
-function getDirection(current, previous){
-
-    if(previous === null) return {arrow:"↔️", class:"side"};
-
-    if(current > previous) return {arrow:"⬆️", class:"up"};
-    if(current < previous) return {arrow:"⬇️", class:"down"};
-
-    return {arrow:"↔️", class:"side"};
+/* DIRECTION */
+function dir(c,p){
+    if(p===null) return {a:"↔️",c:"side"};
+    if(c>p) return {a:"⬆️",c:"up"};
+    if(c<p) return {a:"⬇️",c:"down"};
+    return {a:"↔️",c:"side"};
 }
 
-/* UPDATE FUNCTION */
+/* FETCH ENGINE */
 async function update(){
 
-    let res = await fetch("https://api.coingecko.com/api/v3/global");
-    let data = await res.json();
+// GLOBAL DATA
+let g = await fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json());
 
-    let total = data.data.total_market_cap.usd;
+let total = g.data.total_market_cap.usd;
+let btc_d = g.data.market_cap_percentage.btc;
+let eth_d = g.data.market_cap_percentage.eth;
+let usdt_d = 100 - btc_d - eth_d;
+let ethbtc = eth_d / btc_d;
 
-    let btc_d = data.data.market_cap_percentage.btc;
-    let eth_d = data.data.market_cap_percentage.eth;
+// BINANCE DATA
+let vol = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
 
-    /* APPROX CALCULATIONS */
-    let usdt_d = 100 - btc_d - eth_d;
-    let ethbtc = eth_d / btc_d;
+// APPROX FLOW
+let spotVol = parseFloat(vol.quoteVolume);
+let perpVol = spotVol * 1.4; // proxy
+let openInterest = parseFloat(oi.openInterest);
 
-    /* DIRECTION */
-    let btcDir = getDirection(btc_d, prev.btc);
-    let usdtDir = getDirection(usdt_d, prev.usdt);
-    let ethbtcDir = getDirection(ethbtc, prev.ethbtc);
-    let totalDir = getDirection(total, prev.total);
+// DELTA (proxy)
+let delta = spotVol - perpVol * 0.7;
 
-    /* UPDATE UI */
-    document.getElementById("btc").innerHTML =
-        `<span class="${btcDir.class}">${btc_d.toFixed(2)}% ${btcDir.arrow}</span>`;
+/* DIRECTIONS */
+let d1=dir(btc_d,prev.btc);
+let d2=dir(usdt_d,prev.usdt);
+let d3=dir(ethbtc,prev.ethbtc);
+let d4=dir(total,prev.total);
+let d5=dir(openInterest,prev.oi);
 
-    document.getElementById("usdt").innerHTML =
-        `<span class="${usdtDir.class}">${usdt_d.toFixed(2)}% ${usdtDir.arrow}</span>`;
+/* UI */
+btc.innerHTML=`<span class="${d1.c}">${btc_d.toFixed(2)}% ${d1.a}</span>`;
+usdt.innerHTML=`<span class="${d2.c}">${usdt_d.toFixed(2)}% ${d2.a}</span>`;
+ethbtc.innerHTML=`<span class="${d3.c}">${ethbtc.toFixed(4)} ${d3.a}</span>`;
+total.innerHTML=`<span class="${d4.c}">${fmt(total)} ${d4.a}</span>`;
 
-    document.getElementById("ethbtc").innerHTML =
-        `<span class="${ethbtcDir.class}">${ethbtc.toFixed(4)} ${ethbtcDir.arrow}</span>`;
+/* REGIME DETECTION */
+let regime="RANGE";
 
-    document.getElementById("total").innerHTML =
-        `<span class="${totalDir.class}">${fmt(total)} ${totalDir.arrow}</span>`;
+if(d4.c==="up" && d5.c==="up") regime="TREND";
+if(d4.c==="down" && d2.c==="up") regime="RISK-OFF";
+if(d3.c==="up" && d2.c==="down") regime="ALT TREND";
 
-    /* MARKET LOGIC */
-    let market = "NEUTRAL";
-    let color = "side";
+regimeEl = document.getElementById("regime");
+regimeEl.innerHTML = regime;
 
-    if(usdt_d < prev.usdt && ethbtc > prev.ethbtc) {
-        market = "RISK-ON";
-        color = "up";
-    }
-    else if(usdt_d > prev.usdt) {
-        market = "RISK-OFF";
-        color = "down";
-    }
-    else if(btc_d > prev.btc) {
-        market = "BTC-LED";
-        color = "side";
-    }
+/* FLOW */
+spot.innerText=fmt(spotVol);
+perp.innerText=fmt(perpVol);
+oi.innerHTML=`<span class="${d5.c}">${fmt(openInterest)} ${d5.a}</span>`;
+delta.innerHTML = delta>0 ? `<span class="up">${fmt(delta)}</span>` : `<span class="down">${fmt(delta)}</span>`;
 
-    document.getElementById("market").innerHTML =
-        `<span class="${color}">${market}</span>`;
+/* ADAPTIVE SCORE */
+let score = 0;
 
-    /* SAVE PREVIOUS */
-    prev.btc = btc_d;
-    prev.usdt = usdt_d;
-    prev.ethbtc = ethbtc;
-    prev.total = total;
+// dominance
+if(d2.c==="down") score+=2;
+if(d1.c==="up") score+=1;
+
+// flow
+if(delta>0) score+=2;
+if(d5.c==="up") score+=2;
+
+// structure
+if(d4.c==="up") score+=2;
+if(d4.c==="down") score-=2;
+
+/* SIGNAL */
+let signalText="WAIT";
+let color="side";
+
+if(score>=5){ signalText="BUY"; color="up"; }
+else if(score<=-2){ signalText="SELL"; color="down"; }
+
+document.getElementById("signal").innerHTML =
+`<span class="${color}">${signalText} (${score})</span>`;
+
+/* SAVE */
+prev={btc:btc_d,usdt:usdt_d,ethbtc:ethbtc,total:total,oi:openInterest};
+
 }
 
 /* RUN */
 update();
-setInterval(update, 5000);
+setInterval(update,8000);
 
 </script>
 
