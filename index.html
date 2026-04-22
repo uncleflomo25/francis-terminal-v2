@@ -1,130 +1,266 @@
-import numpy as np
-import pandas as pd
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>⚡ V11 INSTITUTIONAL FLOW ENGINE</title>
+<script src="https://s3.tradingview.com/tv.js"></script>
 
-# =============================
-# MOCK DATA INPUT (replace later with API)
-# =============================
-def get_data():
-    data = {
-        "USDT.D": np.random.normal(7, 0.1, 100),
-        "BTC.D": np.random.normal(60, 0.3, 100),
-        "ETHBTC": np.random.normal(0.03, 0.001, 100),
-        "TOTAL": np.random.normal(2.5, 0.05, 100),
+<style>
+body{
+    margin:0;
+    background:#02050c;
+    color:#fff;
+    font-family:Arial;
+}
+
+/* HEADER */
+.header{
+    text-align:center;
+    padding:12px;
+    font-size:20px;
+    background:#060d1f;
+    border-bottom:1px solid #1a2a4a;
+}
+
+/* CLASS BOX */
+.classify{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    padding:10px;
+}
+
+.card{
+    padding:12px;
+    border-radius:8px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.green{background:#0b2e1c;color:#00ff9c;}
+.red{background:#2a0b0b;color:#ff4d4d;}
+.orange{background:#2a1a0b;color:#ffb347;}
+.gray{background:#111;color:#aaa;}
+
+.grid{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:10px;
+    padding:10px;
+}
+
+.chart{
+    height:400px;
+    border:1px solid #13203a;
+    border-radius:8px;
+}
+
+/* TABLE */
+.table{
+    margin:10px;
+    border:1px solid #1c2b4a;
+    border-radius:8px;
+    overflow:hidden;
+}
+
+.row{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    padding:8px;
+    border-bottom:1px solid #1c2b4a;
+    font-size:13px;
+}
+
+/* ENTRY RULES */
+.rules{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+    padding:10px;
+}
+
+.box{
+    padding:12px;
+    border-radius:8px;
+    background:#0a1326;
+    border:1px solid #1c2b4a;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">⚡ V11 — DOMINANCE + FOOTPRINT ENGINE</div>
+
+<!-- CLASSIFICATION -->
+<div class="classify">
+    <div id="riskOn" class="card green">RISK-ON<br>LONG ETH</div>
+    <div id="riskOff" class="card red">RISK-OFF<br>SHORTS</div>
+    <div id="btcLed" class="card orange">BTC-LED<br>LONG BTC</div>
+</div>
+
+<!-- CHARTS -->
+<div class="grid">
+    <div id="chart_total" class="chart"></div>
+    <div>
+        <div id="chart_ethbtc" class="chart"></div>
+        <div id="chart_btc" class="chart"></div>
+    </div>
+</div>
+
+<div class="grid">
+    <div id="chart_usdt" class="chart"></div>
+    <div class="box">
+        <b>⚡ TRADE CHECK</b><br><br>
+        ✔ Market Setup?<br>
+        ✔ Clear Imbalance?<br>
+        ✔ Price Moving?<br><br>
+
+        <span style="color:#00ff9c">YES → EXECUTE</span><br>
+        <span style="color:#ff4d4d">NO → SKIP</span>
+    </div>
+</div>
+
+<!-- HTF TABLE -->
+<div class="table">
+    <div class="row"><b>Metric</b><b>Status</b><b>Direction</b><b>Value</b><b>Volume</b><b>Delta</b></div>
+
+    <div class="row">
+        <div>USDT.D</div>
+        <div id="usdtState"></div>
+        <div id="usdtDir"></div>
+        <div id="usdtVal"></div>
+        <div id="usdtVol"></div>
+        <div id="usdtDelta"></div>
+    </div>
+
+    <div class="row">
+        <div>BTC.D</div>
+        <div id="btcState"></div>
+        <div id="btcDir"></div>
+        <div id="btcVal"></div>
+        <div id="btcVol"></div>
+        <div id="btcDelta"></div>
+    </div>
+
+    <div class="row">
+        <div>ETHBTC</div>
+        <div id="ethState"></div>
+        <div id="ethDir"></div>
+        <div id="ethVal"></div>
+        <div id="ethVol"></div>
+        <div id="ethDelta"></div>
+    </div>
+
+    <div class="row">
+        <div>TOTAL</div>
+        <div id="totalState"></div>
+        <div id="totalDir"></div>
+        <div id="totalVal"></div>
+        <div id="totalVol"></div>
+        <div id="totalDelta"></div>
+    </div>
+</div>
+
+<!-- ENTRY RULES -->
+<div class="rules">
+
+    <div class="box">
+        <b>CONTINUATION</b><br><br>
+        ✔ Buy Imbalance<br>
+        ✔ Delta Rising<br>
+        ✔ Strong Trend<br><br>
+        → Pullback Entry
+    </div>
+
+    <div class="box" style="background:#2a0b0b;">
+        <b>TRAP REVERSAL</b><br><br>
+        ✖ Price Stalls<br>
+        ✖ Delta Stops<br>
+        ✖ Absorption<br><br>
+        → Fade Move
+    </div>
+
+    <div class="box">
+        <b>FOOTPRINT</b><br><br>
+        Spot Volume<br>
+        Perp Volume<br>
+        Delta<br>
+        Open Interest
+    </div>
+
+</div>
+
+<script>
+
+/* RANDOM ENGINE (replace later with API) */
+function rand(){ return Math.random()>0.5 ? 1 : -1; }
+
+function fmt(v){
+    if(v>1e9) return (v/1e9).toFixed(2)+"B";
+    if(v>1e6) return (v/1e6).toFixed(2)+"M";
+    return v.toFixed(2);
+}
+
+function update(){
+
+    let usdt = rand();
+    let btc = rand();
+    let eth = rand();
+
+    // CLASSIFICATION
+    if(usdt<0 && eth>0){
+        document.getElementById("riskOn").style.opacity="1";
+    }else{
+        document.getElementById("riskOn").style.opacity="0.3";
     }
-    return pd.DataFrame(data)
 
-# =============================
-# INDICATORS
-# =============================
-def ema(series, period=50):
-    return series.ewm(span=period, adjust=False).mean()
+    if(usdt>0){
+        document.getElementById("riskOff").style.opacity="1";
+    }else{
+        document.getElementById("riskOff").style.opacity="0.3";
+    }
 
-def roc(series, period=10):
-    return series.pct_change(period)
+    if(btc>0 && eth<0){
+        document.getElementById("btcLed").style.opacity="1";
+    }else{
+        document.getElementById("btcLed").style.opacity="0.3";
+    }
 
-# =============================
-# SIGNAL FUNCTION
-# =============================
-def calc_signal(series):
-    trend = np.where(series > ema(series), 1, -1)
-    momentum = roc(series).fillna(0)
-    return trend * momentum
+    // TABLE DATA
+    document.getElementById("usdtState").innerHTML = usdt>0 ? "<span style='color:red'>RISK-OFF</span>" : "<span style='color:green'>RISK-ON</span>";
+    document.getElementById("btcState").innerHTML = btc>0 ? "<span style='color:orange'>BTC-LED</span>" : "<span style='color:gray'>NEUTRAL</span>";
+    document.getElementById("ethState").innerHTML = eth>0 ? "<span style='color:green'>RISK-ON</span>" : "<span style='color:red'>WEAK</span>";
 
-# =============================
-# REGIME DETECTION
-# =============================
-def detect_regime(df):
-    btc_up = ema(df["BTC.D"], 50).iloc[-1] > ema(df["BTC.D"], 100).iloc[-1]
-    usdt_up = ema(df["USDT.D"], 50).iloc[-1] > ema(df["USDT.D"], 100).iloc[-1]
-    total_up = ema(df["TOTAL"], 50).iloc[-1] > ema(df["TOTAL"], 100).iloc[-1]
+    document.getElementById("totalState").innerHTML = "<span style='color:green'>FLOW</span>";
 
-    if usdt_up:
-        return "RISK_OFF"
-    elif btc_up:
-        return "BTC_DOM"
-    elif total_up:
-        return "ALT"
-    else:
-        return "CHOP"
+    document.getElementById("usdtVal").innerText = (Math.random()*10).toFixed(2)+"%";
+    document.getElementById("btcVal").innerText = (Math.random()*60).toFixed(2)+"%";
+    document.getElementById("ethVal").innerText = (Math.random()*0.05).toFixed(5);
+    document.getElementById("totalVal").innerText = (Math.random()*3).toFixed(2)+"T";
 
-# =============================
-# ADAPTIVE WEIGHTS
-# =============================
-def get_weights(regime):
-    if regime == "BTC_DOM":
-        return {"USDT":0.15,"BTC":0.4,"ETH":0.2,"TOTAL":0.25}
-    elif regime == "ALT":
-        return {"USDT":0.15,"BTC":0.15,"ETH":0.4,"TOTAL":0.3}
-    elif regime == "RISK_OFF":
-        return {"USDT":0.5,"BTC":0.2,"ETH":0.1,"TOTAL":0.2}
-    else:
-        return {"USDT":0.25,"BTC":0.25,"ETH":0.25,"TOTAL":0.25}
+    document.getElementById("usdtVol").innerText = fmt(Math.random()*1e9);
+    document.getElementById("btcVol").innerText = fmt(Math.random()*1e9);
+    document.getElementById("ethVol").innerText = fmt(Math.random()*1e9);
+    document.getElementById("totalVol").innerText = fmt(Math.random()*1e9);
 
-# =============================
-# SCORE ENGINE
-# =============================
-def compute_score(df, weights):
-    usdt_sig = calc_signal(df["USDT.D"]).iloc[-1]
-    btc_sig  = calc_signal(df["BTC.D"]).iloc[-1]
-    eth_sig  = calc_signal(df["ETHBTC"]).iloc[-1]
-    tot_sig  = calc_signal(df["TOTAL"]).iloc[-1]
+    document.getElementById("usdtDelta").innerText = fmt(Math.random()*1e8);
+    document.getElementById("btcDelta").innerText = fmt(Math.random()*1e8);
+    document.getElementById("ethDelta").innerText = fmt(Math.random()*1e8);
+    document.getElementById("totalDelta").innerText = fmt(Math.random()*1e8);
+}
 
-    raw = (
-        (-usdt_sig * weights["USDT"]) +
-        ( eth_sig * weights["ETH"]) +
-        ( btc_sig * weights["BTC"]) +
-        ( tot_sig * weights["TOTAL"])
-    )
+/* CHARTS */
+new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_usdt",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_btc",symbol:"CRYPTOCAP:BTC.D",interval:"D",theme:"dark"});
 
-    score = max(0, min(100, 50 + raw * 50))
-    return score, usdt_sig, btc_sig, eth_sig, tot_sig
+update();
+setInterval(update,4000);
 
-# =============================
-# CONFIDENCE
-# =============================
-def compute_confidence(signals):
-    aligned = sum(np.sign(s) == np.sign(signals[-1]) for s in signals)
-    strength = sum(abs(s) for s in signals)
-    return min(100, aligned * 20 + strength * 10)
+</script>
 
-# =============================
-# FINAL SIGNAL
-# =============================
-def classify(score):
-    if score > 75:
-        return "STRONG LONG"
-    elif score > 60:
-        return "LONG"
-    elif score < 25:
-        return "STRONG SHORT"
-    elif score < 40:
-        return "SHORT"
-    else:
-        return "NO TRADE"
-
-# =============================
-# RUN ENGINE
-# =============================
-def run_engine():
-    df = get_data()
-
-    regime = detect_regime(df)
-    weights = get_weights(regime)
-
-    score, usdt, btc, eth, total = compute_score(df, weights)
-    confidence = compute_confidence([usdt, btc, eth, total])
-
-    signal = classify(score)
-
-    print("\n⚡ V10 ADAPTIVE ENGINE")
-    print("======================")
-    print(f"Regime: {regime}")
-    print(f"Score: {score:.2f}")
-    print(f"Confidence: {confidence:.2f}")
-    print(f"Signal: {signal}")
-
-# =============================
-# START
-# =============================
-if __name__ == "__main__":
-    run_engine()
+</body>
+</html>
