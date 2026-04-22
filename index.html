@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 
 # =============================
-# MOCK DATA INPUT (replace with API later)
+# MOCK DATA INPUT (replace later with API)
 # =============================
 def get_data():
-    # Replace this with real API (Binance, TradingView, etc.)
     data = {
         "USDT.D": np.random.normal(7, 0.1, 100),
         "BTC.D": np.random.normal(60, 0.3, 100),
@@ -104,7 +103,7 @@ def classify(score):
         return "NO TRADE"
 
 # =============================
-# ENGINE RUN
+# RUN ENGINE
 # =============================
 def run_engine():
     df = get_data()
@@ -125,7 +124,7 @@ def run_engine():
     print(f"Signal: {signal}")
 
 # =============================
-# RUN
+# START
 # =============================
 if __name__ == "__main__":
     run_engine()
