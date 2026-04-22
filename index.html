@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V16.1 REAL FLOW ENGINE</title>
+<title>⚡ V16.2 FLOW ENGINE</title>
 
 <style>
 body{background:#02050c;color:#fff;font-family:Arial;margin:0}
@@ -38,7 +38,7 @@ body{background:#02050c;color:#fff;font-family:Arial;margin:0}
 
 <body>
 
-<div class="header">⚡ V16.1 — REAL INSTITUTIONAL FLOW</div>
+<div class="header">⚡ V16.2 — REAL FLOW ENGINE</div>
 
 <!-- TOP -->
 <div class="grid">
@@ -73,17 +73,19 @@ function fmt(v){
 
 // ===== DIRECTION =====
 function getDir(curr, prev){
- if(prev === 0) return ["➜","yellow"];
+ if(prev === 0) return {arrow:"↔️", color:"yellow"};
+
  let change = (curr - prev) / prev;
 
- if(change > 0.001) return ["▲","green"];
- if(change < -0.001) return ["▼","red"];
- return ["➜","yellow"];
+ if(change > 0.001) return {arrow:"⬆️", color:"green"};
+ if(change < -0.001) return {arrow:"⬇️", color:"red"};
+ return {arrow:"↔️", color:"yellow"};
 }
 
 // ===== STATE =====
 let spotBuy=0, spotSell=0, perpBuy=0, perpSell=0;
-let lastBTC=0, lastUSDT=0, lastETHBTC=0;
+
+let lastBTC=0, lastUSDT=0, lastETHBTC=0, lastTOTAL=0;
 
 let btcDom=0, usdtDom=0, totalCap=0, ethbtcPrice=0;
 
@@ -140,45 +142,49 @@ getMacro();
 // ===== ENGINE =====
 function update(){
 
- // direction
- let [btcA, btcC] = getDir(btcDom, lastBTC);
- let [usdtA, usdtC] = getDir(usdtDom, lastUSDT);
- let [ethA, ethC] = getDir(ethbtcPrice, lastETHBTC);
+ // ===== DIRECTION =====
+ let btcDir = getDir(btcDom, lastBTC);
+ let usdtDir = getDir(usdtDom, lastUSDT);
+ let ethDir = getDir(ethbtcPrice, lastETHBTC);
+ let totalDir = getDir(totalCap, lastTOTAL);
 
+ // SAVE PREVIOUS
  lastBTC = btcDom;
  lastUSDT = usdtDom;
  lastETHBTC = ethbtcPrice;
+ lastTOTAL = totalCap;
 
- // display
+ // ===== DISPLAY =====
  document.getElementById("btcd").innerHTML =
-   btcDom.toFixed(2)+"% <span class='"+btcC+"'>"+btcA+"</span>";
+  `<span class="${btcDir.color}">${btcDom.toFixed(2)}% ${btcDir.arrow}</span>`;
 
  document.getElementById("usdt").innerHTML =
-   usdtDom.toFixed(2)+"% <span class='"+usdtC+"'>"+usdtA+"</span>";
+  `<span class="${usdtDir.color}">${usdtDom.toFixed(2)}% ${usdtDir.arrow}</span>`;
 
  document.getElementById("ethbtc").innerHTML =
-   ethbtcPrice.toFixed(5)+" <span class='"+ethC+"'>"+ethA+"</span>";
+  `<span class="${ethDir.color}">${ethbtcPrice.toFixed(5)} ${ethDir.arrow}</span>`;
 
- document.getElementById("total").innerText = fmt(totalCap);
+ document.getElementById("total").innerHTML =
+  `<span class="${totalDir.color}">${fmt(totalCap)} ${totalDir.arrow}</span>`;
 
- // volumes
+ // ===== VOLUME =====
  document.getElementById("spotBuy").innerText = fmt(spotBuy);
  document.getElementById("spotSell").innerText = fmt(spotSell);
  document.getElementById("perpBuy").innerText = fmt(perpBuy);
  document.getElementById("perpSell").innerText = fmt(perpSell);
 
- // delta
+ // ===== DELTA =====
  let delta = (spotBuy+perpBuy) - (spotSell+perpSell);
  document.getElementById("delta").innerText = fmt(delta);
 
- // state
- let state="NEUTRAL ➜", color="yellow";
+ // ===== MARKET STATE =====
+ let state="NEUTRAL ↔️", color="yellow";
 
- if(delta > 0 && usdtDom < lastUSDT){
-  state="RISK-ON ▲"; color="green";
+ if(delta > 0){
+  state="BUY ⬆️"; color="green";
  }
- else if(delta < 0 && usdtDom > lastUSDT){
-  state="RISK-OFF ▼"; color="red";
+ else if(delta < 0){
+  state="SELL ⬇️"; color="red";
  }
 
  let el=document.getElementById("state");
