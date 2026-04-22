@@ -1,52 +1,72 @@
 <script>
 
-// =============================
-// ⚡ REAL ENGINE CORE (V12)
-// =============================
+// ==============================
+// ⚡ CONFIG
+// ==============================
+const REFRESH_RATE = 5000;
 
-// SIMPLE TREND (HTF bias)
-function trend(series){
-    return series[series.length-1] > series[series.length-5] ? 1 : -1;
+// ==============================
+// ⚡ FETCH DATA (LIVE)
+// ==============================
+async function fetchData(){
+
+    // ETHBTC (Binance)
+    let ethbtcRes = await fetch("https://api.binance.com/api/v3/klines?symbol=ETHBTC&interval=1d&limit=10");
+    let ethbtcRaw = await ethbtcRes.json();
+    let ethbtc = ethbtcRaw.map(c => parseFloat(c[4]));
+
+    // TOTAL + BTC DOM (CoinGecko)
+    let globalRes = await fetch("https://api.coingecko.com/api/v3/global");
+    let global = await globalRes.json();
+
+    let total = global.data.total_market_cap.usd / 1e12;
+    let btcDom = global.data.market_cap_percentage.btc;
+    let ethDom = global.data.market_cap_percentage.eth;
+
+    // USDT.D approximation
+    let usdtDom = 100 - btcDom - ethDom;
+
+    return {
+        ethbtc,
+        total,
+        btcDom,
+        usdtDom
+    };
 }
 
-// MOCK REAL DATA (replace with API later)
-let data = {
-    usdt:[7.2,7.3,7.4,7.35,7.28],
-    btc:[58,58.5,59,60,60.5],
-    ethbtc:[0.031,0.0305,0.0302,0.0308,0.0312],
-    total:[2.5,2.55,2.6,2.58,2.61]
-};
+// ==============================
+// ⚡ TREND FUNCTION
+// ==============================
+function trend(arr){
+    if(arr.length < 5) return 0;
+    return arr[arr.length-1] > arr[arr.length-5] ? 1 : -1;
+}
 
-// =============================
-// ⚡ SIGNALS
-// =============================
-let s_usdt = trend(data.usdt) * -1;     // falling = bullish
-let s_btc  = trend(data.btc);
-let s_eth  = trend(data.ethbtc);
-let s_tot  = trend(data.total);
+// ==============================
+// ⚡ ENGINE CORE
+// ==============================
+function computeEngine(d){
 
-// =============================
-// ⚡ ADAPTIVE WEIGHTS
-// =============================
-let weights = {
-    usdt:0.35,
-    btc:0.25,
-    eth:0.25,
-    total:0.15
-};
+    let s_usdt = d.usdtDom < 8 ? 1 : -1;     // liquidity
+    let s_btc  = d.btcDom > 50 ? 1 : -1;     // btc strength
+    let s_eth  = trend(d.ethbtc);            // alt strength
+    let s_tot  = d.total > 2.5 ? 1 : -1;     // expansion
 
-// =============================
-// ⚡ SCORE ENGINE
-// =============================
-let score =
-    s_usdt * weights.usdt +
-    s_btc  * weights.btc +
-    s_eth  * weights.eth +
-    s_tot  * weights.total;
+    // weights
+    let w = {usdt:0.35, btc:0.25, eth:0.25, total:0.15};
 
-// =============================
-// ⚡ CLASSIFICATION
-// =============================
+    let score =
+        s_usdt*w.usdt +
+        s_btc*w.btc +
+        s_eth*w.eth +
+        s_tot*w.total;
+
+    return {score, s_usdt, s_btc, s_eth, s_tot};
+}
+
+// ==============================
+// ⚡ CLASSIFY
+// ==============================
 function classify(score){
     if(score > 0.6) return "🚀 STRONG BULL";
     if(score > 0.2) return "🟢 BULL";
@@ -55,76 +75,53 @@ function classify(score){
     return "💀 STRONG BEAR";
 }
 
-let state = classify(score);
+// ==============================
+// ⚡ UPDATE UI
+// ==============================
+async function update(){
 
-// =============================
-// ⚡ UI UPDATE
-// =============================
-function update(){
+    let d = await fetchData();
+    let e = computeEngine(d);
+    let state = classify(e.score);
 
-    // CLASS BOX
-    document.getElementById("riskOn").style.opacity = (s_usdt>0 && s_eth>0) ? "1" : "0.3";
-    document.getElementById("riskOff").style.opacity = (s_usdt<0) ? "1" : "0.3";
-    document.getElementById("btcLed").style.opacity = (s_btc>0 && s_eth<0) ? "1" : "0.3";
-
-    // TABLE STATES
-    document.getElementById("usdtState").innerHTML = s_usdt>0 ? "RISK-ON" : "RISK-OFF";
-    document.getElementById("btcState").innerHTML  = s_btc>0 ? "BTC-UP" : "BTC-DOWN";
-    document.getElementById("ethState").innerHTML  = s_eth>0 ? "ALT-STRENGTH" : "ALT-WEAK";
-    document.getElementById("totalState").innerHTML= s_tot>0 ? "EXPANSION" : "CONTRACTION";
-
-    // VALUES
-    document.getElementById("usdtVal").innerText = data.usdt.at(-1)+"%";
-    document.getElementById("btcVal").innerText  = data.btc.at(-1)+"%";
-    document.getElementById("ethVal").innerText  = data.ethbtc.at(-1);
-    document.getElementById("totalVal").innerText= data.total.at(-1)+"T";
-
-    // DIRECTION
-    document.getElementById("usdtDir").innerText = s_usdt>0 ? "↓" : "↑";
-    document.getElementById("btcDir").innerText  = s_btc>0 ? "↑" : "↓";
-    document.getElementById("ethDir").innerText  = s_eth>0 ? "↑" : "↓";
-    document.getElementById("totalDir").innerText= s_tot>0 ? "↑" : "↓";
-
-    // ENGINE OUTPUT (MAIN THING)
+    // HEADER
     document.querySelector(".header").innerHTML =
-        "⚡ V12 ENGINE — " + state + " (Score: " + score.toFixed(2) + ")";
+        "⚡ V13 LIVE ENGINE — " + state +
+        " | Score: " + e.score.toFixed(2);
+
+    // CLASS BOXES
+    document.getElementById("riskOn").style.opacity =
+        (e.s_usdt>0 && e.s_eth>0) ? "1" : "0.3";
+
+    document.getElementById("riskOff").style.opacity =
+        (e.s_usdt<0) ? "1" : "0.3";
+
+    document.getElementById("btcLed").style.opacity =
+        (e.s_btc>0 && e.s_eth<0) ? "1" : "0.3";
+
+    // TABLE
+    document.getElementById("usdtState").innerText = e.s_usdt>0?"RISK-ON":"RISK-OFF";
+    document.getElementById("btcState").innerText  = e.s_btc>0?"BTC-UP":"BTC-DOWN";
+    document.getElementById("ethState").innerText  = e.s_eth>0?"ALT-UP":"ALT-DOWN";
+    document.getElementById("totalState").innerText= e.s_tot>0?"EXPANSION":"CONTRACTION";
+
+    document.getElementById("usdtVal").innerText = d.usdtDom.toFixed(2)+"%";
+    document.getElementById("btcVal").innerText  = d.btcDom.toFixed(2)+"%";
+    document.getElementById("ethVal").innerText  = d.ethbtc.at(-1);
+    document.getElementById("totalVal").innerText= d.total.toFixed(2)+"T";
+
 }
 
-// =============================
-// ⚡ TRADINGVIEW CHARTS
-// =============================
-new TradingView.widget({
-    container_id:"chart_total",
-    symbol:"CRYPTOCAP:TOTAL",
-    interval:"D",
-    theme:"dark",
-    autosize:true
-});
+// ==============================
+// ⚡ CHARTS (UNCHANGED)
+// ==============================
+new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_usdt",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_btc",symbol:"CRYPTOCAP:BTC.D",interval:"D",theme:"dark"});
 
-new TradingView.widget({
-    container_id:"chart_usdt",
-    symbol:"CRYPTOCAP:USDT.D",
-    interval:"D",
-    theme:"dark",
-    autosize:true
-});
-
-new TradingView.widget({
-    container_id:"chart_ethbtc",
-    symbol:"BINANCE:ETHBTC",
-    interval:"D",
-    theme:"dark",
-    autosize:true
-});
-
-new TradingView.widget({
-    container_id:"chart_btc",
-    symbol:"CRYPTOCAP:BTC.D",
-    interval:"D",
-    theme:"dark",
-    autosize:true
-});
-
+// RUN
 update();
+setInterval(update, REFRESH_RATE);
 
 </script>
