@@ -1,44 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>⚡ V16 REAL FLOW ENGINE</title>
-
-<style>
-body{background:#02050c;color:#fff;font-family:Arial;margin:0}
-.header{padding:12px;background:#060d1f;color:#ffb347;font-weight:bold}
-
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:10px}
-.box{background:#0a1326;padding:10px;border-radius:6px;border:1px solid #1c2b4a}
-
-.green{color:#00ff9c}
-.red{color:#ff4d4d}
-.yellow{color:#ffd700}
-
-.big{font-size:18px;font-weight:bold}
-</style>
-</head>
-
-<body>
-
-<div class="header">⚡ V16 — REAL INSTITUTIONAL FLOW (FREE DATA)</div>
-
-<div class="grid">
-<div class="box">BTC.D<br><span id="btcd" class="big"></span><br><span id="btcVol"></span></div>
-<div class="box">USDT.D<br><span id="usdt" class="big"></span><br><span id="usdtVol"></span></div>
-<div class="box">TOTAL<br><span id="total" class="big"></span><br><span id="totalVol"></span></div>
-<div class="box">Delta<br><span id="delta" class="big"></span></div>
-<div class="box">Market<br><span id="state" class="big"></span></div>
-</div>
-
-<div class="grid">
-<div class="box">Spot Buy<br><span id="spotBuy"></span></div>
-<div class="box">Spot Sell<br><span id="spotSell"></span></div>
-<div class="box">Perp Buy<br><span id="perpBuy"></span></div>
-<div class="box">Perp Sell<br><span id="perpSell"></span></div>
-<div class="box">Open Interest<br><span id="oi"></span></div>
-</div>
-
 <script>
 
 // ===== FORMAT =====
@@ -48,38 +7,48 @@ function fmt(v){
  return v.toFixed(2);
 }
 
+// ===== DIRECTION =====
+function getDir(curr, prev){
+ if(prev === 0) return ["➜","yellow"];
+
+ let change = (curr - prev) / prev;
+
+ if(change > 0.001) return ["▲","green"];
+ if(change < -0.001) return ["▼","red"];
+ return ["➜","yellow"];
+}
+
 // ===== STATE =====
 let spotBuy=0, spotSell=0, perpBuy=0, perpSell=0;
+let lastBTC=0, lastETHBTC=0, lastUSDT=0;
 
-// ===== BINANCE SPOT =====
+// ===== BTC SPOT =====
 let spotWS = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
-
 spotWS.onmessage = (e)=>{
  let t = JSON.parse(e.data);
  let vol = parseFloat(t.q);
 
- if(t.m){ // seller
-  spotSell += vol;
- }else{
-  spotBuy += vol;
- }
-
+ if(t.m){ spotSell += vol } else { spotBuy += vol }
  update();
 }
 
-// ===== BINANCE PERP =====
+// ===== BTC PERP =====
 let perpWS = new WebSocket("wss://fstream.binance.com/ws/btcusdt@trade");
-
 perpWS.onmessage = (e)=>{
  let t = JSON.parse(e.data);
  let vol = parseFloat(t.q);
 
- if(t.m){
-  perpSell += vol;
- }else{
-  perpBuy += vol;
- }
+ if(t.m){ perpSell += vol } else { perpBuy += vol }
+ update();
+}
 
+// ===== ETHBTC PRICE =====
+let ethbtcPrice = 0;
+
+let ethWS = new WebSocket("wss://stream.binance.com:9443/ws/ethbtc@trade");
+ethWS.onmessage = (e)=>{
+ let t = JSON.parse(e.data);
+ ethbtcPrice = parseFloat(t.p);
  update();
 }
 
@@ -91,22 +60,18 @@ async function getOI(){
 }
 setInterval(getOI,5000);
 
-// ===== COINGECKO DOMINANCE =====
+// ===== DOMINANCE =====
+let btcDom=0, usdtDom=0, totalCap=0;
+
 async function getMacro(){
  let res = await fetch("https://api.coingecko.com/api/v3/global");
  let d = await res.json();
 
- let btc = d.data.market_cap_percentage.btc;
- let total = d.data.total_market_cap.usd;
- let usdt = d.data.market_cap_percentage.usdt || 0;
+ btcDom = d.data.market_cap_percentage.btc;
+ usdtDom = d.data.market_cap_percentage.usdt || 0;
+ totalCap = d.data.total_market_cap.usd;
 
- document.getElementById("btcd").innerText = btc.toFixed(2)+"%";
- document.getElementById("usdt").innerText = usdt.toFixed(2)+"%";
- document.getElementById("total").innerText = fmt(total);
-
- document.getElementById("btcVol").innerText = "LIVE";
- document.getElementById("usdtVol").innerText = "LIVE";
- document.getElementById("totalVol").innerText = "LIVE";
+ update();
 }
 setInterval(getMacro,10000);
 getMacro();
@@ -114,22 +79,46 @@ getMacro();
 // ===== ENGINE =====
 function update(){
 
+ // ===== DIRECTION =====
+ let [btcArrow, btcColor] = getDir(btcDom, lastBTC);
+ let [ethArrow, ethColor] = getDir(ethbtcPrice, lastETHBTC);
+ let [usdtArrow, usdtColor] = getDir(usdtDom, lastUSDT);
+
+ lastBTC = btcDom;
+ lastETHBTC = ethbtcPrice;
+ lastUSDT = usdtDom;
+
+ // ===== DISPLAY =====
+ document.getElementById("btcd").innerHTML = btcDom.toFixed(2)+"% <span class='"+btcColor+"'>"+btcArrow+"</span>";
+ document.getElementById("usdt").innerHTML = usdtDom.toFixed(2)+"% <span class='"+usdtColor+"'>"+usdtArrow+"</span>";
+ document.getElementById("total").innerHTML = fmt(totalCap);
+
+ // ETHBTC ADD (you must add this div in HTML)
+ if(document.getElementById("ethbtc")){
+  document.getElementById("ethbtc").innerHTML =
+    ethbtcPrice.toFixed(5)+" <span class='"+ethColor+"'>"+ethArrow+"</span>";
+ }
+
+ // ===== VOLUME =====
  document.getElementById("spotBuy").innerText = fmt(spotBuy);
  document.getElementById("spotSell").innerText = fmt(spotSell);
  document.getElementById("perpBuy").innerText = fmt(perpBuy);
  document.getElementById("perpSell").innerText = fmt(perpSell);
 
+ // ===== DELTA =====
  let delta = (spotBuy+perpBuy) - (spotSell+perpSell);
  document.getElementById("delta").innerText = fmt(delta);
 
- let state = "NEUTRAL";
+ // ===== MARKET STATE =====
+ let state = "NEUTRAL ➜";
  let color = "yellow";
 
- if(delta > 0){
-  state = "BUY ▲";
+ if(delta > 0 && usdtDom < lastUSDT){
+  state = "RISK-ON ▲";
   color = "green";
- }else if(delta < 0){
-  state = "SELL ▼";
+ }
+ else if(delta < 0 && usdtDom > lastUSDT){
+  state = "RISK-OFF ▼";
   color = "red";
  }
 
@@ -139,6 +128,3 @@ function update(){
 }
 
 </script>
-
-</body>
-</html>
