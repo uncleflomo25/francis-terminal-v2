@@ -2,195 +2,175 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V16.2 FLOW ENGINE</title>
+<title>⚡ V17 REAL FLOW ENGINE</title>
 
 <style>
-body{background:#02050c;color:#fff;font-family:Arial;margin:0}
+body{
+    background:#02050c;
+    color:#fff;
+    font-family:Arial;
+    margin:0;
+}
 
+/* HEADER */
 .header{
- padding:12px;
- background:#060d1f;
- color:#ffb347;
- font-weight:bold;
+    padding:12px;
+    text-align:center;
+    background:#060d1f;
+    border-bottom:1px solid #1a2a4a;
+    font-size:18px;
 }
 
+/* GRID */
 .grid{
- display:grid;
- grid-template-columns:repeat(5,1fr);
- gap:10px;
- padding:10px;
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+    padding:10px;
 }
 
-.box{
- background:#0a1326;
- padding:10px;
- border-radius:6px;
- border:1px solid #1c2b4a;
+/* CARD */
+.card{
+    background:#0a1326;
+    border:1px solid #1c2b4a;
+    border-radius:8px;
+    padding:10px;
 }
 
-.big{font-size:18px;font-weight:bold}
+/* COLORS */
+.up{color:#00ff9c;}
+.down{color:#ff4d4d;}
+.side{color:#ffcc00;}
 
-.green{color:#00ff9c}
-.red{color:#ff4d4d}
-.yellow{color:#ffd700}
+.small{font-size:12px;color:#888;}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V16.2 — REAL FLOW ENGINE</div>
+<div class="header">⚡ V17 — REAL FREE FLOW ENGINE</div>
 
-<!-- TOP -->
 <div class="grid">
-<div class="box">BTC.D<br><span id="btcd" class="big"></span></div>
-<div class="box">USDT.D<br><span id="usdt" class="big"></span></div>
-<div class="box">ETHBTC<br><span id="ethbtc" class="big"></span></div>
-<div class="box">TOTAL<br><span id="total" class="big"></span></div>
-<div class="box">Market<br><span id="state" class="big"></span></div>
+
+<div class="card">
+BTC.D<br>
+<span id="btc" class="value">--</span>
 </div>
 
-<!-- FLOW -->
-<div class="grid">
-<div class="box">Spot Buy<br><span id="spotBuy"></span></div>
-<div class="box">Spot Sell<br><span id="spotSell"></span></div>
-<div class="box">Perp Buy<br><span id="perpBuy"></span></div>
-<div class="box">Perp Sell<br><span id="perpSell"></span></div>
-<div class="box">Open Interest<br><span id="oi"></span></div>
+<div class="card">
+USDT.D<br>
+<span id="usdt" class="value">--</span>
 </div>
 
-<div class="grid">
-<div class="box">Delta<br><span id="delta" class="big"></span></div>
+<div class="card">
+ETHBTC<br>
+<span id="ethbtc" class="value">--</span>
+</div>
+
+<div class="card">
+TOTAL<br>
+<span id="total" class="value">--</span>
+</div>
+
+<div class="card">
+Market<br>
+<span id="market">--</span>
+</div>
+
 </div>
 
 <script>
 
-// ===== FORMAT =====
-function fmt(v){
- if(v>1e9) return (v/1e9).toFixed(2)+"B";
- if(v>1e6) return (v/1e6).toFixed(2)+"M";
- return v.toFixed(2);
+/* STORE PREVIOUS VALUES */
+let prev = {
+    btc:null,
+    usdt:null,
+    ethbtc:null,
+    total:null
 }
 
-// ===== DIRECTION =====
-function getDir(curr, prev){
- if(prev === 0) return {arrow:"↔️", color:"yellow"};
-
- let change = (curr - prev) / prev;
-
- if(change > 0.001) return {arrow:"⬆️", color:"green"};
- if(change < -0.001) return {arrow:"⬇️", color:"red"};
- return {arrow:"↔️", color:"yellow"};
+/* FORMAT */
+function fmt(n){
+    if(n > 1e9) return (n/1e9).toFixed(2)+"B";
+    if(n > 1e6) return (n/1e6).toFixed(2)+"M";
+    return n.toFixed(2);
 }
 
-// ===== STATE =====
-let spotBuy=0, spotSell=0, perpBuy=0, perpSell=0;
+/* DIRECTION ENGINE */
+function getDirection(current, previous){
 
-let lastBTC=0, lastUSDT=0, lastETHBTC=0, lastTOTAL=0;
+    if(previous === null) return {arrow:"↔️", class:"side"};
 
-let btcDom=0, usdtDom=0, totalCap=0, ethbtcPrice=0;
+    if(current > previous) return {arrow:"⬆️", class:"up"};
+    if(current < previous) return {arrow:"⬇️", class:"down"};
 
-// ===== BINANCE SPOT =====
-new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade")
-.onmessage = (e)=>{
- let t = JSON.parse(e.data);
- let vol = parseFloat(t.q);
-
- if(t.m){ spotSell += vol } else { spotBuy += vol }
- update();
+    return {arrow:"↔️", class:"side"};
 }
 
-// ===== BINANCE PERP =====
-new WebSocket("wss://fstream.binance.com/ws/btcusdt@trade")
-.onmessage = (e)=>{
- let t = JSON.parse(e.data);
- let vol = parseFloat(t.q);
+/* UPDATE FUNCTION */
+async function update(){
 
- if(t.m){ perpSell += vol } else { perpBuy += vol }
- update();
+    let res = await fetch("https://api.coingecko.com/api/v3/global");
+    let data = await res.json();
+
+    let total = data.data.total_market_cap.usd;
+
+    let btc_d = data.data.market_cap_percentage.btc;
+    let eth_d = data.data.market_cap_percentage.eth;
+
+    /* APPROX CALCULATIONS */
+    let usdt_d = 100 - btc_d - eth_d;
+    let ethbtc = eth_d / btc_d;
+
+    /* DIRECTION */
+    let btcDir = getDirection(btc_d, prev.btc);
+    let usdtDir = getDirection(usdt_d, prev.usdt);
+    let ethbtcDir = getDirection(ethbtc, prev.ethbtc);
+    let totalDir = getDirection(total, prev.total);
+
+    /* UPDATE UI */
+    document.getElementById("btc").innerHTML =
+        `<span class="${btcDir.class}">${btc_d.toFixed(2)}% ${btcDir.arrow}</span>`;
+
+    document.getElementById("usdt").innerHTML =
+        `<span class="${usdtDir.class}">${usdt_d.toFixed(2)}% ${usdtDir.arrow}</span>`;
+
+    document.getElementById("ethbtc").innerHTML =
+        `<span class="${ethbtcDir.class}">${ethbtc.toFixed(4)} ${ethbtcDir.arrow}</span>`;
+
+    document.getElementById("total").innerHTML =
+        `<span class="${totalDir.class}">${fmt(total)} ${totalDir.arrow}</span>`;
+
+    /* MARKET LOGIC */
+    let market = "NEUTRAL";
+    let color = "side";
+
+    if(usdt_d < prev.usdt && ethbtc > prev.ethbtc) {
+        market = "RISK-ON";
+        color = "up";
+    }
+    else if(usdt_d > prev.usdt) {
+        market = "RISK-OFF";
+        color = "down";
+    }
+    else if(btc_d > prev.btc) {
+        market = "BTC-LED";
+        color = "side";
+    }
+
+    document.getElementById("market").innerHTML =
+        `<span class="${color}">${market}</span>`;
+
+    /* SAVE PREVIOUS */
+    prev.btc = btc_d;
+    prev.usdt = usdt_d;
+    prev.ethbtc = ethbtc;
+    prev.total = total;
 }
 
-// ===== ETHBTC =====
-new WebSocket("wss://stream.binance.com:9443/ws/ethbtc@trade")
-.onmessage = (e)=>{
- let t = JSON.parse(e.data);
- ethbtcPrice = parseFloat(t.p);
- update();
-}
-
-// ===== OPEN INTEREST =====
-async function getOI(){
- let res = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT");
- let d = await res.json();
- document.getElementById("oi").innerText = fmt(parseFloat(d.openInterest));
-}
-setInterval(getOI,5000);
-
-// ===== MACRO =====
-async function getMacro(){
- let res = await fetch("https://api.coingecko.com/api/v3/global");
- let d = await res.json();
-
- btcDom = d.data.market_cap_percentage.btc;
- usdtDom = d.data.market_cap_percentage.usdt || 0;
- totalCap = d.data.total_market_cap.usd;
-
- update();
-}
-setInterval(getMacro,10000);
-getMacro();
-
-// ===== ENGINE =====
-function update(){
-
- // ===== DIRECTION =====
- let btcDir = getDir(btcDom, lastBTC);
- let usdtDir = getDir(usdtDom, lastUSDT);
- let ethDir = getDir(ethbtcPrice, lastETHBTC);
- let totalDir = getDir(totalCap, lastTOTAL);
-
- // SAVE PREVIOUS
- lastBTC = btcDom;
- lastUSDT = usdtDom;
- lastETHBTC = ethbtcPrice;
- lastTOTAL = totalCap;
-
- // ===== DISPLAY =====
- document.getElementById("btcd").innerHTML =
-  `<span class="${btcDir.color}">${btcDom.toFixed(2)}% ${btcDir.arrow}</span>`;
-
- document.getElementById("usdt").innerHTML =
-  `<span class="${usdtDir.color}">${usdtDom.toFixed(2)}% ${usdtDir.arrow}</span>`;
-
- document.getElementById("ethbtc").innerHTML =
-  `<span class="${ethDir.color}">${ethbtcPrice.toFixed(5)} ${ethDir.arrow}</span>`;
-
- document.getElementById("total").innerHTML =
-  `<span class="${totalDir.color}">${fmt(totalCap)} ${totalDir.arrow}</span>`;
-
- // ===== VOLUME =====
- document.getElementById("spotBuy").innerText = fmt(spotBuy);
- document.getElementById("spotSell").innerText = fmt(spotSell);
- document.getElementById("perpBuy").innerText = fmt(perpBuy);
- document.getElementById("perpSell").innerText = fmt(perpSell);
-
- // ===== DELTA =====
- let delta = (spotBuy+perpBuy) - (spotSell+perpSell);
- document.getElementById("delta").innerText = fmt(delta);
-
- // ===== MARKET STATE =====
- let state="NEUTRAL ↔️", color="yellow";
-
- if(delta > 0){
-  state="BUY ⬆️"; color="green";
- }
- else if(delta < 0){
-  state="SELL ⬇️"; color="red";
- }
-
- let el=document.getElementById("state");
- el.innerText=state;
- el.className="big "+color;
-}
+/* RUN */
+update();
+setInterval(update, 5000);
 
 </script>
 
