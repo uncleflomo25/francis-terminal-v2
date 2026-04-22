@@ -2,11 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V100 INSTITUTIONAL FLOW ENGINE</title>
+<title>⚡ V120 ORDERFLOW ENGINE</title>
 
 <style>
 body{background:#02050c;color:#fff;font-family:Arial;margin:0;}
-.header{padding:12px;text-align:center;background:#060d1f;border-bottom:1px solid #1a2a4a;font-size:18px;}
+.header{padding:12px;text-align:center;background:#060d1f;border-bottom:1px solid #1a2a4a;}
 
 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:10px;}
 .card{background:#0a1326;border:1px solid #1c2b4a;border-radius:8px;padding:10px;}
@@ -15,13 +15,13 @@ body{background:#02050c;color:#fff;font-family:Arial;margin:0;}
 .down{color:#ff4d4d;}
 .side{color:#ffcc00;}
 
-.signal{font-size:20px;font-weight:bold;}
+.big{font-size:20px;font-weight:bold;}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V100 — INSTITUTIONAL FLOW ENGINE</div>
+<div class="header">⚡ V120 — REAL ORDERFLOW ENGINE</div>
 
 <div class="grid">
 <div class="card">BTC.D<br><span id="btc"></span></div>
@@ -32,25 +32,29 @@ body{background:#02050c;color:#fff;font-family:Arial;margin:0;}
 </div>
 
 <div class="grid">
-<div class="card">Spot Volume<br><span id="spot"></span></div>
-<div class="card">Perp Volume<br><span id="perp"></span></div>
+<div class="card">Spot Vol<br><span id="spot"></span></div>
+<div class="card">Perp Vol<br><span id="perp"></span></div>
 <div class="card">Open Interest<br><span id="oi"></span></div>
+<div class="card">Funding<br><span id="fund"></span></div>
 <div class="card">Delta<br><span id="delta"></span></div>
-<div class="card signal">Signal<br><span id="signal"></span></div>
+</div>
+
+<div class="grid">
+<div class="card big">Signal<br><span id="signal"></span></div>
 </div>
 
 <script>
 
-let prev = {btc:null, usdt:null, ethbtc:null, total:null, oi:null}
+let prev = {btc:null, usdt:null, ethbtc:null, total:null, oi:null, price:null}
 
 /* FORMAT */
 function fmt(n){
-    if(n > 1e9) return (n/1e9).toFixed(2)+"B";
-    if(n > 1e6) return (n/1e6).toFixed(2)+"M";
+    if(n>1e9) return (n/1e9).toFixed(2)+"B";
+    if(n>1e6) return (n/1e6).toFixed(2)+"M";
     return n.toFixed(2);
 }
 
-/* DIRECTION */
+/* DIR */
 function dir(c,p){
     if(p===null) return {a:"↔️",c:"side"};
     if(c>p) return {a:"⬆️",c:"up"};
@@ -58,92 +62,105 @@ function dir(c,p){
     return {a:"↔️",c:"side"};
 }
 
-/* FETCH ENGINE */
 async function update(){
 
-// GLOBAL DATA
+// GLOBAL
 let g = await fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json());
-
 let total = g.data.total_market_cap.usd;
 let btc_d = g.data.market_cap_percentage.btc;
 let eth_d = g.data.market_cap_percentage.eth;
 let usdt_d = 100 - btc_d - eth_d;
 let ethbtc = eth_d / btc_d;
 
-// BINANCE DATA
-let vol = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
-let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
+// BINANCE
+let spot = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+let perp = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+let oiData = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
+let funding = await fetch("https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT").then(r=>r.json());
 
-// APPROX FLOW
-let spotVol = parseFloat(vol.quoteVolume);
-let perpVol = spotVol * 1.4; // proxy
-let openInterest = parseFloat(oi.openInterest);
+// VALUES
+let spotVol = parseFloat(spot.quoteVolume);
+let perpVol = parseFloat(perp.quoteVolume);
+let openInterest = parseFloat(oiData.openInterest);
+let fundRate = parseFloat(funding.lastFundingRate);
+let price = parseFloat(spot.lastPrice);
 
-// DELTA (proxy)
-let delta = spotVol - perpVol * 0.7;
+// DELTA (better)
+let delta = perpVol - spotVol;
 
-/* DIRECTIONS */
-let d1=dir(btc_d,prev.btc);
-let d2=dir(usdt_d,prev.usdt);
-let d3=dir(ethbtc,prev.ethbtc);
-let d4=dir(total,prev.total);
-let d5=dir(openInterest,prev.oi);
+// DIRECTIONS
+let dBTC=dir(btc_d,prev.btc);
+let dUSDT=dir(usdt_d,prev.usdt);
+let dETH=dir(ethbtc,prev.ethbtc);
+let dTOTAL=dir(total,prev.total);
+let dOI=dir(openInterest,prev.oi);
 
-/* UI */
-btc.innerHTML=`<span class="${d1.c}">${btc_d.toFixed(2)}% ${d1.a}</span>`;
-usdt.innerHTML=`<span class="${d2.c}">${usdt_d.toFixed(2)}% ${d2.a}</span>`;
-ethbtc.innerHTML=`<span class="${d3.c}">${ethbtc.toFixed(4)} ${d3.a}</span>`;
-total.innerHTML=`<span class="${d4.c}">${fmt(total)} ${d4.a}</span>`;
+// UI
+btc.innerHTML=`<span class="${dBTC.c}">${btc_d.toFixed(2)}% ${dBTC.a}</span>`;
+usdt.innerHTML=`<span class="${dUSDT.c}">${usdt_d.toFixed(2)}% ${dUSDT.a}</span>`;
+ethbtc.innerHTML=`<span class="${dETH.c}">${ethbtc.toFixed(4)} ${dETH.a}</span>`;
+total.innerHTML=`<span class="${dTOTAL.c}">${fmt(total)} ${dTOTAL.a}</span>`;
 
-/* REGIME DETECTION */
-let regime="RANGE";
-
-if(d4.c==="up" && d5.c==="up") regime="TREND";
-if(d4.c==="down" && d2.c==="up") regime="RISK-OFF";
-if(d3.c==="up" && d2.c==="down") regime="ALT TREND";
-
-regimeEl = document.getElementById("regime");
-regimeEl.innerHTML = regime;
-
-/* FLOW */
 spot.innerText=fmt(spotVol);
 perp.innerText=fmt(perpVol);
-oi.innerHTML=`<span class="${d5.c}">${fmt(openInterest)} ${d5.a}</span>`;
+oi.innerHTML=`<span class="${dOI.c}">${fmt(openInterest)} ${dOI.a}</span>`;
+
+fund.innerHTML = fundRate>0 ? `<span class="up">${fundRate.toFixed(4)}</span>` : `<span class="down">${fundRate.toFixed(4)}</span>`;
 delta.innerHTML = delta>0 ? `<span class="up">${fmt(delta)}</span>` : `<span class="down">${fmt(delta)}</span>`;
 
-/* ADAPTIVE SCORE */
+// REGIME
+let regime="RANGE";
+
+if(dTOTAL.c==="up" && dOI.c==="up") regime="TREND";
+if(dUSDT.c==="up") regime="RISK-OFF";
+if(dETH.c==="up" && dUSDT.c==="down") regime="ALT SEASON";
+
+document.getElementById("regime").innerText = regime;
+
+// ADVANCED SCORING
 let score = 0;
 
-// dominance
-if(d2.c==="down") score+=2;
-if(d1.c==="up") score+=1;
+// DOMINANCE
+if(dUSDT.c==="down") score+=2;
+if(dBTC.c==="up") score+=1;
 
-// flow
+// FLOW
 if(delta>0) score+=2;
-if(d5.c==="up") score+=2;
+if(dOI.c==="up") score+=2;
 
-// structure
-if(d4.c==="up") score+=2;
-if(d4.c==="down") score-=2;
+// FUNDING (sentiment)
+if(fundRate > 0) score+=1;
+if(fundRate < 0) score-=1;
 
-/* SIGNAL */
-let signalText="WAIT";
+// STRUCTURE
+if(dTOTAL.c==="up") score+=2;
+if(dTOTAL.c==="down") score-=2;
+
+// LIQUIDATION LOGIC (approx)
+if(prev.price){
+    let move = price - prev.price;
+    if(move>0 && delta>0) score+=1; // squeeze up
+    if(move<0 && delta<0) score-=1; // dump
+}
+
+// FINAL SIGNAL
+let signal="WAIT";
 let color="side";
 
-if(score>=5){ signalText="BUY"; color="up"; }
-else if(score<=-2){ signalText="SELL"; color="down"; }
+if(score>=6){ signal="BUY"; color="up"; }
+else if(score<=-3){ signal="SELL"; color="down"; }
 
 document.getElementById("signal").innerHTML =
-`<span class="${color}">${signalText} (${score})</span>`;
+`<span class="${color}">${signal} (${score})</span>`;
 
-/* SAVE */
-prev={btc:btc_d,usdt:usdt_d,ethbtc:ethbtc,total:total,oi:openInterest};
+// SAVE
+prev={btc:btc_d, usdt:usdt_d, ethbtc:ethbtc, total:total, oi:openInterest, price:price};
 
 }
 
-/* RUN */
+// RUN
 update();
-setInterval(update,8000);
+setInterval(update,7000);
 
 </script>
 
