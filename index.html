@@ -2,18 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V9.5</title>
+<title>⚡ FRANCIS TERMINAL V10 — SMART ENGINE</title>
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
-body{
-    margin:0;
-    background:#020409;
-    color:#fff;
-    font-family:Arial;
-}
+body{margin:0;background:#020409;color:#fff;font-family:Arial;}
 
-/* HEADER */
 .header{
     text-align:center;
     padding:12px;
@@ -22,7 +16,6 @@ body{
     border-bottom:1px solid #13203a;
 }
 
-/* TOP BAR */
 .topbar{
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -38,25 +31,14 @@ body{
     text-align:center;
 }
 
-.price{
-    font-size:16px;
-    margin-top:4px;
-}
-
-.vol{
-    font-size:12px;
-    opacity:0.7;
-}
-
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
 
-/* MAIN GRID */
 .main{
     display:grid;
-    grid-template-columns:3fr 1.2fr;
-    grid-template-rows:400px 300px;
+    grid-template-columns:2fr 1fr;
+    grid-template-rows:350px 350px auto;
     gap:10px;
     padding:10px;
 }
@@ -79,94 +61,92 @@ body{
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL V9.5 — FLOW</div>
+<div class="header">⚡ FRANCIS TERMINAL V10 — SMART FLOW ENGINE</div>
 
-<!-- TOP BAR -->
+<!-- TOP -->
 <div class="topbar">
-
-    <div class="box">
-        USDT.D
-        <div id="usdt_price" class="price"></div>
-        <div id="usdt_vol" class="vol"></div>
-    </div>
-
-    <div class="box">
-        ETHBTC
-        <div id="ethbtc_price" class="price"></div>
-        <div id="ethbtc_vol" class="vol"></div>
-    </div>
-
-    <div class="box">
-        BTC.D
-        <div id="btcd_price" class="price"></div>
-        <div id="btcd_vol" class="vol"></div>
-    </div>
-
-    <div class="box">
-        TOTAL
-        <div id="total_price" class="price"></div>
-        <div id="total_vol" class="vol"></div>
-    </div>
-
+    <div class="box">USDT.D <div id="usdt"></div></div>
+    <div class="box">ETHBTC <div id="ethbtc"></div></div>
+    <div class="box">BTC.D <div id="btcd"></div></div>
+    <div class="box">TOTAL <div id="total"></div></div>
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
     <div id="total_chart" class="chart"></div>
+    <div id="ethbtc_chart" class="chart"></div>
+    <div id="usdt_chart" class="chart"></div>
+    <div id="btcd_chart" class="chart"></div>
 
     <div class="panel">
-        <b>⚡ ENGINE</b><br><br>
-        Market State: <span class="green">BTC TREND</span>
-    </div>
+        <b>⚡ V10 ENGINE</b><br><br>
 
-    <div id="usdt_chart" class="chart"></div>
+        Score: <span id="score"></span><br><br>
 
-    <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;">
-        <div id="ethbtc_chart" class="chart"></div>
-        <div id="btcd_chart" class="chart"></div>
+        State: <span id="state"></span><br><br>
+
+        Liquidity: <span id="liq"></span><br>
+        BTC Control: <span id="btc_ctrl"></span><br>
+        Rotation: <span id="rotation"></span>
+
     </div>
 
 </div>
 
 <script>
 
-/* FORMAT */
-function fmt(v){
-    if(v>1e12) return (v/1e12).toFixed(2)+"T";
-    if(v>1e9) return (v/1e9).toFixed(2)+"B";
-    if(v>1e6) return (v/1e6).toFixed(2)+"M";
-    return v.toFixed(2);
+/* ===== MOCK DATA (replace later with real) ===== */
+function randTrend(){
+    return Math.random() > 0.5 ? 1 : -1;
 }
 
-/* FAKE DATA SIMULATION (replace with real API later) */
-function randomUpdate(id_price, id_vol){
-    let price = Math.random()*100;
-    let vol = Math.random()*1e10;
+/* ===== ENGINE ===== */
+function runEngine(){
 
-    let el = document.getElementById(id_price);
-    let color = price > 50 ? "green" : "red";
+    let usdt = randTrend();   // down = good
+    let btcd = randTrend();   // up = good
+    let ethbtc = randTrend(); // up = good
+    let total = randTrend();  // up = good
 
-    el.innerHTML = `<span class="${color}">${price.toFixed(2)}</span>`;
-    document.getElementById(id_vol).innerText = "Vol: " + fmt(vol);
+    let score = 0;
+
+    if(total > 0) score += 25;
+    if(usdt < 0) score += 25;
+    if(btcd > 0) score += 25;
+    if(ethbtc > 0) score += 25;
+
+    // STATE
+    let state = "";
+    let color = "";
+
+    if(score >= 75){ state="🚀 STRONG BULL"; color="green";}
+    else if(score >=55){ state="📈 BULL"; color="green";}
+    else if(score >=45){ state="⚖️ SIDEWAYS"; color="yellow";}
+    else if(score >=25){ state="📉 BEAR"; color="red";}
+    else{ state="💥 STRONG BEAR"; color="red";}
+
+    // UI
+    document.getElementById("score").innerHTML = `<span class="${color}">${score}</span>`;
+    document.getElementById("state").innerHTML = `<span class="${color}">${state}</span>`;
+
+    document.getElementById("liq").innerHTML =
+        usdt < 0 ? `<span class="green">RISK ON</span>` : `<span class="red">RISK OFF</span>`;
+
+    document.getElementById("btc_ctrl").innerHTML =
+        btcd > 0 ? `<span class="green">BTC DOMINANT</span>` : `<span class="red">ALTS DOMINANT</span>`;
+
+    document.getElementById("rotation").innerHTML =
+        ethbtc > 0 ? `<span class="green">ETH STRONG</span>` : `<span class="red">ETH WEAK</span>`;
 }
 
-/* UPDATE LOOP */
-function update(){
-    randomUpdate("usdt_price","usdt_vol");
-    randomUpdate("ethbtc_price","ethbtc_vol");
-    randomUpdate("btcd_price","btcd_vol");
-    randomUpdate("total_price","total_vol");
-}
+setInterval(runEngine,3000);
+runEngine();
 
-setInterval(update,2000);
-update();
-
-/* CHARTS */
-new TradingView.widget({container_id:"total_chart",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark",autosize:true});
-new TradingView.widget({container_id:"usdt_chart",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark",autosize:true});
-new TradingView.widget({container_id:"ethbtc_chart",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark",autosize:true});
-new TradingView.widget({container_id:"btcd_chart",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark",autosize:true});
+/* ===== CHARTS ===== */
+new TradingView.widget({container_id:"total_chart",symbol:"CRYPTOCAP:TOTAL",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"ethbtc_chart",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"usdt_chart",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
+new TradingView.widget({container_id:"btcd_chart",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
 
 </script>
 
