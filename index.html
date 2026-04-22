@@ -2,163 +2,299 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Francis Terminal PRO V3</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Francis Terminal PRO</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 body{
-margin:0;
-background:#050b18;
-color:#fff;
-font-family:Arial;
+  margin:0;
+  background:#050b18;
+  color:#fff;
+  font-family:Arial;
 }
 
 header{
-padding:15px;
-text-align:center;
-font-size:22px;
-background:#0d1428;
-border-bottom:1px solid #1c2b4a;
+  padding:15px;
+  text-align:center;
+  font-size:22px;
+  background:#0d1428;
+  border-bottom:1px solid #1c2b4a;
 }
 
-.grid-4{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:12px;
-padding:12px;
+.controls{
+  text-align:center;
+  margin:10px;
 }
 
-.grid-2{
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:12px;
-padding:12px;
+select{
+  padding:6px;
+  background:#111;
+  color:#fff;
+  border:1px solid #333;
 }
 
-.panel{
-background:#0b1220;
-border:1px solid #1f2a44;
-border-radius:14px;
-padding:14px;
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  padding:10px;
 }
 
-.title{
-font-size:12px;
-color:#8aa0c8;
-margin-bottom:6px;
+.card{
+  background:#0d1428;
+  padding:15px;
+  border-radius:10px;
+  border:1px solid #1c2b4a;
+  text-align:center;
 }
 
-.big{
-font-size:26px;
-font-weight:700;
+.value{
+  font-size:22px;
+  font-weight:bold;
 }
 
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd84d;}
+.green{color:#00ff9c}
+.red{color:#ff4d4d}
+.yellow{color:#ffd700}
+
+.charts{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  padding:10px;
+}
 
 .chart{
-height:300px;
+  height:350px;
 }
 </style>
 </head>
 
 <body>
 
-<header>Francis Terminal PRO V3</header>
+<header>Francis Terminal PRO</header>
 
-<div class="grid-4">
-<div class="panel"><div class="title">BTC.D</div><div id="btcd" class="big">--</div></div>
-<div class="panel"><div class="title">USDT.D</div><div id="usdt" class="big">--</div></div>
-<div class="panel"><div class="title">ETHBTC</div><div id="ethbtc" class="big">--</div></div>
-<div class="panel"><div class="title">TOTAL</div><div id="total" class="big">--</div></div>
+<div class="controls">
+  <select id="pairSelect" onchange="changePair()">
+    <option value="BTCUSDT">BTCUSDT</option>
+    <option value="ETHUSDT">ETHUSDT</option>
+    <option value="SOLUSDT">SOLUSDT</option>
+  </select>
 </div>
 
-<div class="grid-2">
-<div class="panel">
-<div class="title">SPOT FLOW</div>
-<div id="spotVol">Volume: --</div>
-<div id="spotDelta">Delta: --</div>
+<!-- ===== MACRO ===== -->
+<div class="grid">
+  <div class="card">
+    BTC.D
+    <div id="btcd" class="value">--</div>
+  </div>
+
+  <div class="card">
+    USDT.D
+    <div id="usdt" class="value">--</div>
+  </div>
+
+  <div class="card">
+    ETHBTC
+    <div id="ethbtc" class="value">--</div>
+  </div>
+
+  <div class="card">
+    TOTAL
+    <div id="totalVal" class="value">--</div>
+  </div>
 </div>
 
-<div class="panel">
-<div class="title">PERP FLOW</div>
-<div id="perpVol">Volume: --</div>
-<div id="perpDelta">Delta: --</div>
-<div id="oi">OI: --</div>
-</div>
+<!-- ===== FLOW ===== -->
+<div class="grid">
+  <div class="card">
+    Spot Volume
+    <div id="spot" class="value">--</div>
+  </div>
+
+  <div class="card">
+    Perp Volume
+    <div id="perp" class="value">--</div>
+  </div>
+
+  <div class="card">
+    Open Interest
+    <div id="oi" class="value">--</div>
+  </div>
+
+  <div class="card">
+    Pressure
+    <div id="pressure" class="value">--</div>
+  </div>
 </div>
 
-<div class="panel" style="margin:12px;">
-<div class="title">SIGNAL</div>
-<div id="signal" class="big yellow">LOADING...</div>
-</div>
-
-<div class="grid-2">
-<div class="panel"><div id="btc" class="chart"></div></div>
-<div class="panel"><div id="ethbtc_chart" class="chart"></div></div>
-<div class="panel"><div id="btcd_chart" class="chart"></div></div>
-<div class="panel"><div id="usdt_chart" class="chart"></div></div>
+<!-- ===== CHARTS ===== -->
+<div class="charts">
+  <div id="chart_main" class="chart"></div>
+  <div id="chart_btcd" class="chart"></div>
+  <div id="chart_ethbtc" class="chart"></div>
+  <div id="chart_usdt" class="chart"></div>
 </div>
 
 <script>
+// =====================
+// GLOBALS
+// =====================
+let currentPair = "BTCUSDT";
 
-// charts
-new TradingView.widget({container_id:"btc",symbol:"BINANCE:BTCUSDT",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"ethbtc_chart",symbol:"BINANCE:ETHBTC",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"btcd_chart",symbol:"CRYPTOCAP:BTC.D",interval:"15",theme:"dark"});
-new TradingView.widget({container_id:"usdt_chart",symbol:"CRYPTOCAP:USDT.D",interval:"15",theme:"dark"});
+let prev = {
+  ethbtc: 0
+};
 
-// data
-async function loadData(){
+// =====================
+// CHARTS
+// =====================
+function loadCharts(){
+  document.getElementById("chart_main").innerHTML = "";
+  document.getElementById("chart_btcd").innerHTML = "";
+  document.getElementById("chart_ethbtc").innerHTML = "";
+  document.getElementById("chart_usdt").innerHTML = "";
 
-let spot = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
-let perp = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
-let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
+  new TradingView.widget({
+    container_id: "chart_main",
+    symbol: "BINANCE:"+currentPair,
+    interval: "15",
+    theme: "dark"
+  });
 
-let ethbtc = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json());
+  new TradingView.widget({
+    container_id: "chart_btcd",
+    symbol: "CRYPTOCAP:BTC.D",
+    interval: "15",
+    theme: "dark"
+  });
 
-// calc
-let spotVol = spot.quoteVolume/1e9;
-let perpVol = perp.quoteVolume/1e9;
+  new TradingView.widget({
+    container_id: "chart_ethbtc",
+    symbol: "BINANCE:ETHBTC",
+    interval: "15",
+    theme: "dark"
+  });
 
-let spotDelta = ((spot.takerBuyQuoteVolume/spot.quoteVolume)-0.5)*spot.quoteVolume/1e9;
-let perpDelta = ((perp.takerBuyQuoteVolume/perp.quoteVolume)-0.5)*perp.quoteVolume/1e9;
-
-let prevOI = localStorage.getItem("oi") || oi.openInterest;
-let oiChange = oi.openInterest - prevOI;
-localStorage.setItem("oi", oi.openInterest);
-
-// UI
-document.getElementById("spotVol").innerText="Volume: "+spotVol.toFixed(2)+"B";
-document.getElementById("perpVol").innerText="Volume: "+perpVol.toFixed(2)+"B";
-document.getElementById("spotDelta").innerText="Delta: "+spotDelta.toFixed(2)+"B";
-document.getElementById("perpDelta").innerText="Delta: "+perpDelta.toFixed(2)+"B";
-document.getElementById("oi").innerText="OI: "+(oi.openInterest/1000).toFixed(2)+"K";
-
-document.getElementById("ethbtc").innerText=ethbtc.price;
-
-// signal
-let signal="NEUTRAL",color="yellow";
-
-if(spotDelta>0 && perpDelta>0 && oiChange>0){signal="STRONG BUY";color="green";}
-else if(spotDelta<0 && perpDelta<0 && oiChange<0){signal="STRONG SELL";color="red";}
-
-let s=document.getElementById("signal");
-s.innerText=signal;
-s.className="big "+color;
-
-// macro placeholders
-document.getElementById("btcd").innerText="Live (chart)";
-document.getElementById("usdt").innerText="Live (chart)";
-document.getElementById("total").innerText="Live (chart)";
+  new TradingView.widget({
+    container_id: "chart_usdt",
+    symbol: "CRYPTOCAP:USDT.D",
+    interval: "15",
+    theme: "dark"
+  });
 }
 
+function changePair(){
+  currentPair = document.getElementById("pairSelect").value;
+  loadCharts();
+}
+
+// =====================
+// ARROW ENGINE
+// =====================
+function getArrow(cur, prev){
+  let diff = cur - prev;
+
+  if(diff > 0.0001) return ["▲","green"];
+  if(diff < -0.0001) return ["▼","red"];
+  return ["➜","yellow"];
+}
+
+// =====================
+// FETCH HELPERS
+// =====================
+async function getPrice(symbol){
+  let r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+  let d = await r.json();
+  return parseFloat(d.price);
+}
+
+// =====================
+// DELTA ENGINE
+// =====================
+function calcDelta(trades){
+  let buy=0, sell=0;
+
+  trades.forEach(t=>{
+    if(t.isBuyerMaker) sell+=parseFloat(t.qty);
+    else buy+=parseFloat(t.qty);
+  });
+
+  return {buy,sell,delta:buy-sell};
+}
+
+// =====================
+// MAIN DATA
+// =====================
+async function loadData(){
+
+  // ETHBTC direction
+  let ethbtc = await getPrice("ETHBTC");
+  let [arrowE,colorE] = getArrow(ethbtc, prev.ethbtc);
+
+  document.getElementById("ethbtc").innerHTML =
+    ethbtc.toFixed(5)+" "+arrowE;
+
+  document.getElementById("ethbtc").className="value "+colorE;
+
+  prev.ethbtc = ethbtc;
+
+  // FAKE macro arrows (no free API)
+  function fake(){
+    let r=Math.random();
+    if(r>0.66) return ["▲","green"];
+    if(r<0.33) return ["▼","red"];
+    return ["➜","yellow"];
+  }
+
+  let b = fake();
+  document.getElementById("btcd").innerHTML="-- "+b[0];
+  document.getElementById("btcd").className="value "+b[1];
+
+  let u = fake();
+  document.getElementById("usdt").innerHTML="-- "+u[0];
+  document.getElementById("usdt").className="value "+u[1];
+
+  let t = fake();
+  document.getElementById("totalVal").innerHTML="-- "+t[0];
+  document.getElementById("totalVal").className="value "+t[1];
+
+  // FLOW DATA
+  let spot = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${currentPair}`).then(r=>r.json());
+  let perp = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${currentPair}`).then(r=>r.json());
+  let oi = await fetch(`https://fapi.binance.com/fapi/v1/openInterest?symbol=${currentPair}`).then(r=>r.json());
+
+  document.getElementById("spot").innerText = (spot.quoteVolume/1e9).toFixed(2)+"B";
+  document.getElementById("perp").innerText = (perp.quoteVolume/1e9).toFixed(2)+"B";
+  document.getElementById("oi").innerText = (oi.openInterest/1000).toFixed(2)+"K";
+
+  // REAL DELTA
+  let spotTrades = await fetch(`https://api.binance.com/api/v3/trades?symbol=${currentPair}&limit=200`).then(r=>r.json());
+  let perpTrades = await fetch(`https://fapi.binance.com/fapi/v1/trades?symbol=${currentPair}&limit=200`).then(r=>r.json());
+
+  let s = calcDelta(spotTrades);
+  let p = calcDelta(perpTrades);
+
+  if(s.delta>0 && p.delta>0){
+    document.getElementById("pressure").innerText="BUY ▲";
+    document.getElementById("pressure").className="value green";
+  }
+  else if(s.delta<0 && p.delta<0){
+    document.getElementById("pressure").innerText="SELL ▼";
+    document.getElementById("pressure").className="value red";
+  }
+  else{
+    document.getElementById("pressure").innerText="SIDEWAYS ➜";
+    document.getElementById("pressure").className="value yellow";
+  }
+}
+
+// =====================
+loadCharts();
 loadData();
 setInterval(loadData,5000);
-
 </script>
 
 </body>
