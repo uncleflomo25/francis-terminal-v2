@@ -1,16 +1,16 @@
+```html
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ FRANCIS TERMINAL V7 — PRO TERMINAL</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ FRANCIS TERMINAL V8 — REAL ENGINE</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 body{
     margin:0;
-    background:radial-gradient(circle at top, #0a0f1f, #04060c);
+    background:#02040a;
     color:#fff;
     font-family:Arial;
 }
@@ -19,192 +19,170 @@ body{
 .header{
     text-align:center;
     padding:12px;
-    font-size:18px;
+    font-size:20px;
     background:#0a0f1f;
-    border-bottom:1px solid #1c2b4a;
 }
 
-/* TOP PANEL */
-.top{
+/* GRID */
+.grid{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:2fr 1fr;
     gap:10px;
     padding:10px;
 }
 
-.box{
-    background:#0a0f1f;
-    border:1px solid #1c2b4a;
-    border-radius:10px;
-    padding:10px;
-    text-align:center;
-}
-
-/* COLORS */
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd700;}
-
-/* PRO GRID */
-.grid{
+.right{
     display:grid;
-    grid-template-columns:2fr 1fr;
-    grid-template-rows:420px 420px;
-    gap:12px;
-    padding:12px;
+    grid-template-rows:1fr 1fr;
+    gap:10px;
 }
 
-.chart{
-    width:100%;
-    height:100%;
-    border:1px solid #13203a;
-    border-radius:8px;
-}
+.chart{height:350px;border:1px solid #1c2b4a;border-radius:8px;}
+.small{height:170px;}
 
-/* FLOW PANEL */
+/* PANEL */
 .panel{
     position:absolute;
-    right:12px;
-    top:90px;
+    right:10px;
+    top:70px;
     width:260px;
     padding:14px;
     background:#0a0f1f;
-    border:1px solid #1c2b4a;
     border-radius:10px;
+    border:1px solid #1c2b4a;
 }
 
-.line{
-    display:flex;
-    justify-content:space-between;
-    margin:6px 0;
-}
+.green{color:#00ff9c;}
+.red{color:#ff4d4d;}
+.yellow{color:#ffd700;}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ FRANCIS TERMINAL V7 — INSTITUTIONAL FLOW</div>
+<div class="header">⚡ FRANCIS TERMINAL V8 — INSTITUTIONAL FLOW</div>
 
-<!-- TOP SIGNAL BOXES -->
-<div class="top">
-    <div class="box">USDT.D<br><span id="usdtDir"></span><br><span id="usdtVol"></span></div>
-    <div class="box">ETHBTC<br><span id="ethDir"></span><br><span id="ethVol"></span></div>
-    <div class="box">BTC.D<br><span id="btcDir"></span><br><span id="btcVol"></span></div>
-    <div class="box">TOTAL<br><span id="totDir"></span><br><span id="totVol"></span></div>
-</div>
-
-<!-- PRO CHART LAYOUT -->
 <div class="grid">
+    <div id="total" class="chart"></div>
 
-    <!-- BIG MAIN -->
-    <div id="c1" class="chart" style="grid-row: span 2;"></div>
-
-    <!-- RIGHT TOP -->
-    <div id="c2" class="chart"></div>
-
-    <!-- RIGHT MID -->
-    <div id="c3" class="chart"></div>
-
-    <!-- FULL WIDTH BOTTOM -->
-    <div id="c4" class="chart" style="grid-column: span 2;"></div>
-
+    <div class="right">
+        <div id="btcdom" class="chart small"></div>
+        <div id="ethbtc" class="chart small"></div>
+    </div>
 </div>
 
-<!-- FLOW ENGINE -->
+<div id="usdt" class="chart small"></div>
+
 <div class="panel">
-<b>⚡ FLOW ENGINE</b>
+<b>⚡ V8 FLOW ENGINE</b><br><br>
 
-<div class="line">Spot <span id="spot"></span></div>
-<div class="line">Perp <span id="perp"></span></div>
-<div class="line">OI <span id="oi"></span></div>
-<div class="line">Delta <span id="delta"></span></div>
+Score: <span id="score"></span><br>
+Confidence: <span id="conf"></span><br><br>
 
-<hr>
+State: <span id="state"></span><br><br>
 
-<div class="line">State <span id="state"></span></div>
+<div id="drivers"></div>
 </div>
 
 <script>
 
-/* FORMAT */
+/* ===== FORMAT ===== */
 function fmt(v){
     if(v>1e9) return (v/1e9).toFixed(2)+"B";
     if(v>1e6) return (v/1e6).toFixed(2)+"M";
-    return v.toFixed(0);
+    return v.toFixed(2);
 }
 
-/* DIRECTION */
-function dir(v){
-    if(v>0.2) return '<span class="green">▲</span>';
-    if(v<-0.2) return '<span class="red">▼</span>';
-    return '<span class="yellow">→</span>';
+/* ===== FETCH BINANCE ===== */
+async function getData(symbol){
+    let r = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
+    return await r.json();
 }
 
-/* FETCH */
-async function getData(){
-    let s = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
-    let p = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
-    let o = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
-
-    return {
-        spot: parseFloat(s.quoteVolume),
-        perp: parseFloat(p.quoteVolume),
-        oi: parseFloat(o.openInterest),
-        change: parseFloat(s.priceChangePercent)
-    };
+/* ===== TREND DETECTION ===== */
+function trend(change){
+    return parseFloat(change) >= 0 ? 1 : -1;
 }
 
-/* UPDATE */
+/* ===== ENGINE ===== */
 async function update(){
 
-    let d = await getData();
-    let delta = d.spot - d.perp;
+    // REAL DATA
+    let btc = await getData("BTCUSDT");
+    let eth = await getData("ETHUSDT");
 
-    document.getElementById("spot").innerText = fmt(d.spot);
-    document.getElementById("perp").innerText = fmt(d.perp);
-    document.getElementById("oi").innerText   = fmt(d.oi);
+    // PROXY LOGIC (since TOTAL/BTC.D not in Binance API)
+    let TOTAL = trend(btc.priceChangePercent);      // market proxy
+    let BTCD  = trend(btc.priceChangePercent);      // btc strength proxy
+    let ETHBTC= trend(eth.priceChangePercent - btc.priceChangePercent);
+    let USDTD = trend(-btc.priceChangePercent);     // inverse risk proxy
 
-    document.getElementById("delta").innerHTML =
-        delta>0 ? `<span class="green">+${fmt(delta)}</span>`
-                : `<span class="red">-${fmt(Math.abs(delta))}</span>`;
+    // ===== SCORING =====
+    let score = 0;
 
-    let state="SIDEWAYS", c="yellow";
+    score += TOTAL * 2;
+    score += BTCD * 1;
+    score += ETHBTC * 1;
+    score += (USDTD * -2);
 
-    if(d.spot>d.perp && delta>0){ state="SMART MONEY BUY"; c="green";}
-    else if(d.perp>d.spot){ state="SHORT PRESSURE"; c="red";}
+    // ===== STATE =====
+    let state = "NEUTRAL";
+    let color = "yellow";
 
-    document.getElementById("state").innerHTML = `<span class="${c}">${state}</span>`;
+    if(score >=3){state="STRONG BULL";color="green";}
+    else if(score >=1){state="BULLISH";color="green";}
+    else if(score <=-3){state="RISK OFF";color="red";}
+    else if(score <=-1){state="BEARISH";color="red";}
 
-    /* TOP BOXES */
-    document.getElementById("usdtDir").innerHTML = dir(-d.change);
-    document.getElementById("ethDir").innerHTML  = dir(-d.change/2);
-    document.getElementById("btcDir").innerHTML  = dir(d.change/2);
-    document.getElementById("totDir").innerHTML  = dir(d.change);
+    // SPECIAL
+    if(TOTAL==1 && BTCD==1) state="BTC TREND";
+    if(TOTAL==1 && BTCD==-1) state="ALT SEASON";
 
-    document.getElementById("usdtVol").innerText = fmt(d.spot);
-    document.getElementById("ethVol").innerText  = fmt(d.perp);
-    document.getElementById("btcVol").innerText  = fmt(d.spot);
-    document.getElementById("totVol").innerText  = fmt(d.perp);
+    let conf = Math.min(100, Math.abs(score)*20);
+
+    // DISPLAY
+    document.getElementById("score").innerText = score;
+    document.getElementById("conf").innerText = conf+"%";
+    document.getElementById("state").innerHTML =
+        `<span class="${color}">${state}</span>`;
+
+    document.getElementById("drivers").innerHTML =
+        `
+        Market: ${TOTAL>0?'🟢':'🔴'}<br>
+        BTC: ${BTCD>0?'🟢':'🔴'}<br>
+        Alts: ${ETHBTC>0?'🟢':'🔴'}<br>
+        Liquidity: ${USDTD>0?'🔴':'🟢'}
+        `;
 }
 
-/* STABLE CHART LOAD */
-function loadChart(id,symbol){
-    new TradingView.widget({
-        container_id:id,
-        symbol:symbol,
-        interval:"15",
-        theme:"dark",
-        style:"1",
-        autosize:true,
-        toolbar_bg:"#04060c"
-    });
-}
+/* ===== CHARTS ===== */
+new TradingView.widget({
+    container_id:"total",
+    symbol:"CRYPTOCAP:TOTAL",
+    interval:"15",
+    theme:"dark"
+});
 
-/* LOAD FIX (delay) */
-setTimeout(()=>loadChart("c1","CRYPTOCAP:TOTAL"),0);
-setTimeout(()=>loadChart("c2","BINANCE:ETHBTC"),300);
-setTimeout(()=>loadChart("c3","CRYPTOCAP:BTC.D"),600);
-setTimeout(()=>loadChart("c4","CRYPTOCAP:USDT.D"),900);
+new TradingView.widget({
+    container_id:"btcdom",
+    symbol:"CRYPTOCAP:BTC.D",
+    interval:"15",
+    theme:"dark"
+});
+
+new TradingView.widget({
+    container_id:"ethbtc",
+    symbol:"BINANCE:ETHBTC",
+    interval:"15",
+    theme:"dark"
+});
+
+new TradingView.widget({
+    container_id:"usdt",
+    symbol:"CRYPTOCAP:USDT.D",
+    interval:"15",
+    theme:"dark"
+});
 
 /* RUN */
 update();
@@ -214,3 +192,4 @@ setInterval(update,5000);
 
 </body>
 </html>
+```
