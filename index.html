@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V26 — REAL FLOW ENGINE (NO TV)</title>
+<title>⚡ V26 — REAL FLOW ENGINE</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -81,6 +81,11 @@ function dir(curr, prev){
     return {a:"↔️",c:"yellow",d:0};
 }
 
+function pct(curr, prev){
+    if(!prev) return 0;
+    return (curr-prev)/prev;
+}
+
 //=====================
 // CHART
 //=====================
@@ -91,10 +96,9 @@ let chart = new Chart(ctx,{
     data:{
         labels:[],
         datasets:[{
-            label:'Composite Flow',
             data:[],
             borderWidth:3,
-            tension:0.3
+            tension:0.35
         }]
     },
     options:{
@@ -102,7 +106,11 @@ let chart = new Chart(ctx,{
         plugins:{legend:{display:false}},
         scales:{
             x:{display:false},
-            y:{grid:{color:"#111"}}
+            y:{
+                grid:{color:"#111"},
+                min:-5,
+                max:5
+            }
         }
     }
 });
@@ -126,10 +134,14 @@ async function update(){
     let d1 = dir(btcP, prev.btc);
     let d2 = dir(ethP, prev.eth);
 
-    // PROXIES (IMPORTANT)
-    let btc_d = 50 + (d1.d * 2);     // fake BTC dominance movement
-    let usdt_d = 5 - (d1.d * 1.5);   // inverse risk
-    let total = btcP * 19;           // scaled proxy
+    // % MOVEMENT
+    let btcCh = pct(btcP, prev.btc);
+    let ethCh = pct(ethP, prev.eth);
+
+    // PROXIES (DYNAMIC)
+    let btc_d = 50 + (btcCh * 200);
+    let usdt_d = 5 - (btcCh * 150);
+    let total = btcP * (18 + ethCh * 50);
 
     // DISPLAY
     document.getElementById("btc").innerHTML =
@@ -150,14 +162,18 @@ async function update(){
     //=====================
     // COMPOSITE ENGINE
     //=====================
-    let comp =
-        (d2.d * 0.4) +
-        (d1.d * 0.3) -
-        (btc_d * 0.002) -
-        (usdt_d * 0.002);
+    let compRaw =
+        (ethCh * 4) +
+        (btcCh * 2) -
+        (btc_d * 0.01) -
+        (usdt_d * 0.02);
+
+    // SMOOTH
+    let prevComp = compArr.length ? compArr[compArr.length-1] : 0;
+    let comp = (compRaw + prevComp) / 2;
 
     compArr.push(comp);
-    if(compArr.length > 100) compArr.shift();
+    if(compArr.length > 200) compArr.shift();
 
     //=====================
     // CHART UPDATE
@@ -165,7 +181,6 @@ async function update(){
     chart.data.labels.push("");
     chart.data.datasets[0].data = compArr;
 
-    // COLOR
     chart.data.datasets[0].borderColor =
         comp > 0 ? "#00ff9c" :
         comp < 0 ? "#ff4d4d" : "#ffd700";
@@ -173,7 +188,7 @@ async function update(){
     chart.update();
 
     //=====================
-    // SIGNAL
+    // SIGNAL ENGINE
     //=====================
     let signal="NEUTRAL";
     if(comp > 0.5) signal="STRONG BUY";
