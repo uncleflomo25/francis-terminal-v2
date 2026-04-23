@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>⚡ V25 Composite Flow Engine</title>
 
-<!-- CHART ENGINE (FIXED) -->
+<!-- REQUIRED LIBS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
@@ -82,7 +82,7 @@ function norm(arr){
     return arr.map(x => (x-avg)/(std || 1));
 }
 
-// ================= BUILD ENGINE =================
+// ================= BUILD COMPOSITE =================
 function buildComposite(btc, eth){
 
     let btcArr = btc.map(x=>x.close);
@@ -95,7 +95,6 @@ function buildComposite(btc, eth){
 
     for(let i=1;i<btc.length;i++){
 
-        // PROXY MACRO (FREE DATA LIMITATION)
         let total   = nBTC[i];
         let btcDom  = nBTC[i];
         let usdtDom = -nBTC[i];
@@ -121,6 +120,10 @@ function buildComposite(btc, eth){
         });
     }
 
+    // 🔥 CRITICAL FIXES
+    candles.sort((a,b)=>a.x - b.x);
+    candles = candles.slice(-150);
+
     return candles;
 }
 
@@ -137,6 +140,7 @@ function draw(data){
             datasets: [{
                 label: 'Composite',
                 data: data,
+                parsing: false,
                 color: {
                     up: '#00ff9c',
                     down: '#ff4d4d',
@@ -146,13 +150,14 @@ function draw(data){
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins:{
                 legend:{display:false}
             },
             scales:{
                 x:{
                     type:'time',
-                    time:{unit:'day'},
+                    distribution:'series',
                     ticks:{color:'#aaa'}
                 },
                 y:{
@@ -176,8 +181,8 @@ async function loadData(interval){
         draw(composite);
 
     }catch(e){
-        console.error("Error loading data:", e);
-        alert("Data failed to load (check internet or Binance API)");
+        console.error(e);
+        alert("Error loading data");
     }
 }
 
