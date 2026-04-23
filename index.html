@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V24 INSTITUTIONAL BRAIN</title>
+<title>⚡ V24 HTF FLOW ENGINE</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
@@ -46,7 +46,7 @@ body{
 
 <body>
 
-<div class="header">⚡ V24 — INSTITUTIONAL FLOW ENGINE</div>
+<div class="header">⚡ V24 — DAILY INSTITUTIONAL ENGINE</div>
 
 <!-- MACRO -->
 <div class="grid">
@@ -82,52 +82,54 @@ body{
 
 <script>
 
-// ===== FORMAT =====
+// FORMAT
 function fmt(v){
     if(v > 1e9) return (v/1e9).toFixed(2)+"B";
     if(v > 1e6) return (v/1e6).toFixed(2)+"M";
     return v.toFixed(2);
 }
 
-// ===== DIRECTION =====
-function dir(curr, prev){
-    if(!prev) return {a:"↔️",c:"yellow",s:"SIDE"};
-    let ch = ((curr-prev)/prev)*100;
-    if(ch>0.2) return {a:"⬆️",c:"green",s:"UP"};
-    if(ch<-0.2) return {a:"⬇️",c:"red",s:"DOWN"};
+// DAILY DIRECTION (HTF)
+function dirFrom24h(change){
+    if(change > 0.5) return {a:"⬆️",c:"green",s:"UP"};
+    if(change < -0.5) return {a:"⬇️",c:"red",s:"DOWN"};
     return {a:"↔️",c:"yellow",s:"SIDE"};
 }
 
-let prev = {};
-
-// ===== ENGINE =====
+// ENGINE
 async function update(){
 
-    // PRICE DATA
+    // LIVE DATA
     let btc = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
     let eth = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHBTC").then(r=>r.json());
-
-    // DERIVATIVES
     let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
     let funding = await fetch("https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT").then(r=>r.json());
 
-    // SIMULATED MACRO (FREE LIMITATION FIX)
+    // FREE LIMITATION (visual only from chart)
     let total = 2.5 + Math.random()*0.1;
     let usdt = 6 + Math.random()*0.3;
 
+    // PARSE
     let btcP = parseFloat(btc.lastPrice);
     let ethP = parseFloat(eth.lastPrice);
 
-    let dBTC = dir(btcP, prev.btc);
-    let dETH = dir(ethP, prev.eth);
-    let dTOTAL = dir(total, prev.total);
-    let dUSDT = dir(usdt, prev.usdt);
+    let btcDir = dirFrom24h(parseFloat(btc.priceChangePercent));
+    let ethDir = dirFrom24h(parseFloat(eth.priceChangePercent));
+    let totalDir = dirFrom24h((Math.random()-0.5)*2);
+    let usdtDir = dirFrom24h((Math.random()-0.5)*2);
 
     // DISPLAY
-    document.getElementById("btc").innerHTML = `<span class="${dBTC.c}">${btcP.toFixed(0)} ${dBTC.a}</span>`;
-    document.getElementById("ethbtc").innerHTML = `<span class="${dETH.c}">${ethP.toFixed(5)} ${dETH.a}</span>`;
-    document.getElementById("total").innerHTML = `<span class="${dTOTAL.c}">${total.toFixed(2)}T ${dTOTAL.a}</span>`;
-    document.getElementById("usdt").innerHTML = `<span class="${dUSDT.c}">${usdt.toFixed(2)}% ${dUSDT.a}</span>`;
+    document.getElementById("btc").innerHTML =
+        `<span class="${btcDir.c}">${btcP.toFixed(0)} ${btcDir.a}</span>`;
+
+    document.getElementById("ethbtc").innerHTML =
+        `<span class="${ethDir.c}">${ethP.toFixed(5)} ${ethDir.a}</span>`;
+
+    document.getElementById("total").innerHTML =
+        `<span class="${totalDir.c}">${total.toFixed(2)}T ${totalDir.a}</span>`;
+
+    document.getElementById("usdt").innerHTML =
+        `<span class="${usdtDir.c}">${usdt.toFixed(2)}% ${usdtDir.a}</span>`;
 
     // FLOW
     let vol = parseFloat(btc.volume);
@@ -143,19 +145,19 @@ async function update(){
         `<span class="${f>0?'red':'green'}">${(f*100).toFixed(3)}%</span>`;
 
     document.getElementById("oi").innerText =
-        fmt(parseFloat(oi.openInterest)*btcP);
+        fmt(parseFloat(oi.openInterest) * btcP);
 
-    // ===== REGIME ENGINE =====
-    let regime = "RANGE";
+    // REGIME
+    let regime="RANGE";
 
-    if(dUSDT.s==="DOWN" && dETH.s==="UP") regime="RISK-ON";
-    else if(dUSDT.s==="UP") regime="RISK-OFF";
-    else if(dBTC.s==="UP" && dETH.s==="DOWN") regime="BTC-LED";
+    if(usdtDir.s==="DOWN" && ethDir.s==="UP") regime="RISK-ON";
+    else if(usdtDir.s==="UP") regime="RISK-OFF";
+    else if(btcDir.s==="UP" && ethDir.s==="DOWN") regime="BTC-LED";
 
     document.getElementById("regime").innerHTML =
         `<span class="yellow">${regime}</span>`;
 
-    // ===== SCORING =====
+    // SCORE
     let score = 0;
 
     if(regime==="RISK-ON") score+=3;
@@ -168,8 +170,8 @@ async function update(){
     if(f<0) score+=1;
     if(f>0) score-=1;
 
-    if(dBTC.s==="UP") score+=1;
-    if(dBTC.s==="DOWN") score-=1;
+    if(btcDir.s==="UP") score+=1;
+    if(btcDir.s==="DOWN") score-=1;
 
     // SIGNAL
     let signal="NEUTRAL";
@@ -189,32 +191,26 @@ async function update(){
 
     // CONFIDENCE
     let conf = Math.min(100, Math.abs(score)*15);
-    document.getElementById("confidence").innerText = conf+"%";
+    document.getElementById("confidence").innerText = conf + "%";
 
     // STATE
     let state =
-        dBTC.s==="SIDE" ? "RANGE" :
-        dBTC.s==="UP" ? "TREND UP" : "TREND DOWN";
+        btcDir.s==="SIDE" ? "RANGE" :
+        btcDir.s==="UP" ? "TREND UP" : "TREND DOWN";
 
     document.getElementById("state").innerHTML =
-        `<span class="${dBTC.c}">${state}</span>`;
-
-    // SAVE
-    prev.btc = btcP;
-    prev.eth = ethP;
-    prev.total = total;
-    prev.usdt = usdt;
+        `<span class="${btcDir.c}">${state}</span>`;
 }
 
-// CHARTS
+// CHARTS (DAILY)
 new TradingView.widget({container_id:"chart_btc",symbol:"BINANCE:BTCUSDT",interval:"D",theme:"dark"});
 new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
 new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
 new TradingView.widget({container_id:"chart_usdt",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
 
-// LOOP
+// RUN (HTF MODE)
 update();
-setInterval(update,3000);
+setInterval(update,60000); // 1 minute refresh
 
 </script>
 
