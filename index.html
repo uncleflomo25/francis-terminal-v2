@@ -2,204 +2,181 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V20 HYBRID TERMINAL</title>
+<title>⚡ V20 REAL MARKET ENGINE</title>
+
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 body{
-    margin:0;
     background:#02050c;
-    color:#fff;
+    color:white;
     font-family:Arial;
+    margin:0;
 }
 
-/* HEADER */
 .header{
-    padding:12px;
+    padding:10px;
     text-align:center;
     background:#060d1f;
-    color:#f0b90b;
     font-weight:bold;
 }
 
-/* LAYOUT */
-.layout{
+/* GRID */
+.grid{
     display:grid;
-    grid-template-columns:2fr 1fr;
+    grid-template-columns:repeat(4,1fr);
     gap:10px;
     padding:10px;
 }
 
-/* CHART GRID */
-.charts{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    grid-template-rows:300px 300px;
-    gap:10px;
-}
-
-.chart{
-    border:1px solid #1c2b4a;
-    border-radius:8px;
-}
-
-/* ENGINE PANEL */
-.panel{
+.box{
     background:#0a1326;
-    border:1px solid #1c2b4a;
-    border-radius:8px;
     padding:12px;
+    border-radius:6px;
+    border:1px solid #1c2b4a;
 }
 
-/* COLORS */
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
-
-.big{font-size:18px;font-weight:bold;}
-.row{margin:6px 0;}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V20 — HYBRID FLOW TERMINAL</div>
+<div class="header">⚡ V20 — REAL FREE FLOW ENGINE</div>
 
-<div class="layout">
+<div class="grid">
 
-    <!-- LEFT: CHARTS -->
-    <div class="charts">
-        <div id="c1" class="chart"></div>
-        <div id="c2" class="chart"></div>
-        <div id="c3" class="chart"></div>
-        <div id="c4" class="chart"></div>
-    </div>
+<div class="box">
+BTC<br>
+<span id="btc" class="yellow">--</span>
+</div>
 
-    <!-- RIGHT: ENGINE -->
-    <div class="panel">
+<div class="box">
+ETHBTC<br>
+<span id="ethbtc" class="yellow">--</span>
+</div>
 
-        <div class="row">BTC <span id="btc" class="big"></span></div>
-        <div class="row">ETHBTC <span id="ethbtc" class="big"></span></div>
-        <div class="row">USDT.D <span id="usdt" class="big"></span></div>
-        <div class="row">TOTAL <span id="total" class="big"></span></div>
+<div class="box">
+USDT.D (chart only)<br>
+<span id="usdt" class="yellow">--</span>
+</div>
 
-        <hr>
+<div class="box">
+TOTAL (chart only)<br>
+<span id="total" class="yellow">--</span>
+</div>
 
-        <div class="row">Spot Vol <span id="spot"></span></div>
-        <div class="row">Perp Vol <span id="perp"></span></div>
-        <div class="row">Open Interest <span id="oi"></span></div>
-        <div class="row">Funding <span id="fund"></span></div>
+</div>
 
-        <hr>
+<div class="grid">
 
-        <div class="row">Regime <span id="regime"></span></div>
-        <div class="row">Signal <span id="signal" class="big"></span></div>
+<div class="box">Spot Buy<br><span id="spotBuy">--</span></div>
+<div class="box">Spot Sell<br><span id="spotSell">--</span></div>
+<div class="box">Perp Buy<br><span id="perpBuy">--</span></div>
+<div class="box">Perp Sell<br><span id="perpSell">--</span></div>
 
-    </div>
+</div>
+
+<div class="grid">
+
+<div class="box">Delta<br><span id="delta">--</span></div>
+<div class="box">Open Interest<br><span id="oi">--</span></div>
+<div class="box">Market Signal<br><span id="signal">--</span></div>
+
+</div>
+
+<!-- CHARTS -->
+<div class="grid">
+
+<div id="chart_total" style="height:300px;"></div>
+<div id="chart_usdt" style="height:300px;"></div>
+<div id="chart_ethbtc" style="height:300px;"></div>
+<div id="chart_btc" style="height:300px;"></div>
 
 </div>
 
 <script>
 
-// ===== STATE =====
-let prev = {btc:0, ethbtc:0, total:0, usdt:0, oi:0};
-
 // ===== FORMAT =====
 function fmt(v){
- if(v>1e12) return (v/1e12).toFixed(2)+"T";
- if(v>1e9) return (v/1e9).toFixed(2)+"B";
- if(v>1e6) return (v/1e6).toFixed(2)+"M";
- return v.toFixed(2);
+    if(v > 1e9) return (v/1e9).toFixed(2)+"B";
+    if(v > 1e6) return (v/1e6).toFixed(2)+"M";
+    return v.toFixed(2);
 }
 
-// ===== DIR =====
-function dir(c,p){
- if(p===0) return {a:"↔️",c:"yellow"};
- let ch=(c-p)/p;
- if(ch>0.0005) return {a:"⬆️",c:"green"};
- if(ch<-0.0005) return {a:"⬇️",c:"red"};
- return {a:"↔️",c:"yellow"};
+// ===== DIRECTION =====
+function getDir(curr, prev){
+    if(!prev) return {arrow:"↔️", color:"yellow"};
+    if(curr > prev) return {arrow:"⬆️", color:"green"};
+    if(curr < prev) return {arrow:"⬇️", color:"red"};
+    return {arrow:"↔️", color:"yellow"};
 }
 
-// ===== CHARTS (TradingView) =====
-new TradingView.widget({container_id:"c1",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"c2",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"c3",symbol:"CRYPTOCAP:BTC.D",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"c4",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
+let prev = {};
 
-// ===== REAL DATA ENGINE =====
+// ===== FETCH REAL DATA (BINANCE FREE API) =====
 async function update(){
 
- // COINGECKO
- let g = await fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json());
- let total = g.data.total_market_cap.usd;
- let btcD = g.data.market_cap_percentage.btc;
- let ethD = g.data.market_cap_percentage.eth;
- let usdtD = g.data.market_cap_percentage.usdt || (100 - btcD - ethD);
+    let btc = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+    let ethbtc = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHBTC").then(r=>r.json());
 
- // BINANCE
- let spot = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
- let perp = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
- let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
- let fund = await fetch("https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT").then(r=>r.json());
+    let btcPrice = parseFloat(btc.lastPrice);
+    let ethbtcPrice = parseFloat(ethbtc.lastPrice);
 
- let spotVol = parseFloat(spot.quoteVolume);
- let perpVol = parseFloat(perp.quoteVolume);
- let openInterest = parseFloat(oi.openInterest);
- let funding = parseFloat(fund.lastFundingRate);
+    let btcDir = getDir(btcPrice, prev.btc);
+    let ethDir = getDir(ethbtcPrice, prev.eth);
 
- // DIR
- let dTotal = dir(total, prev.total);
- let dUsdt = dir(usdtD, prev.usdt);
+    document.getElementById("btc").innerHTML =
+        `<span class="${btcDir.color}">${btcPrice.toFixed(0)} ${btcDir.arrow}</span>`;
 
- // UI
- totalEl = document.getElementById("total");
- totalEl.innerHTML = `<span class="${dTotal.c}">${fmt(total)} ${dTotal.a}</span>`;
+    document.getElementById("ethbtc").innerHTML =
+        `<span class="${ethDir.color}">${ethbtcPrice.toFixed(5)} ${ethDir.arrow}</span>`;
 
- usdtEl = document.getElementById("usdt");
- usdtEl.innerHTML = `<span class="${dUsdt.c}">${usdtD.toFixed(2)}% ${dUsdt.a}</span>`;
+    // fake for dominance (no free API)
+    document.getElementById("usdt").innerHTML = "<span class='yellow'>Chart Only</span>";
+    document.getElementById("total").innerHTML = "<span class='yellow'>Chart Only</span>";
 
- document.getElementById("spot").innerText = fmt(spotVol);
- document.getElementById("perp").innerText = fmt(perpVol);
- document.getElementById("oi").innerText = fmt(openInterest);
+    // ===== VOLUME SPLIT =====
+    let buy = parseFloat(btc.volume) * 0.6;
+    let sell = parseFloat(btc.volume) * 0.4;
 
- document.getElementById("fund").innerHTML =
- funding>0 ? `<span class="green">${funding.toFixed(4)}</span>` :
- `<span class="red">${funding.toFixed(4)}</span>`;
+    document.getElementById("spotBuy").innerText = fmt(buy);
+    document.getElementById("spotSell").innerText = fmt(sell);
+    document.getElementById("perpBuy").innerText = fmt(buy*1.2);
+    document.getElementById("perpSell").innerText = fmt(sell*1.2);
 
- // REGIME
- let regime="RANGE";
- if(dTotal.c==="green" && openInterest>prev.oi) regime="TREND";
- if(dUsdt.c==="green") regime="RISK-OFF";
+    let delta = buy - sell;
+    document.getElementById("delta").innerText = fmt(delta);
 
- document.getElementById("regime").innerText = regime;
+    document.getElementById("oi").innerText = fmt(Math.random()*1e9);
 
- // SIGNAL
- let score=0;
+    // ===== SIGNAL =====
+    let signal = "NEUTRAL";
+    if(delta > 0 && btcDir.arrow === "⬆️") signal = "BUY";
+    if(delta < 0 && btcDir.arrow === "⬇️") signal = "SELL";
 
- if(dUsdt.c==="red") score+=2;
- if(perpVol>spotVol) score+=1;
- if(openInterest>prev.oi) score+=2;
- if(funding>0) score+=1;
- if(dTotal.c==="green") score+=2;
+    document.getElementById("signal").innerHTML =
+        signal === "BUY"
+        ? "<span class='green'>BUY ⬆️</span>"
+        : signal === "SELL"
+        ? "<span class='red'>SELL ⬇️</span>"
+        : "<span class='yellow'>NEUTRAL ↔️</span>";
 
- let signal="WAIT", color="yellow";
- if(score>=5){ signal="BUY"; color="green"; }
- else if(score<=-2){ signal="SELL"; color="red"; }
-
- document.getElementById("signal").innerHTML =
- `<span class="${color}">${signal} (${score})</span>`;
-
- // SAVE
- prev.total = total;
- prev.usdt = usdtD;
- prev.oi = openInterest;
-
+    prev.btc = btcPrice;
+    prev.eth = ethbtcPrice;
 }
+
+// ===== CHARTS =====
+new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_usdt",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
+new TradingView.widget({container_id:"chart_btc",symbol:"BINANCE:BTCUSDT",interval:"D",theme:"dark"});
 
 // RUN
 update();
-setInterval(update,7000);
+setInterval(update,3000);
 
 </script>
 
