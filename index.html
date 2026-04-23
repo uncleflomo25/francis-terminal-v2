@@ -2,125 +2,126 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V26 — REAL FLOW ENGINE</title>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>⚡ ELITE FLOW PRO</title>
 
 <style>
 body{
-    margin:0;
     background:#02050c;
     color:white;
     font-family:Arial;
+    margin:0;
 }
 
 .header{
     text-align:center;
-    padding:10px;
-    background:#06122b;
+    padding:12px;
+    background:#060d1f;
     font-weight:bold;
+    font-size:18px;
 }
 
 .grid{
     display:grid;
     grid-template-columns:repeat(4,1fr);
-    gap:10px;
-    padding:10px;
+    gap:12px;
+    padding:12px;
 }
 
 .box{
     background:#0a1326;
-    padding:12px;
-    border-radius:6px;
     border:1px solid #1c2b4a;
+    border-radius:8px;
+    padding:15px;
 }
 
-.big{font-size:20px;font-weight:bold;}
+.big{
+    font-size:22px;
+    font-weight:bold;
+}
 
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
 
-canvas{
-    width:100% !important;
-    height:500px !important;
+.arrow{
+    font-size:28px;
+    margin-left:8px;
 }
+
+.center{text-align:center;}
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V26 — REAL INSTITUTIONAL ENGINE</div>
+<div class="header">⚡ ELITE FLOW PRO — LIVE</div>
 
 <div class="grid">
-<div class="box">BTC<br><span id="btc" class="big">--</span></div>
-<div class="box">ETHBTC<br><span id="ethbtc" class="big">--</span></div>
-<div class="box">BTC.D (proxy)<br><span id="btcd" class="big">--</span></div>
-<div class="box">USDT.D (proxy)<br><span id="usdt" class="big">--</span></div>
+
+<div class="box center">
+USDT.D<br>
+<span id="usdt" class="big"></span>
 </div>
 
-<div class="grid">
-<div class="box">TOTAL (proxy)<br><span id="total"></span></div>
-<div class="box">Signal<br><span id="signal"></span></div>
-<div class="box">State<br><span id="state"></span></div>
-<div class="box">Confidence<br><span id="conf"></span></div>
+<div class="box center">
+ETHBTC<br>
+<span id="ethbtc" class="big"></span>
 </div>
 
-<canvas id="chart"></canvas>
+<div class="box center">
+BTC.D<br>
+<span id="btcd" class="big"></span>
+</div>
+
+<div class="box center">
+TOTAL<br>
+<span id="total" class="big"></span>
+</div>
+
+<div class="box center">
+BTC<br>
+<span id="btc" class="big"></span>
+</div>
+
+<div class="box center">
+Signal<br>
+<span id="signal" class="big"></span>
+</div>
+
+<div class="box center">
+State<br>
+<span id="state" class="big"></span>
+</div>
+
+<div class="box center">
+Confidence<br>
+<span id="conf" class="big"></span>
+</div>
+
+</div>
 
 <script>
 
-//=====================
-// HELPERS
-//=====================
+// FORMAT
+function fmt(v){
+    if(v>1e9) return (v/1e9).toFixed(2)+"B";
+    if(v>1e6) return (v/1e6).toFixed(2)+"M";
+    return v.toFixed(2);
+}
+
+// DIRECTION
 function dir(curr, prev){
     if(!prev) return {a:"↔️",c:"yellow",d:0};
-    let ch = (curr-prev)/prev;
-    if(ch>0.002) return {a:"⬆️",c:"green",d:1};
-    if(ch<-0.002) return {a:"⬇️",c:"red",d:-1};
+    let ch = ((curr-prev)/prev)*100;
+
+    if(ch>0.2) return {a:"⬆️",c:"green",d:1};
+    if(ch<-0.2) return {a:"⬇️",c:"red",d:-1};
     return {a:"↔️",c:"yellow",d:0};
 }
 
-function pct(curr, prev){
-    if(!prev) return 0;
-    return (curr-prev)/prev;
-}
+let prev={};
 
-//=====================
-// CHART
-//=====================
-let ctx = document.getElementById('chart').getContext('2d');
-
-let chart = new Chart(ctx,{
-    type:'line',
-    data:{
-        labels:[],
-        datasets:[{
-            data:[],
-            borderWidth:3,
-            tension:0.35
-        }]
-    },
-    options:{
-        responsive:true,
-        plugins:{legend:{display:false}},
-        scales:{
-            x:{display:false},
-            y:{
-                grid:{color:"#111"},
-                min:-5,
-                max:5
-            }
-        }
-    }
-});
-
-//=====================
-// ENGINE
-//=====================
-let prev = {};
-let compArr = [];
-
+// MAIN LOOP
 async function update(){
 
     // REAL DATA
@@ -130,89 +131,67 @@ async function update(){
     let btcP = parseFloat(btc.price);
     let ethP = parseFloat(eth.price);
 
-    // DIRECTION
-    let d1 = dir(btcP, prev.btc);
-    let d2 = dir(ethP, prev.eth);
+    let btcD = dir(btcP, prev.btc);
+    let ethD = dir(ethP, prev.eth);
 
-    // % MOVEMENT
-    let btcCh = pct(btcP, prev.btc);
-    let ethCh = pct(ethP, prev.eth);
+    // ===== PROXY DOMINANCE =====
+    let btcd = 50 + (btcD.d * 5);      // fake but directional
+    let usdt = 5 - (btcD.d * 2);       // inverse logic
+    let total = btcP * 19;             // rough proxy
 
-    // PROXIES (DYNAMIC)
-    let btc_d = 50 + (btcCh * 200);
-    let usdt_d = 5 - (btcCh * 150);
-    let total = btcP * (18 + ethCh * 50);
+    let btcdD = dir(btcd, prev.btcd);
+    let usdtD = dir(usdt, prev.usdt);
+    let totalD = dir(total, prev.total);
 
     // DISPLAY
-    document.getElementById("btc").innerHTML =
-        `<span class="${d1.c}">${btcP.toFixed(0)} ${d1.a}</span>`;
+    function set(id,val,d){
+        document.getElementById(id).innerHTML =
+            `<span class="${d.c}">${val} <span class="arrow">${d.a}</span></span>`;
+    }
 
-    document.getElementById("ethbtc").innerHTML =
-        `<span class="${d2.c}">${ethP.toFixed(5)} ${d2.a}</span>`;
+    set("btc", btcP.toFixed(0), btcD);
+    set("ethbtc", ethP.toFixed(5), ethD);
+    set("btcd", btcd.toFixed(2)+"%", btcdD);
+    set("usdt", usdt.toFixed(2)+"%", usdtD);
+    set("total", fmt(total), totalD);
 
-    document.getElementById("btcd").innerHTML =
-        `<span class="${d1.c}">${btc_d.toFixed(2)}%</span>`;
+    // ===== SIGNAL ENGINE =====
+    let score = 0;
 
-    document.getElementById("usdt").innerHTML =
-        `<span class="${d1.c}">${usdt_d.toFixed(2)}%</span>`;
+    score += btcD.d * 2;
+    score += ethD.d;
+    score -= btcdD.d;
+    score -= usdtD.d;
+    score += totalD.d * 2;
 
-    document.getElementById("total").innerText =
-        (total/1e6).toFixed(2)+"B";
-
-    //=====================
-    // COMPOSITE ENGINE
-    //=====================
-    let compRaw =
-        (ethCh * 4) +
-        (btcCh * 2) -
-        (btc_d * 0.01) -
-        (usdt_d * 0.02);
-
-    // SMOOTH
-    let prevComp = compArr.length ? compArr[compArr.length-1] : 0;
-    let comp = (compRaw + prevComp) / 2;
-
-    compArr.push(comp);
-    if(compArr.length > 200) compArr.shift();
-
-    //=====================
-    // CHART UPDATE
-    //=====================
-    chart.data.labels.push("");
-    chart.data.datasets[0].data = compArr;
-
-    chart.data.datasets[0].borderColor =
-        comp > 0 ? "#00ff9c" :
-        comp < 0 ? "#ff4d4d" : "#ffd700";
-
-    chart.update();
-
-    //=====================
-    // SIGNAL ENGINE
-    //=====================
     let signal="NEUTRAL";
-    if(comp > 0.5) signal="STRONG BUY";
-    else if(comp > 0.1) signal="BUY";
-    else if(comp < -0.5) signal="STRONG SELL";
-    else if(comp < -0.1) signal="SELL";
+    if(score>=3) signal="BUY";
+    if(score<=-3) signal="SELL";
 
-    let color =
-        signal.includes("BUY") ? "green" :
-        signal.includes("SELL") ? "red" : "yellow";
+    let color = signal=="BUY"?"green":signal=="SELL"?"red":"yellow";
 
     document.getElementById("signal").innerHTML =
         `<span class="${color}">${signal}</span>`;
 
+    // STATE
+    let state =
+        btcD.d==1 ? "TREND UP" :
+        btcD.d==-1 ? "TREND DOWN" :
+        "RANGE";
+
     document.getElementById("state").innerHTML =
-        `<span class="${d1.c}">
-        ${d1.d==1?"TREND UP":d1.d==-1?"TREND DOWN":"RANGE"}
-        </span>`;
+        `<span class="${btcD.c}">${state}</span>`;
 
-    document.getElementById("conf").innerText =
-        Math.min(100, Math.abs(comp)*100).toFixed(0)+"%";
+    // CONFIDENCE
+    let conf = Math.min(100, Math.abs(score)*20);
+    document.getElementById("conf").innerText = conf + "%";
 
+    // SAVE
     prev.btc = btcP;
     prev.eth = ethP;
+    prev.btcd = btcd;
+    prev.usdt = usdt;
+    prev.total = total;
 }
 
 // LOOP
