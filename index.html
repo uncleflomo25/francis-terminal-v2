@@ -13,26 +13,6 @@ body{
     font-family:Arial;
 }
 
-/* GRID */
-.grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
-    padding:10px;
-}
-
-.box{
-    background:#0a1326;
-    border:1px solid #1c2b4a;
-    border-radius:8px;
-    padding:12px;
-}
-
-/* COLORS */
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd700;}
-
 /* HEADER */
 .header{
     text-align:center;
@@ -41,8 +21,51 @@ body{
     font-weight:bold;
 }
 
-/* BIG TEXT */
+/* GRID */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    padding:10px;
+}
+
+/* BOX */
+.box{
+    background:#0a1326;
+    border:1px solid #1c2b4a;
+    border-radius:8px;
+    padding:12px;
+}
+
+/* TEXT */
 .big{font-size:18px;font-weight:bold}
+
+/* COLORS */
+.green{color:#00ff9c;}
+.red{color:#ff4d4d;}
+.yellow{color:#ffd700;}
+
+/* BIG ARROWS */
+.arrow{
+    font-size:32px;
+    font-weight:bold;
+    margin-left:6px;
+}
+
+.up{
+    color:#00ff9c;
+    text-shadow:0 0 10px #00ff9c;
+}
+
+.down{
+    color:#ff4d4d;
+    text-shadow:0 0 10px #ff4d4d;
+}
+
+.side{
+    color:#ffd700;
+    text-shadow:0 0 8px #ffd700;
+}
 
 /* BAR */
 .bar{
@@ -50,6 +73,7 @@ body{
     background:#111;
     border-radius:4px;
     overflow:hidden;
+    margin-top:6px;
 }
 
 .fill{
@@ -71,9 +95,9 @@ body{
 
 <!-- MACRO -->
 <div class="grid">
-<div class="box">BTC.D<br><span id="btcD" class="big"></span></div>
-<div class="box">USDT.D<br><span id="usdtD" class="big"></span></div>
+<div class="box">BTC<br><span id="btc" class="big"></span></div>
 <div class="box">ETHBTC<br><span id="ethbtc" class="big"></span></div>
+<div class="box">USDT.D<br><span id="usdtD" class="big"></span></div>
 <div class="box">TOTAL<br><span id="total" class="big"></span></div>
 </div>
 
@@ -85,7 +109,7 @@ body{
 <div class="box">Perp Sell<br><span id="perpSell"></span></div>
 </div>
 
-<!-- DELTA -->
+<!-- ENGINE -->
 <div class="grid">
 <div class="box">
 Delta<br><span id="delta"></span>
@@ -114,13 +138,16 @@ function fmt(v){
     return v.toFixed(2);
 }
 
-// ===== DIRECTION =====
+// ===== DIRECTION ENGINE =====
 function dir(curr, prev){
-    if(!prev) return {a:"↔️",c:"yellow"};
-    let ch=(curr-prev)/prev;
-    if(ch>0.002) return {a:"⬆️",c:"green"};
-    if(ch<-0.002) return {a:"⬇️",c:"red"};
-    return {a:"↔️",c:"yellow"};
+    if(!prev) return {arrow:"↔️",cls:"side"};
+
+    let ch = (curr-prev)/prev;
+
+    if(ch>0.002) return {arrow:"⬆️",cls:"up"};
+    if(ch<-0.002) return {arrow:"⬇️",cls:"down"};
+
+    return {arrow:"↔️",cls:"side"};
 }
 
 let prev={};
@@ -139,20 +166,25 @@ async function update(){
     let btcDir = dir(btcP, prev.btc);
     let ethDir = dir(ethP, prev.eth);
 
-    document.getElementById("btcD").innerHTML =
-        `<span class="${btcDir.c}">${btc.priceChangePercent}% ${btcDir.a}</span>`;
+    // ===== PRICE DISPLAY =====
+    document.getElementById("btc").innerHTML =
+        `<span class="${btcDir.cls}">${btcP.toFixed(0)}</span>
+         <span class="arrow ${btcDir.cls}">${btcDir.arrow}</span>`;
 
     document.getElementById("ethbtc").innerHTML =
-        `<span class="${ethDir.c}">${ethP.toFixed(5)} ${ethDir.a}</span>`;
+        `<span class="${ethDir.cls}">${ethP.toFixed(5)}</span>
+         <span class="arrow ${ethDir.cls}">${ethDir.arrow}</span>`;
 
-    // Fake but realistic macro values
+    // ===== SIMULATED MACRO =====
     document.getElementById("usdtD").innerHTML =
-        `<span class="yellow">${(Math.random()*10).toFixed(2)}% ↔️</span>`;
+        `<span class="yellow">${(Math.random()*10).toFixed(2)}%</span>
+         <span class="arrow side">↔️</span>`;
 
     document.getElementById("total").innerHTML =
-        `<span class="green">${(btcP*19).toFixed(0)}B ⬆️</span>`;
+        `<span class="green">${(btcP*19).toFixed(0)}B</span>
+         <span class="arrow up">⬆️</span>`;
 
-    // FLOW
+    // ===== FLOW =====
     let vol = parseFloat(btc.volume);
 
     let spotBuy = vol * (btc.priceChangePercent>0 ? 0.6 : 0.45);
@@ -166,6 +198,7 @@ async function update(){
     document.getElementById("perpBuy").innerText = fmt(perpBuy);
     document.getElementById("perpSell").innerText = fmt(perpSell);
 
+    // ===== DELTA =====
     let delta = spotBuy - spotSell;
 
     document.getElementById("delta").innerHTML =
@@ -177,37 +210,39 @@ async function update(){
     document.getElementById("deltaBar").style.background =
         delta>0 ? "#00ff9c" : "#ff4d4d";
 
-    // FUNDING
+    // ===== FUNDING =====
     let f = parseFloat(funding.lastFundingRate);
     document.getElementById("funding").innerHTML =
         `<span class="${f>0?'red':'green'}">${(f*100).toFixed(3)}%</span>`;
 
-    // OI
+    // ===== OI =====
     let oiVal = parseFloat(oi.openInterest);
     document.getElementById("oi").innerText = fmt(oiVal * btcP);
 
-    // SIGNAL ENGINE
+    // ===== SIGNAL =====
     let score=0;
 
     if(delta>0) score+=2;
     if(f<0) score+=1;
-    if(btcDir.a==="⬆️") score+=2;
+    if(btcDir.cls==="up") score+=2;
 
     if(delta<0) score-=2;
     if(f>0) score-=1;
-    if(btcDir.a==="⬇️") score-=2;
+    if(btcDir.cls==="down") score-=2;
 
     let signal="NEUTRAL";
     if(score>=3) signal="BUY";
     else if(score<=-3) signal="SELL";
 
-    let color = signal==="BUY"?"green":signal==="SELL"?"red":"yellow";
+    let color =
+        signal==="BUY"?"green":
+        signal==="SELL"?"red":"yellow";
 
     document.getElementById("signal").innerHTML =
         `<span class="${color}">${signal}</span>`;
 
-    prev.btc=btcP;
-    prev.eth=ethP;
+    prev.btc = btcP;
+    prev.eth = ethP;
 }
 
 // ===== CHARTS =====
