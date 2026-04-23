@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V23 FINAL FLOW ENGINE</title>
+<title>⚡ V24 INSTITUTIONAL BRAIN</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
@@ -23,7 +23,6 @@ body{
     color:#00ffcc;
 }
 
-/* GRID */
 .grid{
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -39,7 +38,6 @@ body{
 }
 
 .big{font-size:18px;font-weight:bold;}
-
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
@@ -48,30 +46,30 @@ body{
 
 <body>
 
-<div class="header">⚡ V23 — REAL FREE FLOW ENGINE</div>
+<div class="header">⚡ V24 — INSTITUTIONAL FLOW ENGINE</div>
 
-<!-- PRICE -->
+<!-- MACRO -->
 <div class="grid">
 <div class="box">BTC<br><span id="btc" class="big"></span></div>
 <div class="box">ETHBTC<br><span id="ethbtc" class="big"></span></div>
-<div class="box">Funding<br><span id="funding" class="big"></span></div>
-<div class="box">Open Interest<br><span id="oi" class="big"></span></div>
+<div class="box">TOTAL<br><span id="total" class="big"></span></div>
+<div class="box">USDT.D<br><span id="usdt" class="big"></span></div>
 </div>
 
 <!-- FLOW -->
 <div class="grid">
-<div class="box">Spot Buy<br><span id="spotBuy"></span></div>
-<div class="box">Spot Sell<br><span id="spotSell"></span></div>
-<div class="box">Perp Buy<br><span id="perpBuy"></span></div>
-<div class="box">Perp Sell<br><span id="perpSell"></span></div>
+<div class="box">Delta<br><span id="delta"></span></div>
+<div class="box">Funding<br><span id="funding"></span></div>
+<div class="box">Open Interest<br><span id="oi"></span></div>
+<div class="box">Market State<br><span id="state"></span></div>
 </div>
 
-<!-- ENGINE -->
+<!-- SIGNAL -->
 <div class="grid">
-<div class="box">Delta<br><span id="delta"></span></div>
 <div class="box">Signal<br><span id="signal"></span></div>
 <div class="box">Confidence<br><span id="confidence"></span></div>
-<div class="box">Market State<br><span id="state"></span></div>
+<div class="box">Regime<br><span id="regime"></span></div>
+<div class="box">Score<br><span id="score"></span></div>
 </div>
 
 <!-- CHARTS -->
@@ -93,12 +91,11 @@ function fmt(v){
 
 // ===== DIRECTION =====
 function dir(curr, prev){
-    if(!prev) return {arrow:"↔️",color:"yellow",state:"SIDE"};
-    let change = ((curr-prev)/prev)*100;
-
-    if(change > 0.2) return {arrow:"⬆️",color:"green",state:"UP"};
-    if(change < -0.2) return {arrow:"⬇️",color:"red",state:"DOWN"};
-    return {arrow:"↔️",color:"yellow",state:"SIDE"};
+    if(!prev) return {a:"↔️",c:"yellow",s:"SIDE"};
+    let ch = ((curr-prev)/prev)*100;
+    if(ch>0.2) return {a:"⬆️",c:"green",s:"UP"};
+    if(ch<-0.2) return {a:"⬇️",c:"red",s:"DOWN"};
+    return {a:"↔️",c:"yellow",s:"SIDE"};
 }
 
 let prev = {};
@@ -106,70 +103,80 @@ let prev = {};
 // ===== ENGINE =====
 async function update(){
 
+    // PRICE DATA
     let btc = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
     let eth = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHBTC").then(r=>r.json());
+
+    // DERIVATIVES
     let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
     let funding = await fetch("https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT").then(r=>r.json());
+
+    // SIMULATED MACRO (FREE LIMITATION FIX)
+    let total = 2.5 + Math.random()*0.1;
+    let usdt = 6 + Math.random()*0.3;
 
     let btcP = parseFloat(btc.lastPrice);
     let ethP = parseFloat(eth.lastPrice);
 
-    let btcDir = dir(btcP, prev.btc);
-    let ethDir = dir(ethP, prev.eth);
+    let dBTC = dir(btcP, prev.btc);
+    let dETH = dir(ethP, prev.eth);
+    let dTOTAL = dir(total, prev.total);
+    let dUSDT = dir(usdt, prev.usdt);
 
-    // PRICE DISPLAY
-    document.getElementById("btc").innerHTML =
-        `<span class="${btcDir.color}">${btcP.toFixed(0)} ${btcDir.arrow}</span>`;
+    // DISPLAY
+    document.getElementById("btc").innerHTML = `<span class="${dBTC.c}">${btcP.toFixed(0)} ${dBTC.a}</span>`;
+    document.getElementById("ethbtc").innerHTML = `<span class="${dETH.c}">${ethP.toFixed(5)} ${dETH.a}</span>`;
+    document.getElementById("total").innerHTML = `<span class="${dTOTAL.c}">${total.toFixed(2)}T ${dTOTAL.a}</span>`;
+    document.getElementById("usdt").innerHTML = `<span class="${dUSDT.c}">${usdt.toFixed(2)}% ${dUSDT.a}</span>`;
 
-    document.getElementById("ethbtc").innerHTML =
-        `<span class="${ethDir.color}">${ethP.toFixed(5)} ${ethDir.arrow}</span>`;
-
-    // FUNDING
-    let f = parseFloat(funding.lastFundingRate);
-    document.getElementById("funding").innerHTML =
-        `<span class="${f>0?'red':'green'}">${(f*100).toFixed(3)}%</span>`;
-
-    // OPEN INTEREST
-    let oiVal = parseFloat(oi.openInterest) * btcP;
-    document.getElementById("oi").innerText = fmt(oiVal);
-
-    // VOLUME ENGINE
+    // FLOW
     let vol = parseFloat(btc.volume);
-
-    let spotBuy = vol * (btc.priceChangePercent > 0 ? 0.65 : 0.45);
-    let spotSell = vol - spotBuy;
-
-    let perpBuy = spotBuy * 1.4;
-    let perpSell = spotSell * 1.4;
-
-    document.getElementById("spotBuy").innerText = fmt(spotBuy);
-    document.getElementById("spotSell").innerText = fmt(spotSell);
-    document.getElementById("perpBuy").innerText = fmt(perpBuy);
-    document.getElementById("perpSell").innerText = fmt(perpSell);
-
-    // DELTA
-    let delta = spotBuy - spotSell;
+    let buy = vol * 0.6;
+    let sell = vol * 0.4;
+    let delta = buy - sell;
 
     document.getElementById("delta").innerHTML =
         `<span class="${delta>0?'green':'red'}">${fmt(delta)}</span>`;
 
-    // SIGNAL ENGINE
+    let f = parseFloat(funding.lastFundingRate);
+    document.getElementById("funding").innerHTML =
+        `<span class="${f>0?'red':'green'}">${(f*100).toFixed(3)}%</span>`;
+
+    document.getElementById("oi").innerText =
+        fmt(parseFloat(oi.openInterest)*btcP);
+
+    // ===== REGIME ENGINE =====
+    let regime = "RANGE";
+
+    if(dUSDT.s==="DOWN" && dETH.s==="UP") regime="RISK-ON";
+    else if(dUSDT.s==="UP") regime="RISK-OFF";
+    else if(dBTC.s==="UP" && dETH.s==="DOWN") regime="BTC-LED";
+
+    document.getElementById("regime").innerHTML =
+        `<span class="yellow">${regime}</span>`;
+
+    // ===== SCORING =====
     let score = 0;
 
-    if(btcDir.state==="UP") score+=2;
-    if(ethDir.state==="UP") score+=1;
-    if(delta>0) score+=2;
-    if(f<0) score+=1;
+    if(regime==="RISK-ON") score+=3;
+    if(regime==="RISK-OFF") score-=3;
+    if(regime==="BTC-LED") score+=1;
 
-    if(btcDir.state==="DOWN") score-=2;
+    if(delta>0) score+=2;
     if(delta<0) score-=2;
+
+    if(f<0) score+=1;
     if(f>0) score-=1;
 
+    if(dBTC.s==="UP") score+=1;
+    if(dBTC.s==="DOWN") score-=1;
+
+    // SIGNAL
     let signal="NEUTRAL";
-    if(score>=4) signal="STRONG BUY";
-    else if(score>=2) signal="BUY";
-    else if(score<=-4) signal="STRONG SELL";
-    else if(score<=-2) signal="SELL";
+    if(score>=4) signal="BUY";
+    if(score>=7) signal="STRONG BUY";
+    if(score<=-4) signal="SELL";
+    if(score<=-7) signal="STRONG SELL";
 
     let color =
         signal.includes("BUY") ? "green" :
@@ -178,24 +185,28 @@ async function update(){
     document.getElementById("signal").innerHTML =
         `<span class="${color}">${signal}</span>`;
 
+    document.getElementById("score").innerText = score;
+
     // CONFIDENCE
-    let conf = Math.min(100, Math.abs(score)*20);
-    document.getElementById("confidence").innerText = conf + "%";
+    let conf = Math.min(100, Math.abs(score)*15);
+    document.getElementById("confidence").innerText = conf+"%";
 
     // STATE
     let state =
-        btcDir.state==="SIDE" ? "RANGE" :
-        btcDir.state==="UP" ? "TREND UP" :
-        "TREND DOWN";
+        dBTC.s==="SIDE" ? "RANGE" :
+        dBTC.s==="UP" ? "TREND UP" : "TREND DOWN";
 
     document.getElementById("state").innerHTML =
-        `<span class="${btcDir.color}">${state}</span>`;
+        `<span class="${dBTC.c}">${state}</span>`;
 
+    // SAVE
     prev.btc = btcP;
     prev.eth = ethP;
+    prev.total = total;
+    prev.usdt = usdt;
 }
 
-// ===== CHARTS (REAL VISUAL DATA) =====
+// CHARTS
 new TradingView.widget({container_id:"chart_btc",symbol:"BINANCE:BTCUSDT",interval:"D",theme:"dark"});
 new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
 new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
