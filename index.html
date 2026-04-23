@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V22 INSTITUTIONAL FLOW ENGINE</title>
+<title>⚡ V23 INSTITUTIONAL FLOW ENGINE</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
@@ -24,7 +24,7 @@ body{
 
 .grid{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(5,1fr);
     gap:10px;
     padding:10px;
 }
@@ -41,20 +41,20 @@ body{
 .green{color:#00ff9c;}
 .red{color:#ff4d4d;}
 .yellow{color:#ffd700;}
-
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V22 — INSTITUTIONAL FLOW ENGINE</div>
+<div class="header">⚡ V23 — ANCHORED VWAP FLOW ENGINE</div>
 
 <!-- PRICE -->
 <div class="grid">
-<div class="box">BTC<br><span id="btc" class="big">--</span></div>
-<div class="box">ETHBTC<br><span id="ethbtc" class="big">--</span></div>
-<div class="box">Funding<br><span id="funding" class="big">--</span></div>
-<div class="box">Open Interest<br><span id="oi" class="big">--</span></div>
+<div class="box">BTC<br><span id="btc" class="big"></span></div>
+<div class="box">ETHBTC<br><span id="ethbtc" class="big"></span></div>
+<div class="box">Funding<br><span id="funding" class="big"></span></div>
+<div class="box">Open Interest<br><span id="oi" class="big"></span></div>
+<div class="box">VWAP<br><span id="vwap" class="big"></span></div>
 </div>
 
 <!-- FLOW -->
@@ -63,12 +63,12 @@ body{
 <div class="box">Spot Sell<br><span id="spotSell"></span></div>
 <div class="box">Perp Buy<br><span id="perpBuy"></span></div>
 <div class="box">Perp Sell<br><span id="perpSell"></span></div>
+<div class="box">Delta<br><span id="delta"></span></div>
 </div>
 
 <!-- ENGINE -->
 <div class="grid">
-<div class="box">Delta<br><span id="delta"></span></div>
-<div class="box">Market Signal<br><span id="signal"></span></div>
+<div class="box">Signal<br><span id="signal"></span></div>
 <div class="box">Confidence<br><span id="confidence"></span></div>
 <div class="box">Market State<br><span id="state"></span></div>
 </div>
@@ -99,12 +99,28 @@ function dir(curr, prev){
     return {a:"↔️",c:"yellow",d:"SIDE"};
 }
 
+// ===== VWAP ENGINE =====
+let cumPV = 0;
+let cumV = 0;
+let lastDay = null;
+
+function updateVWAP(price, volume){
+    let now = new Date().getUTCDate();
+    if(lastDay !== now){
+        cumPV = 0;
+        cumV = 0;
+        lastDay = now;
+    }
+    cumPV += price * volume;
+    cumV += volume;
+    return cumPV / cumV;
+}
+
 let prev = {};
 
 // ===== MAIN ENGINE =====
 async function update(){
 
-    // ===== DATA =====
     let btc = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
     let eth = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHBTC").then(r=>r.json());
     let oi = await fetch("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT").then(r=>r.json());
@@ -116,21 +132,30 @@ async function update(){
     let btcDir = dir(btcP, prev.btc);
     let ethDir = dir(ethP, prev.eth);
 
-    // ===== DISPLAY PRICE =====
+    // ===== VWAP =====
+    let volume = parseFloat(btc.volume);
+    let vwap = updateVWAP(btcP, volume);
+
+    let dev = Math.abs(btcP - vwap);
+    let upper = vwap + dev;
+    let lower = vwap - dev;
+
+    // ===== DISPLAY =====
     document.getElementById("btc").innerHTML =
         `<span class="${btcDir.c}">${btcP.toFixed(0)} ${btcDir.a}</span>`;
 
     document.getElementById("ethbtc").innerHTML =
         `<span class="${ethDir.c}">${ethP.toFixed(5)} ${ethDir.a}</span>`;
 
-    // ===== FUNDING =====
     let f = parseFloat(funding.lastFundingRate);
     document.getElementById("funding").innerHTML =
         `<span class="${f>0?'red':'green'}">${(f*100).toFixed(3)}%</span>`;
 
-    // ===== OI =====
     let oiVal = parseFloat(oi.openInterest);
     document.getElementById("oi").innerText = fmt(oiVal * btcP);
+
+    document.getElementById("vwap").innerHTML =
+        `<span class="${btcP > vwap ? 'green':'red'}">${vwap.toFixed(0)}</span>`;
 
     // ===== FLOW =====
     let vol = parseFloat(btc.volume);
@@ -147,26 +172,25 @@ async function update(){
     document.getElementById("perpSell").innerText = fmt(perpSell);
 
     let delta = spotBuy - spotSell;
-
     document.getElementById("delta").innerHTML =
         `<span class="${delta>0?'green':'red'}">${fmt(delta)}</span>`;
 
-    // ===== SIGNAL ENGINE =====
-    let score = 0;
-
-    if(btcDir.d==="UP") score+=2;
-    if(ethDir.d==="UP") score+=1;
-    if(delta>0) score+=2;
-    if(f<0) score+=1;
-    if(btcDir.d==="DOWN") score-=2;
-    if(delta<0) score-=2;
-    if(f>0) score-=1;
-
+    // ===== V23 SIGNAL =====
     let signal="NEUTRAL";
-    if(score>=4) signal="STRONG BUY";
-    else if(score>=2) signal="BUY";
-    else if(score<=-4) signal="STRONG SELL";
-    else if(score<=-2) signal="SELL";
+    let confidence=40;
+
+    if(btcP > vwap && delta > 0 && btcDir.d==="UP"){
+        signal="STRONG BUY"; confidence=90;
+    }
+    else if(btcP > vwap && delta > 0){
+        signal="BUY"; confidence=70;
+    }
+    else if(btcP < vwap && delta < 0 && btcDir.d==="DOWN"){
+        signal="STRONG SELL"; confidence=90;
+    }
+    else if(btcP < vwap && delta < 0){
+        signal="SELL"; confidence=70;
+    }
 
     let color =
         signal.includes("BUY") ? "green" :
@@ -175,15 +199,15 @@ async function update(){
     document.getElementById("signal").innerHTML =
         `<span class="${color}">${signal}</span>`;
 
-    // ===== CONFIDENCE =====
-    let conf = Math.min(100, Math.abs(score)*20);
-    document.getElementById("confidence").innerText = conf + "%";
+    document.getElementById("confidence").innerText = confidence + "%";
 
     // ===== STATE =====
     let state =
-        btcDir.d==="SIDE" ? "RANGE" :
-        btcDir.d==="UP" ? "TREND UP" :
-        "TREND DOWN";
+        btcP > upper ? "OVERBOUGHT" :
+        btcP < lower ? "OVERSOLD" :
+        btcP > vwap ? "BULLISH VALUE" :
+        btcP < vwap ? "BEARISH VALUE" :
+        "BALANCED";
 
     document.getElementById("state").innerHTML =
         `<span class="${btcDir.c}">${state}</span>`;
