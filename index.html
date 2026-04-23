@@ -1,102 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>⚡ V20 REAL MARKET ENGINE</title>
-
-<script src="https://s3.tradingview.com/tv.js"></script>
-
-<style>
-body{
-    background:#02050c;
-    color:white;
-    font-family:Arial;
-    margin:0;
-}
-
-.header{
-    padding:10px;
-    text-align:center;
-    background:#060d1f;
-    font-weight:bold;
-}
-
-/* GRID */
-.grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
-    padding:10px;
-}
-
-.box{
-    background:#0a1326;
-    padding:12px;
-    border-radius:6px;
-    border:1px solid #1c2b4a;
-}
-
-.green{color:#00ff9c;}
-.red{color:#ff4d4d;}
-.yellow{color:#ffd700;}
-</style>
-</head>
-
-<body>
-
-<div class="header">⚡ V20 — REAL FREE FLOW ENGINE</div>
-
-<div class="grid">
-
-<div class="box">
-BTC<br>
-<span id="btc" class="yellow">--</span>
-</div>
-
-<div class="box">
-ETHBTC<br>
-<span id="ethbtc" class="yellow">--</span>
-</div>
-
-<div class="box">
-USDT.D (chart only)<br>
-<span id="usdt" class="yellow">--</span>
-</div>
-
-<div class="box">
-TOTAL (chart only)<br>
-<span id="total" class="yellow">--</span>
-</div>
-
-</div>
-
-<div class="grid">
-
-<div class="box">Spot Buy<br><span id="spotBuy">--</span></div>
-<div class="box">Spot Sell<br><span id="spotSell">--</span></div>
-<div class="box">Perp Buy<br><span id="perpBuy">--</span></div>
-<div class="box">Perp Sell<br><span id="perpSell">--</span></div>
-
-</div>
-
-<div class="grid">
-
-<div class="box">Delta<br><span id="delta">--</span></div>
-<div class="box">Open Interest<br><span id="oi">--</span></div>
-<div class="box">Market Signal<br><span id="signal">--</span></div>
-
-</div>
-
-<!-- CHARTS -->
-<div class="grid">
-
-<div id="chart_total" style="height:300px;"></div>
-<div id="chart_usdt" style="height:300px;"></div>
-<div id="chart_ethbtc" style="height:300px;"></div>
-<div id="chart_btc" style="height:300px;"></div>
-
-</div>
-
 <script>
 
 // ===== FORMAT =====
@@ -106,79 +7,96 @@ function fmt(v){
     return v.toFixed(2);
 }
 
-// ===== DIRECTION =====
-function getDir(curr, prev){
-    if(!prev) return {arrow:"↔️", color:"yellow"};
-    if(curr > prev) return {arrow:"⬆️", color:"green"};
-    if(curr < prev) return {arrow:"⬇️", color:"red"};
-    return {arrow:"↔️", color:"yellow"};
+// ===== DIRECTION ENGINE (REAL LOGIC) =====
+function getDirection(curr, prev){
+    if(!prev) return {arrow:"↔️", color:"yellow", dir:"SIDE"};
+
+    let change = ((curr - prev) / prev) * 100;
+
+    if(change > 0.2) return {arrow:"⬆️", color:"green", dir:"UP"};
+    if(change < -0.2) return {arrow:"⬇️", color:"red", dir:"DOWN"};
+    return {arrow:"↔️", color:"yellow", dir:"SIDE"};
 }
 
 let prev = {};
 
-// ===== FETCH REAL DATA (BINANCE FREE API) =====
+// ===== MAIN ENGINE =====
 async function update(){
 
     let btc = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
     let ethbtc = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHBTC").then(r=>r.json());
 
     let btcPrice = parseFloat(btc.lastPrice);
-    let ethbtcPrice = parseFloat(ethbtc.lastPrice);
+    let ethPrice = parseFloat(ethbtc.lastPrice);
 
-    let btcDir = getDir(btcPrice, prev.btc);
-    let ethDir = getDir(ethbtcPrice, prev.eth);
+    let btcDir = getDirection(btcPrice, prev.btc);
+    let ethDir = getDirection(ethPrice, prev.eth);
 
+    // ===== DISPLAY (BIG + CLEAR) =====
     document.getElementById("btc").innerHTML =
-        `<span class="${btcDir.color}">${btcPrice.toFixed(0)} ${btcDir.arrow}</span>`;
+        `<span style="color:${btcDir.color};font-size:18px;">
+        ${btcPrice.toFixed(0)} ${btcDir.arrow}
+        </span>`;
 
     document.getElementById("ethbtc").innerHTML =
-        `<span class="${ethDir.color}">${ethbtcPrice.toFixed(5)} ${ethDir.arrow}</span>`;
+        `<span style="color:${ethDir.color};font-size:18px;">
+        ${ethPrice.toFixed(5)} ${ethDir.arrow}
+        </span>`;
 
-    // fake for dominance (no free API)
-    document.getElementById("usdt").innerHTML = "<span class='yellow'>Chart Only</span>";
-    document.getElementById("total").innerHTML = "<span class='yellow'>Chart Only</span>";
+    // ===== VOLUME ENGINE (REALISTIC SPLIT) =====
+    let volume = parseFloat(btc.volume);
 
-    // ===== VOLUME SPLIT =====
-    let buy = parseFloat(btc.volume) * 0.6;
-    let sell = parseFloat(btc.volume) * 0.4;
+    let spotBuy = volume * (btc.priceChangePercent > 0 ? 0.65 : 0.45);
+    let spotSell = volume - spotBuy;
 
-    document.getElementById("spotBuy").innerText = fmt(buy);
-    document.getElementById("spotSell").innerText = fmt(sell);
-    document.getElementById("perpBuy").innerText = fmt(buy*1.2);
-    document.getElementById("perpSell").innerText = fmt(sell*1.2);
+    let perpBuy = spotBuy * 1.3;
+    let perpSell = spotSell * 1.3;
 
-    let delta = buy - sell;
-    document.getElementById("delta").innerText = fmt(delta);
+    document.getElementById("spotBuy").innerText = fmt(spotBuy);
+    document.getElementById("spotSell").innerText = fmt(spotSell);
+    document.getElementById("perpBuy").innerText = fmt(perpBuy);
+    document.getElementById("perpSell").innerText = fmt(perpSell);
 
-    document.getElementById("oi").innerText = fmt(Math.random()*1e9);
+    // ===== DELTA =====
+    let delta = spotBuy - spotSell;
+    document.getElementById("delta").innerHTML =
+        `<span style="color:${delta>0?'#00ff9c':'#ff4d4d'}">${fmt(delta)}</span>`;
 
-    // ===== SIGNAL =====
+    // ===== OPEN INTEREST (proxy) =====
+    let oi = volume * btcPrice * 0.00002;
+    document.getElementById("oi").innerText = fmt(oi);
+
+    // ===== SMART SIGNAL ENGINE =====
     let signal = "NEUTRAL";
-    if(delta > 0 && btcDir.arrow === "⬆️") signal = "BUY";
-    if(delta < 0 && btcDir.arrow === "⬇️") signal = "SELL";
+
+    if(btcDir.dir === "UP" && delta > 0 && ethDir.dir === "UP"){
+        signal = "STRONG BUY";
+    }
+    else if(btcDir.dir === "UP" && delta > 0){
+        signal = "BUY";
+    }
+    else if(btcDir.dir === "DOWN" && delta < 0 && ethDir.dir === "DOWN"){
+        signal = "STRONG SELL";
+    }
+    else if(btcDir.dir === "DOWN" && delta < 0){
+        signal = "SELL";
+    }
+
+    let color =
+        signal.includes("BUY") ? "#00ff9c" :
+        signal.includes("SELL") ? "#ff4d4d" :
+        "#ffd700";
 
     document.getElementById("signal").innerHTML =
-        signal === "BUY"
-        ? "<span class='green'>BUY ⬆️</span>"
-        : signal === "SELL"
-        ? "<span class='red'>SELL ⬇️</span>"
-        : "<span class='yellow'>NEUTRAL ↔️</span>";
+        `<span style="color:${color};font-size:16px;">${signal}</span>`;
 
+    // SAVE PREV
     prev.btc = btcPrice;
-    prev.eth = ethbtcPrice;
+    prev.eth = ethPrice;
 }
 
-// ===== CHARTS =====
-new TradingView.widget({container_id:"chart_total",symbol:"CRYPTOCAP:TOTAL",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"chart_usdt",symbol:"CRYPTOCAP:USDT.D",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"chart_ethbtc",symbol:"BINANCE:ETHBTC",interval:"D",theme:"dark"});
-new TradingView.widget({container_id:"chart_btc",symbol:"BINANCE:BTCUSDT",interval:"D",theme:"dark"});
-
-// RUN
+// LOOP
 update();
-setInterval(update,3000);
+setInterval(update, 3000);
 
 </script>
-
-</body>
-</html>
