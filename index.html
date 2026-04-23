@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <title>⚡ V25 Composite Flow Engine</title>
 
+<!-- CHART ENGINE (FIXED) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
 
 <style>
@@ -23,13 +26,13 @@ body{
 }
 
 .controls{
-    padding:10px;
     text-align:center;
+    padding:10px;
 }
 
 button{
     margin:5px;
-    padding:6px 10px;
+    padding:6px 12px;
     background:#0a1326;
     color:#fff;
     border:1px solid #1c2b4a;
@@ -45,15 +48,14 @@ canvas{
 
 <body>
 
-<div class="header">⚡ V25 — COMPOSITE INSTITUTIONAL CANDLE (NO TV)</div>
+<div class="header">⚡ V25 — COMPOSITE INSTITUTIONAL CANDLE</div>
 
 <div class="controls">
-    Timeframe:
-    <button onclick="loadData('1')">1m</button>
-    <button onclick="loadData('5')">5m</button>
-    <button onclick="loadData('15')">15m</button>
-    <button onclick="loadData('60')">1H</button>
-    <button onclick="loadData('D')">1D</button>
+    <button onclick="loadData('1m')">1m</button>
+    <button onclick="loadData('5m')">5m</button>
+    <button onclick="loadData('15m')">15m</button>
+    <button onclick="loadData('1h')">1H</button>
+    <button onclick="loadData('1d')">1D</button>
 </div>
 
 <canvas id="chart"></canvas>
@@ -62,28 +64,29 @@ canvas{
 
 let chart;
 
-// ===== FETCH BINANCE =====
+// ================= FETCH =================
 async function getKlines(symbol, interval){
     let url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=200`;
     let data = await fetch(url).then(r=>r.json());
+
     return data.map(d => ({
         time: d[0],
         close: parseFloat(d[4])
     }));
 }
 
-// ===== NORMALIZE =====
+// ================= NORMALIZE =================
 function norm(arr){
     let avg = arr.reduce((a,b)=>a+b)/arr.length;
-    let std = Math.sqrt(arr.map(x=>Math.pow(x-avg,2)).reduce((a,b)=>a+b)/arr.length);
-    return arr.map(x => (x-avg)/(std||1));
+    let std = Math.sqrt(arr.map(x=>(x-avg)**2).reduce((a,b)=>a+b)/arr.length);
+    return arr.map(x => (x-avg)/(std || 1));
 }
 
-// ===== BUILD COMPOSITE =====
-function buildComposite(btc, ethbtc){
+// ================= BUILD ENGINE =================
+function buildComposite(btc, eth){
 
     let btcArr = btc.map(x=>x.close);
-    let ethArr = ethbtc.map(x=>x.close);
+    let ethArr = eth.map(x=>x.close);
 
     let nBTC = norm(btcArr);
     let nETH = norm(ethArr);
@@ -92,10 +95,10 @@ function buildComposite(btc, ethbtc){
 
     for(let i=1;i<btc.length;i++){
 
-        // Simulated macro proxies
-        let total = nBTC[i];       // proxy
-        let btcDom = nBTC[i];
-        let usdtDom = -nBTC[i];    // inverse proxy
+        // PROXY MACRO (FREE DATA LIMITATION)
+        let total   = nBTC[i];
+        let btcDom  = nBTC[i];
+        let usdtDom = -nBTC[i];
 
         let composite =
             (nETH[i]*0.45) +
@@ -110,7 +113,7 @@ function buildComposite(btc, ethbtc){
             (-nBTC[i-1]*0.10);
 
         candles.push({
-            x: btc[i].time,
+            x: new Date(btc[i].time),
             o: prev,
             h: Math.max(prev, composite),
             l: Math.min(prev, composite),
@@ -121,54 +124,65 @@ function buildComposite(btc, ethbtc){
     return candles;
 }
 
-// ===== DRAW =====
+// ================= DRAW =================
 function draw(data){
 
     if(chart) chart.destroy();
 
-    const ctx = document.getElementById('chart');
+    const ctx = document.getElementById('chart').getContext('2d');
 
     chart = new Chart(ctx, {
         type: 'candlestick',
         data: {
             datasets: [{
-                label: 'Composite Market',
+                label: 'Composite',
                 data: data,
-                borderColor: '#00ff9c'
+                color: {
+                    up: '#00ff9c',
+                    down: '#ff4d4d',
+                    unchanged: '#ffd700'
+                }
             }]
         },
         options: {
+            responsive: true,
             plugins:{
                 legend:{display:false}
             },
             scales:{
-                x:{ticks:{color:'#aaa'}},
-                y:{ticks:{color:'#aaa'}}
+                x:{
+                    type:'time',
+                    time:{unit:'day'},
+                    ticks:{color:'#aaa'}
+                },
+                y:{
+                    ticks:{color:'#aaa'}
+                }
             }
         }
     });
 }
 
-// ===== LOAD ENGINE =====
-async function loadData(tf){
+// ================= LOAD =================
+async function loadData(interval){
 
-    let interval =
-        tf==="1" ? "1m" :
-        tf==="5" ? "5m" :
-        tf==="15"? "15m":
-        tf==="60"? "1h":
-        "1d";
+    try{
 
-    let btc = await getKlines("BTCUSDT", interval);
-    let eth = await getKlines("ETHBTC", interval);
+        let btc = await getKlines("BTCUSDT", interval);
+        let eth = await getKlines("ETHBTC", interval);
 
-    let composite = buildComposite(btc, eth);
+        let composite = buildComposite(btc, eth);
 
-    draw(composite);
+        draw(composite);
+
+    }catch(e){
+        console.error("Error loading data:", e);
+        alert("Data failed to load (check internet or Binance API)");
+    }
 }
 
 // INIT
-loadData("D");
+loadData("1d");
 
 </script>
 
