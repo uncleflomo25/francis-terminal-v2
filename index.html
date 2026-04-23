@@ -2,192 +2,207 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>⚡ V25 Composite Flow Engine</title>
+<title>⚡ V26 — REAL FLOW ENGINE (NO TV)</title>
 
-<!-- REQUIRED LIBS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/luxon"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
 
 <style>
 body{
-    background:#02050c;
-    color:#fff;
-    font-family:Arial;
     margin:0;
+    background:#02050c;
+    color:white;
+    font-family:Arial;
 }
 
 .header{
     text-align:center;
-    padding:12px;
-    font-size:18px;
-    background:#060d1f;
+    padding:10px;
+    background:#06122b;
+    font-weight:bold;
 }
 
-.controls{
-    text-align:center;
+.grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
     padding:10px;
 }
 
-button{
-    margin:5px;
-    padding:6px 12px;
+.box{
     background:#0a1326;
-    color:#fff;
+    padding:12px;
+    border-radius:6px;
     border:1px solid #1c2b4a;
-    cursor:pointer;
 }
+
+.big{font-size:20px;font-weight:bold;}
+
+.green{color:#00ff9c;}
+.red{color:#ff4d4d;}
+.yellow{color:#ffd700;}
 
 canvas{
     width:100% !important;
-    height:600px !important;
+    height:500px !important;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">⚡ V25 — COMPOSITE INSTITUTIONAL CANDLE</div>
+<div class="header">⚡ V26 — REAL INSTITUTIONAL ENGINE</div>
 
-<div class="controls">
-    <button onclick="loadData('1m')">1m</button>
-    <button onclick="loadData('5m')">5m</button>
-    <button onclick="loadData('15m')">15m</button>
-    <button onclick="loadData('1h')">1H</button>
-    <button onclick="loadData('1d')">1D</button>
+<div class="grid">
+<div class="box">BTC<br><span id="btc" class="big">--</span></div>
+<div class="box">ETHBTC<br><span id="ethbtc" class="big">--</span></div>
+<div class="box">BTC.D (proxy)<br><span id="btcd" class="big">--</span></div>
+<div class="box">USDT.D (proxy)<br><span id="usdt" class="big">--</span></div>
+</div>
+
+<div class="grid">
+<div class="box">TOTAL (proxy)<br><span id="total"></span></div>
+<div class="box">Signal<br><span id="signal"></span></div>
+<div class="box">State<br><span id="state"></span></div>
+<div class="box">Confidence<br><span id="conf"></span></div>
 </div>
 
 <canvas id="chart"></canvas>
 
 <script>
 
-let chart;
-
-// ================= FETCH =================
-async function getKlines(symbol, interval){
-    let url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=200`;
-    let data = await fetch(url).then(r=>r.json());
-
-    return data.map(d => ({
-        time: d[0],
-        close: parseFloat(d[4])
-    }));
+//=====================
+// HELPERS
+//=====================
+function dir(curr, prev){
+    if(!prev) return {a:"↔️",c:"yellow",d:0};
+    let ch = (curr-prev)/prev;
+    if(ch>0.002) return {a:"⬆️",c:"green",d:1};
+    if(ch<-0.002) return {a:"⬇️",c:"red",d:-1};
+    return {a:"↔️",c:"yellow",d:0};
 }
 
-// ================= NORMALIZE =================
-function norm(arr){
-    let avg = arr.reduce((a,b)=>a+b)/arr.length;
-    let std = Math.sqrt(arr.map(x=>(x-avg)**2).reduce((a,b)=>a+b)/arr.length);
-    return arr.map(x => (x-avg)/(std || 1));
-}
+//=====================
+// CHART
+//=====================
+let ctx = document.getElementById('chart').getContext('2d');
 
-// ================= BUILD COMPOSITE =================
-function buildComposite(btc, eth){
-
-    let btcArr = btc.map(x=>x.close);
-    let ethArr = eth.map(x=>x.close);
-
-    let nBTC = norm(btcArr);
-    let nETH = norm(ethArr);
-
-    let candles = [];
-
-    for(let i=1;i<btc.length;i++){
-
-        let total   = nBTC[i];
-        let btcDom  = nBTC[i];
-        let usdtDom = -nBTC[i];
-
-        let composite =
-            (nETH[i]*0.45) +
-            (total*0.25) -
-            (btcDom*0.20) -
-            (usdtDom*0.10);
-
-        let prev =
-            (nETH[i-1]*0.45) +
-            (nBTC[i-1]*0.25) -
-            (nBTC[i-1]*0.20) -
-            (-nBTC[i-1]*0.10);
-
-        candles.push({
-            x: new Date(btc[i].time),
-            o: prev,
-            h: Math.max(prev, composite),
-            l: Math.min(prev, composite),
-            c: composite
-        });
-    }
-
-    // 🔥 CRITICAL FIXES
-    candles.sort((a,b)=>a.x - b.x);
-    candles = candles.slice(-150);
-
-    return candles;
-}
-
-// ================= DRAW =================
-function draw(data){
-
-    if(chart) chart.destroy();
-
-    const ctx = document.getElementById('chart').getContext('2d');
-
-    chart = new Chart(ctx, {
-        type: 'candlestick',
-        data: {
-            datasets: [{
-                label: 'Composite',
-                data: data,
-                parsing: false,
-                color: {
-                    up: '#00ff9c',
-                    down: '#ff4d4d',
-                    unchanged: '#ffd700'
-                }
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins:{
-                legend:{display:false}
-            },
-            scales:{
-                x:{
-                    type:'time',
-                    distribution:'series',
-                    ticks:{color:'#aaa'}
-                },
-                y:{
-                    ticks:{color:'#aaa'}
-                }
-            }
+let chart = new Chart(ctx,{
+    type:'line',
+    data:{
+        labels:[],
+        datasets:[{
+            label:'Composite Flow',
+            data:[],
+            borderWidth:3,
+            tension:0.3
+        }]
+    },
+    options:{
+        responsive:true,
+        plugins:{legend:{display:false}},
+        scales:{
+            x:{display:false},
+            y:{grid:{color:"#111"}}
         }
-    });
-}
-
-// ================= LOAD =================
-async function loadData(interval){
-
-    try{
-
-        let btc = await getKlines("BTCUSDT", interval);
-        let eth = await getKlines("ETHBTC", interval);
-
-        let composite = buildComposite(btc, eth);
-
-        draw(composite);
-
-    }catch(e){
-        console.error(e);
-        alert("Error loading data");
     }
+});
+
+//=====================
+// ENGINE
+//=====================
+let prev = {};
+let compArr = [];
+
+async function update(){
+
+    // REAL DATA
+    let btc = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT").then(r=>r.json());
+    let eth = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json());
+
+    let btcP = parseFloat(btc.price);
+    let ethP = parseFloat(eth.price);
+
+    // DIRECTION
+    let d1 = dir(btcP, prev.btc);
+    let d2 = dir(ethP, prev.eth);
+
+    // PROXIES (IMPORTANT)
+    let btc_d = 50 + (d1.d * 2);     // fake BTC dominance movement
+    let usdt_d = 5 - (d1.d * 1.5);   // inverse risk
+    let total = btcP * 19;           // scaled proxy
+
+    // DISPLAY
+    document.getElementById("btc").innerHTML =
+        `<span class="${d1.c}">${btcP.toFixed(0)} ${d1.a}</span>`;
+
+    document.getElementById("ethbtc").innerHTML =
+        `<span class="${d2.c}">${ethP.toFixed(5)} ${d2.a}</span>`;
+
+    document.getElementById("btcd").innerHTML =
+        `<span class="${d1.c}">${btc_d.toFixed(2)}%</span>`;
+
+    document.getElementById("usdt").innerHTML =
+        `<span class="${d1.c}">${usdt_d.toFixed(2)}%</span>`;
+
+    document.getElementById("total").innerText =
+        (total/1e6).toFixed(2)+"B";
+
+    //=====================
+    // COMPOSITE ENGINE
+    //=====================
+    let comp =
+        (d2.d * 0.4) +
+        (d1.d * 0.3) -
+        (btc_d * 0.002) -
+        (usdt_d * 0.002);
+
+    compArr.push(comp);
+    if(compArr.length > 100) compArr.shift();
+
+    //=====================
+    // CHART UPDATE
+    //=====================
+    chart.data.labels.push("");
+    chart.data.datasets[0].data = compArr;
+
+    // COLOR
+    chart.data.datasets[0].borderColor =
+        comp > 0 ? "#00ff9c" :
+        comp < 0 ? "#ff4d4d" : "#ffd700";
+
+    chart.update();
+
+    //=====================
+    // SIGNAL
+    //=====================
+    let signal="NEUTRAL";
+    if(comp > 0.5) signal="STRONG BUY";
+    else if(comp > 0.1) signal="BUY";
+    else if(comp < -0.5) signal="STRONG SELL";
+    else if(comp < -0.1) signal="SELL";
+
+    let color =
+        signal.includes("BUY") ? "green" :
+        signal.includes("SELL") ? "red" : "yellow";
+
+    document.getElementById("signal").innerHTML =
+        `<span class="${color}">${signal}</span>`;
+
+    document.getElementById("state").innerHTML =
+        `<span class="${d1.c}">
+        ${d1.d==1?"TREND UP":d1.d==-1?"TREND DOWN":"RANGE"}
+        </span>`;
+
+    document.getElementById("conf").innerText =
+        Math.min(100, Math.abs(comp)*100).toFixed(0)+"%";
+
+    prev.btc = btcP;
+    prev.eth = ethP;
 }
 
-// INIT
-loadData("1d");
+// LOOP
+update();
+setInterval(update,3000);
 
 </script>
 
