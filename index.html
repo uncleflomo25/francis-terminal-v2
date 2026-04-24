@@ -3,98 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>FRANCIS TERMINAL V5 FINAL</title>
+<title>FRANCIS TERMINAL V6</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{
-background:#0f1722;
-font-family:Arial,Helvetica,sans-serif;
-color:#fff;
-overflow:hidden;
-}
+body{background:#0f1722;font-family:Arial;color:#fff;overflow:hidden}
 
-/* TOPBAR */
 .topbar{
-height:52px;
-background:#131722;
-border-bottom:1px solid #222b39;
-display:flex;
-align-items:center;
-gap:8px;
-padding:0 12px;
+height:52px;background:#131722;border-bottom:1px solid #222b39;
+display:flex;align-items:center;gap:8px;padding:0 12px;
 }
 .logo{font-weight:700}
-.btn{
-background:#1e222d;
-padding:6px 10px;
-border-radius:6px;
-cursor:pointer;
-font-size:12px;
-color:#cfd6e4;
-}
+.btn{background:#1e222d;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px}
 .btn:hover{background:#2a3140}
 
-/* LAYOUT */
-.wrap{
-display:grid;
-grid-template-columns:1fr 280px;
-height:calc(100vh - 52px);
-}
+.wrap{display:grid;grid-template-columns:1fr 280px;height:calc(100vh - 52px)}
 .left{position:relative}
-.right{
-background:#0d1520;
-border-left:1px solid #1f2937;
-padding:10px;
-display:grid;
-gap:10px;
-}
+.right{background:#0d1520;border-left:1px solid #1f2937;padding:10px;display:grid;gap:10px}
 
-.card{
-background:#111827;
-border:1px solid #1f2937;
-border-radius:10px;
-padding:10px;
-}
+.card{background:#111827;border:1px solid #1f2937;border-radius:10px;padding:10px}
 .lab{font-size:11px;color:#8ea2bd}
-.val{font-size:22px;font-weight:700}
+.val{font-size:20px;font-weight:700}
 
-/* CHART */
 canvas{position:absolute;inset:0}
-.watermark{
-position:absolute;
-top:18px;
-left:18px;
-font-size:24px;
-color:rgba(255,255,255,.05);
-}
 
 .status{
-position:absolute;
-bottom:10px;
-left:12px;
-font-size:13px;
-display:flex;
-gap:15px;
-color:#94a3b8;
-flex-wrap:wrap;
+position:absolute;bottom:10px;left:12px;font-size:13px;
+display:flex;gap:15px;color:#94a3b8;flex-wrap:wrap;
 }
 
 .green{color:#26a69a}
 .red{color:#ef5350}
 .gold{color:#f0b90b}
-
-@media(max-width:900px){
-.wrap{grid-template-columns:1fr}
-.right{display:none}
-}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-<div class="logo">FRANCIS TERMINAL V5</div>
+<div class="logo">FRANCIS TERMINAL V6</div>
 <div class="btn" onclick="setTF('1m')">1m</div>
 <div class="btn" onclick="setTF('5m')">5m</div>
 <div class="btn" onclick="setTF('15m')">15m</div>
@@ -106,11 +53,11 @@ flex-wrap:wrap;
 
 <div class="left">
 <canvas id="chart"></canvas>
-<div class="watermark">REAL MARKET ENGINE</div>
 
 <div class="status">
 <div id="mode">--</div>
-<div id="clock"></div>
+<div id="regime">--</div>
+<div id="htf">--</div>
 <div id="price">--</div>
 </div>
 </div>
@@ -126,54 +73,23 @@ flex-wrap:wrap;
 </div>
 
 <script>
-const canvas=document.getElementById("chart");
-const ctx=canvas.getContext("2d");
+const ctx = document.getElementById("chart").getContext("2d");
 
-const elBTC=document.getElementById("btc");
-const elUSDT=document.getElementById("usdt");
-const elETHBTC=document.getElementById("ethbtc");
-const elETHD=document.getElementById("ethd");
-const elTOTAL=document.getElementById("total");
-const elMODE=document.getElementById("mode");
-const elCLOCK=document.getElementById("clock");
-const elPRICE=document.getElementById("price");
+const elMODE=mode, elREGIME=regime, elHTF=htf, elPRICE=price;
+const elBTC=btc, elUSDT=usdt, elETHBTC=ethbtc, elETHD=ethd, elTOTAL=total;
 
-/* STATE */
-let bars=[];
-let tf="1m";
-let signal=0;
-
-/* CLOCK */
-setInterval(()=>{
-elCLOCK.innerText=new Date().toLocaleTimeString();
-},1000);
-
-/* RESIZE */
-function resize(){
-canvas.width=window.innerWidth-280;
-canvas.height=window.innerHeight-52;
-draw();
-}
-window.addEventListener("resize",resize);
+let bars=[], tf="1m", signal=0, prevSignal=0, htfBias=0;
+let signals=[];
 
 /* FETCH PRICE */
-async function loadPrice(){
-try{
-let res=await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${tf}&limit=150`);
+async function loadPrice(interval){
+let res=await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=150`);
 let data=await res.json();
-
-bars=data.map(k=>({
-o:+k[1],
-h:+k[2],
-l:+k[3],
-c:+k[4]
-}));
-}catch{}
+return data.map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4]}));
 }
 
-/* FETCH MACRO */
+/* MACRO */
 async function loadMacro(){
-try{
 const [cg,bn]=await Promise.all([
 fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json()),
 fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json())
@@ -187,10 +103,13 @@ ethbtc:parseFloat(bn.price),
 total:cg.data.total_market_cap.usd/1e12
 };
 
-updatePanel(d);
-calcSignal(d);
+elBTC.innerText=d.btc.toFixed(2)+"%";
+elUSDT.innerText=d.usdt.toFixed(2)+"%";
+elETHBTC.innerText=d.ethbtc.toFixed(5);
+elETHD.innerText=d.ethd.toFixed(2)+"%";
+elTOTAL.innerText="$"+d.total.toFixed(2)+"T";
 
-}catch{}
+calcSignal(d);
 }
 
 /* SIGNAL ENGINE */
@@ -203,57 +122,74 @@ let score=
 (d.ethd*0.8)-
 (d.btc*0.35);
 
+prevSignal=signal;
 signal=(score-100)/20;
 
-let state="NEUTRAL";
+/* MOMENTUM */
+let momentum = bars.at(-1).c - bars.at(-5).c;
+
+/* STATE */
+let state="CHOP";
 let color="#f0b90b";
 
-if(signal>1.2){state="STRONG LONG";color="#26a69a";}
-else if(signal>0.5){state="LONG";color="#26a69a";}
-else if(signal<-1.2){state="STRONG SHORT";color="#ef5350";}
-else if(signal<-0.5){state="SHORT";color="#ef5350";}
+if(signal>1 && momentum>0){state="TREND LONG";color="#26a69a";}
+else if(signal>0.5){state="WEAK LONG";color="#26a69a";}
+else if(signal<-1 && momentum<0){state="TREND SHORT";color="#ef5350";}
+else if(signal<-0.5){state="WEAK SHORT";color="#ef5350";}
 
-/* RISK FILTER */
+/* RISK */
 if(d.usdt>9 || d.btc>60){
-state="NO TRADE";
+state="RISK OFF";
 color="#ef5350";
 }
 
 elMODE.innerText=state;
 elMODE.style.color=color;
+
+/* REGIME */
+if(Math.abs(momentum)<20) elREGIME.innerText="CHOP";
+else if(momentum>0) elREGIME.innerText="TRENDING BULL";
+else elREGIME.innerText="TRENDING BEAR";
+
+/* SIGNAL TRIGGERS */
+if(signal>1 && prevSignal<=1){
+signals.push({type:"buy",index:bars.length-1});
+}
+if(signal<-1 && prevSignal>=-1){
+signals.push({type:"sell",index:bars.length-1});
+}
 }
 
-/* PANEL */
-function updatePanel(d){
-elBTC.innerText=d.btc.toFixed(2)+"%";
-elUSDT.innerText=d.usdt.toFixed(2)+"%";
-elETHBTC.innerText=d.ethbtc.toFixed(5);
-elETHD.innerText=d.ethd.toFixed(2)+"%";
-elTOTAL.innerText="$"+d.total.toFixed(2)+"T";
+/* HTF */
+async function calcHTF(){
+let htfBars=await loadPrice("1h");
+let m = htfBars.at(-1).c - htfBars.at(-10).c;
+htfBias = m>0 ? 1 : -1;
+elHTF.innerText = htfBias>0 ? "HTF BULL" : "HTF BEAR";
 }
 
 /* DRAW */
 function draw(){
 
+let canvas=ctx.canvas;
+canvas.width=window.innerWidth-280;
+canvas.height=window.innerHeight-52;
+
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
-/* BG BIAS */
+/* BG */
 ctx.fillStyle = signal>0
 ? "rgba(38,166,154,0.05)"
 : "rgba(239,83,80,0.05)";
 ctx.fillRect(0,0,canvas.width,canvas.height);
 
-if(bars.length<2) return;
-
 let max=Math.max(...bars.map(b=>b.h));
 let min=Math.min(...bars.map(b=>b.l));
 let range=max-min || 1;
 
-let w=6;
-let x=30;
+let w=6,x=30;
 
-bars.forEach(b=>{
-
+bars.forEach((b,i)=>{
 let col=b.c>b.o ? "#26a69a" : "#ef5350";
 
 let yo=(max-b.o)/range*canvas.height;
@@ -270,42 +206,47 @@ ctx.stroke();
 ctx.fillStyle=col;
 ctx.fillRect(x-2,Math.min(yo,yc),4,Math.abs(yc-yo));
 
+/* SIGNAL ARROWS */
+let sig=signals.find(s=>s.index===i);
+if(sig){
+ctx.fillStyle=sig.type==="buy"?"#26a69a":"#ef5350";
+ctx.beginPath();
+if(sig.type==="buy"){
+ctx.moveTo(x,yl+10);
+ctx.lineTo(x-5,yl+20);
+ctx.lineTo(x+5,yl+20);
+}else{
+ctx.moveTo(x,yh-10);
+ctx.lineTo(x-5,yh-20);
+ctx.lineTo(x+5,yh-20);
+}
+ctx.fill();
+}
+
 x+=w;
 });
 
-/* PRICE LINE */
-let last=bars[bars.length-1].c;
-let py=(max-last)/range*canvas.height;
-
-ctx.strokeStyle="#d94b4b";
-ctx.setLineDash([4,4]);
-ctx.beginPath();
-ctx.moveTo(0,py);
-ctx.lineTo(canvas.width,py);
-ctx.stroke();
-ctx.setLineDash([]);
-
+let last=bars.at(-1).c;
 elPRICE.innerText="BTC "+last.toFixed(0);
 }
 
 /* LOOP */
 async function update(){
-await loadPrice();
+bars=await loadPrice(tf);
 await loadMacro();
+await calcHTF();
 draw();
 }
 
-/* TIMEFRAME */
+/* TF */
 function setTF(v){
 tf=v;
 update();
 }
 
-/* INIT */
-resize();
+/* START */
 update();
 setInterval(update,4000);
-
 </script>
 
 </body>
