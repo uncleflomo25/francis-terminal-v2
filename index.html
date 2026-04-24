@@ -2,115 +2,184 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>FRANCIS TERMINAL V8 (DOM + HEATMAP)</title>
+<title>FRANCIS TERMINAL V9</title>
 
 <style>
 body{margin:0;background:#0f1722;color:#fff;font-family:Arial}
-.wrap{display:grid;grid-template-columns:1fr 300px;height:100vh}
+.wrap{display:grid;grid-template-columns:1fr 320px;height:100vh}
 .left{position:relative}
-.right{background:#0d1520;border-left:1px solid #1f2937;padding:10px}
+.right{
+background:#0d1520;
+border-left:1px solid #1f2937;
+display:flex;
+flex-direction:column;
+}
 
 /* DOM */
-.dom{font-size:12px}
+.dom{flex:1;overflow:auto;font-size:12px}
 .row{display:flex;justify-content:space-between;padding:2px}
 .bid{color:#26a69a}
 .ask{color:#ef5350}
+
+/* TAPE */
+.tape{
+height:200px;
+overflow:auto;
+border-top:1px solid #1f2937;
+font-size:12px;
+}
+.trade{display:flex;justify-content:space-between;padding:2px}
+.buy{color:#26a69a}
+.sell{color:#ef5350}
 </style>
 </head>
 
 <body>
 
 <div class="wrap">
+
 <div class="left">
 <canvas id="c"></canvas>
 </div>
 
 <div class="right">
-<div>ORDER BOOK</div>
+<div style="padding:6px">ORDER BOOK</div>
 <div id="dom" class="dom"></div>
+
+<div style="padding:6px">TRADE TAPE</div>
+<div id="tape" class="tape"></div>
 </div>
+
 </div>
 
 <script>
 const c=document.getElementById("c");
 const ctx=c.getContext("2d");
 const domEl=document.getElementById("dom");
+const tapeEl=document.getElementById("tape");
 
 let bids=[],asks=[];
+let heatmap=[]; // persistent
+let trades=[];
+
 let price=0;
 
 /* RESIZE */
 function resize(){
-c.width=window.innerWidth-300;
+c.width=window.innerWidth-320;
 c.height=window.innerHeight;
 }
 window.onresize=resize;
 resize();
 
-/* WEBSOCKET */
-let ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms");
+/* WEBSOCKETS */
+let depthWS=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms");
+let tradeWS=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
 
-ws.onmessage=(e)=>{
-let data=JSON.parse(e.data);
-bids=data.bids.map(b=>[+b[0],+b[1]]);
-asks=data.asks.map(a=>[+a[0],+a[1]]);
+/* DEPTH */
+depthWS.onmessage=(e)=>{
+let d=JSON.parse(e.data);
+
+bids=d.bids.map(b=>[+b[0],+b[1]]);
+asks=d.asks.map(a=>[+a[0],+a[1]]);
 price=bids[0][0];
+
+/* STORE HEAT HISTORY */
+let snapshot=[...bids,...asks];
+heatmap.push(snapshot);
+if(heatmap.length>80) heatmap.shift();
+
 renderDOM();
-draw();
 };
 
-/* DOM PANEL */
+/* TRADES */
+tradeWS.onmessage=(e)=>{
+let t=JSON.parse(e.data);
+
+let trade={
+price:+t.p,
+qty:+t.q,
+side:t.m ? "sell" : "buy"
+};
+
+trades.unshift(trade);
+if(trades.length>50) trades.pop();
+
+renderTape();
+};
+
+/* DOM */
 function renderDOM(){
 domEl.innerHTML="";
 
 asks.slice().reverse().forEach(a=>{
 domEl.innerHTML+=`<div class="row ask"><span>${a[0]}</span><span>${a[1]}</span></div>`;
 });
+
 bids.forEach(b=>{
 domEl.innerHTML+=`<div class="row bid"><span>${b[0]}</span><span>${b[1]}</span></div>`;
 });
 }
 
-/* HEATMAP DRAW */
+/* TAPE */
+function renderTape(){
+tapeEl.innerHTML="";
+
+trades.forEach(t=>{
+tapeEl.innerHTML+=`
+<div class="trade ${t.side}">
+<span>${t.price}</span>
+<span>${t.qty}</span>
+</div>`;
+});
+}
+
+/* DRAW */
 function draw(){
 
 ctx.fillStyle="#0f1722";
 ctx.fillRect(0,0,c.width,c.height);
 
-if(!bids.length) return;
-
-let all=[...bids,...asks];
-let maxVol=Math.max(...all.map(x=>x[1]));
+if(!heatmap.length) return;
 
 /* SCALE */
-let minP=Math.min(...all.map(x=>x[0]));
+let latest=heatmap[heatmap.length-1];
+let all=[...latest];
+
 let maxP=Math.max(...all.map(x=>x[0]));
+let minP=Math.min(...all.map(x=>x[0]));
 let range=maxP-minP;
 
-/* DRAW HEATMAP */
-all.forEach(([p,v])=>{
+/* DRAW HISTORY HEATMAP */
+heatmap.forEach((snap,i)=>{
+
+let x = i*(c.width/heatmap.length);
+
+snap.forEach(([p,v])=>{
 
 let y=(maxP-p)/range*c.height;
+let intensity=Math.min(v/5,1); // normalize
 
-/* intensity */
-let alpha=v/maxVol;
-
-/* color */
 ctx.fillStyle = p>price
-? `rgba(239,83,80,${alpha*0.6})`
-: `rgba(38,166,154,${alpha*0.6})`;
+? `rgba(239,83,80,${intensity*0.3})`
+: `rgba(38,166,154,${intensity*0.3})`;
 
-ctx.fillRect(0,y,c.width,3);
+ctx.fillRect(x,y,4,2);
+});
 });
 
-/* CURRENT PRICE LINE */
+/* PRICE LINE */
 let py=(maxP-price)/range*c.height;
 ctx.strokeStyle="#fff";
 ctx.beginPath();
 ctx.moveTo(0,py);
 ctx.lineTo(c.width,py);
 ctx.stroke();
+
+requestAnimationFrame(draw);
 }
+
+draw();
 </script>
 
 </body>
