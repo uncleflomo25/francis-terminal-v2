@@ -1,34 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>COMPOSITE CANDLE ENGINE</title>
-
+<title>COMPOSITE REAL-TIME FIXED</title>
 <style>
-body{margin:0;background:#0f1722;color:#fff;font-family:Arial;overflow:hidden}
+body{margin:0;background:#0f1722;color:#fff;font-family:Arial}
 canvas{display:block}
-.panel{
-position:absolute;right:10px;top:10px;
-background:#111827;padding:12px;border-radius:10px;
-font-size:13px
-}
 </style>
 </head>
 
 <body>
-
 <canvas id="c"></canvas>
-
-<div class="panel" id="info">Loading...</div>
 
 <script>
 const c=document.getElementById("c");
 const ctx=c.getContext("2d");
-const info=document.getElementById("info");
 
 let bars=[];
-let prevClose=100;
+let current=null;
+let intervalMs=60000; // 1m
+let lastTime=0;
 
 /* RESIZE */
 function resize(){
@@ -38,78 +29,72 @@ c.height=innerHeight;
 window.onresize=resize;
 resize();
 
-/* NORMALIZE */
-function norm(v,min,max){
-return (v-min)/(max-min);
-}
-
-/* BUILD COMPOSITE SCORE */
-function buildScore(d){
-
+/* SCORE */
+function score(d){
 return (
-(d.total*10) +          // growth
-(d.ethbtc*500) +        // alt strength
-((10-d.usdt)*2) +       // risk-on
-(d.ethd*0.7) -          // ETH dominance
-(d.btc*0.4)             // BTC dominance
+(d.total*10)+
+(d.ethbtc*500)+
+((10-d.usdt)*2)+
+(d.ethd*0.7)-
+(d.btc*0.4)
 );
 }
 
-/* CREATE CANDLE */
-function makeCandle(score){
-
-// smooth movement
-let change = (score - 100) * 0.05;
-
-// inertia
-let open = prevClose;
-let close = open + change;
-
-// wick simulation (controlled, not random noise)
-let high = Math.max(open, close) + Math.abs(change)*0.5;
-let low  = Math.min(open, close) - Math.abs(change)*0.5;
-
-prevClose = close;
-
-return {o:open,h:high,l:low,c:close};
-}
-
-/* FETCH DATA */
-async function fetchData(){
-
+/* FETCH */
+async function getData(){
 try{
 const [cg,bn]=await Promise.all([
 fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json()),
 fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json())
 ]);
 
-let d={
+return {
 btc:cg.data.market_cap_percentage.btc,
 usdt:cg.data.market_cap_percentage.usdt,
 ethd:cg.data.market_cap_percentage.eth,
 ethbtc:parseFloat(bn.price),
 total:cg.data.total_market_cap.usd/1e12
 };
+}catch{
+return null;
+}
+}
 
-let score=buildScore(d);
-let candle=makeCandle(score);
+/* UPDATE ENGINE */
+async function update(){
 
-bars.push(candle);
-if(bars.length>150) bars.shift();
+let d=await getData();
+if(!d) return;
+
+let s=score(d);
+let now=Date.now();
+
+/* NEW CANDLE */
+if(!current || now-lastTime>=intervalMs){
+
+if(current) bars.push(current);
+
+let open = current ? current.c : 100;
+
+current={
+o:open,
+h:open,
+l:open,
+c:open,
+t:now
+};
+
+lastTime=now;
+}
+
+/* UPDATE CURRENT ONLY */
+let move=(s-100)*0.03;
+
+current.c = current.c + move;
+current.h = Math.max(current.h,current.c);
+current.l = Math.min(current.l,current.c);
 
 draw();
-
-info.innerHTML=`
-BTC.D: ${d.btc.toFixed(2)}%<br>
-USDT.D: ${d.usdt.toFixed(2)}%<br>
-ETHBTC: ${d.ethbtc.toFixed(5)}<br>
-ETH.D: ${d.ethd.toFixed(2)}%<br>
-TOTAL: $${d.total.toFixed(2)}T
-`;
-
-}catch(e){
-console.log("fallback");
-}
 }
 
 /* DRAW */
@@ -118,16 +103,16 @@ function draw(){
 ctx.fillStyle="#0f1722";
 ctx.fillRect(0,0,c.width,c.height);
 
-if(bars.length<2) return;
+let all=[...bars,current].filter(Boolean);
+if(all.length<2) return;
 
-let max=Math.max(...bars.map(b=>b.h));
-let min=Math.min(...bars.map(b=>b.l));
-let range=max-min;
+let max=Math.max(...all.map(b=>b.h));
+let min=Math.min(...all.map(b=>b.l));
+let range=max-min || 1;
 
-let w=8;
-let x=50;
+let w=6,x=40;
 
-bars.forEach(b=>{
+all.forEach(b=>{
 
 let col=b.c>b.o?"#26a69a":"#ef5350";
 
@@ -143,17 +128,15 @@ ctx.lineTo(x,yl);
 ctx.stroke();
 
 ctx.fillStyle=col;
-ctx.fillRect(x-3,Math.min(yo,yc),6,Math.abs(yc-yo));
+ctx.fillRect(x-2,Math.min(yo,yc),4,Math.abs(yc-yo));
 
 x+=w;
 });
 }
 
 /* LOOP */
-setInterval(fetchData,3000);
-fetchData();
-
+setInterval(update,3000);
+update();
 </script>
-
 </body>
 </html>
