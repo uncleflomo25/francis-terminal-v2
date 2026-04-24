@@ -2,141 +2,116 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>COMPOSITE REAL-TIME FIXED</title>
+<title>FRANCIS TERMINAL V8 (DOM + HEATMAP)</title>
+
 <style>
 body{margin:0;background:#0f1722;color:#fff;font-family:Arial}
-canvas{display:block}
+.wrap{display:grid;grid-template-columns:1fr 300px;height:100vh}
+.left{position:relative}
+.right{background:#0d1520;border-left:1px solid #1f2937;padding:10px}
+
+/* DOM */
+.dom{font-size:12px}
+.row{display:flex;justify-content:space-between;padding:2px}
+.bid{color:#26a69a}
+.ask{color:#ef5350}
 </style>
 </head>
 
 <body>
+
+<div class="wrap">
+<div class="left">
 <canvas id="c"></canvas>
+</div>
+
+<div class="right">
+<div>ORDER BOOK</div>
+<div id="dom" class="dom"></div>
+</div>
+</div>
 
 <script>
 const c=document.getElementById("c");
 const ctx=c.getContext("2d");
+const domEl=document.getElementById("dom");
 
-let bars=[];
-let current=null;
-let intervalMs=60000; // 1m
-let lastTime=0;
+let bids=[],asks=[];
+let price=0;
 
 /* RESIZE */
 function resize(){
-c.width=innerWidth;
-c.height=innerHeight;
+c.width=window.innerWidth-300;
+c.height=window.innerHeight;
 }
 window.onresize=resize;
 resize();
 
-/* SCORE */
-function score(d){
-return (
-(d.total*10)+
-(d.ethbtc*500)+
-((10-d.usdt)*2)+
-(d.ethd*0.7)-
-(d.btc*0.4)
-);
-}
+/* WEBSOCKET */
+let ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms");
 
-/* FETCH */
-async function getData(){
-try{
-const [cg,bn]=await Promise.all([
-fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json()),
-fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json())
-]);
-
-return {
-btc:cg.data.market_cap_percentage.btc,
-usdt:cg.data.market_cap_percentage.usdt,
-ethd:cg.data.market_cap_percentage.eth,
-ethbtc:parseFloat(bn.price),
-total:cg.data.total_market_cap.usd/1e12
-};
-}catch{
-return null;
-}
-}
-
-/* UPDATE ENGINE */
-async function update(){
-
-let d=await getData();
-if(!d) return;
-
-let s=score(d);
-let now=Date.now();
-
-/* NEW CANDLE */
-if(!current || now-lastTime>=intervalMs){
-
-if(current) bars.push(current);
-
-let open = current ? current.c : 100;
-
-current={
-o:open,
-h:open,
-l:open,
-c:open,
-t:now
-};
-
-lastTime=now;
-}
-
-/* UPDATE CURRENT ONLY */
-let move=(s-100)*0.03;
-
-current.c = current.c + move;
-current.h = Math.max(current.h,current.c);
-current.l = Math.min(current.l,current.c);
-
+ws.onmessage=(e)=>{
+let data=JSON.parse(e.data);
+bids=data.bids.map(b=>[+b[0],+b[1]]);
+asks=data.asks.map(a=>[+a[0],+a[1]]);
+price=bids[0][0];
+renderDOM();
 draw();
+};
+
+/* DOM PANEL */
+function renderDOM(){
+domEl.innerHTML="";
+
+asks.slice().reverse().forEach(a=>{
+domEl.innerHTML+=`<div class="row ask"><span>${a[0]}</span><span>${a[1]}</span></div>`;
+});
+bids.forEach(b=>{
+domEl.innerHTML+=`<div class="row bid"><span>${b[0]}</span><span>${b[1]}</span></div>`;
+});
 }
 
-/* DRAW */
+/* HEATMAP DRAW */
 function draw(){
 
 ctx.fillStyle="#0f1722";
 ctx.fillRect(0,0,c.width,c.height);
 
-let all=[...bars,current].filter(Boolean);
-if(all.length<2) return;
+if(!bids.length) return;
 
-let max=Math.max(...all.map(b=>b.h));
-let min=Math.min(...all.map(b=>b.l));
-let range=max-min || 1;
+let all=[...bids,...asks];
+let maxVol=Math.max(...all.map(x=>x[1]));
 
-let w=6,x=40;
+/* SCALE */
+let minP=Math.min(...all.map(x=>x[0]));
+let maxP=Math.max(...all.map(x=>x[0]));
+let range=maxP-minP;
 
-all.forEach(b=>{
+/* DRAW HEATMAP */
+all.forEach(([p,v])=>{
 
-let col=b.c>b.o?"#26a69a":"#ef5350";
+let y=(maxP-p)/range*c.height;
 
-let yo=(max-b.o)/range*c.height;
-let yc=(max-b.c)/range*c.height;
-let yh=(max-b.h)/range*c.height;
-let yl=(max-b.l)/range*c.height;
+/* intensity */
+let alpha=v/maxVol;
 
-ctx.strokeStyle=col;
-ctx.beginPath();
-ctx.moveTo(x,yh);
-ctx.lineTo(x,yl);
-ctx.stroke();
+/* color */
+ctx.fillStyle = p>price
+? `rgba(239,83,80,${alpha*0.6})`
+: `rgba(38,166,154,${alpha*0.6})`;
 
-ctx.fillStyle=col;
-ctx.fillRect(x-2,Math.min(yo,yc),4,Math.abs(yc-yo));
-
-x+=w;
+ctx.fillRect(0,y,c.width,3);
 });
-}
 
-/* LOOP */
-setInterval(update,3000);
-update();
+/* CURRENT PRICE LINE */
+let py=(maxP-price)/range*c.height;
+ctx.strokeStyle="#fff";
+ctx.beginPath();
+ctx.moveTo(0,py);
+ctx.lineTo(c.width,py);
+ctx.stroke();
+}
 </script>
+
 </body>
 </html>
