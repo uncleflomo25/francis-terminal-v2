@@ -3,93 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>FRANCIS TERMINAL V6</title>
+<title>COMPOSITE CANDLE ENGINE</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0f1722;font-family:Arial;color:#fff;overflow:hidden}
-
-.topbar{
-height:52px;background:#131722;border-bottom:1px solid #222b39;
-display:flex;align-items:center;gap:8px;padding:0 12px;
+body{margin:0;background:#0f1722;color:#fff;font-family:Arial;overflow:hidden}
+canvas{display:block}
+.panel{
+position:absolute;right:10px;top:10px;
+background:#111827;padding:12px;border-radius:10px;
+font-size:13px
 }
-.logo{font-weight:700}
-.btn{background:#1e222d;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px}
-.btn:hover{background:#2a3140}
-
-.wrap{display:grid;grid-template-columns:1fr 280px;height:calc(100vh - 52px)}
-.left{position:relative}
-.right{background:#0d1520;border-left:1px solid #1f2937;padding:10px;display:grid;gap:10px}
-
-.card{background:#111827;border:1px solid #1f2937;border-radius:10px;padding:10px}
-.lab{font-size:11px;color:#8ea2bd}
-.val{font-size:20px;font-weight:700}
-
-canvas{position:absolute;inset:0}
-
-.status{
-position:absolute;bottom:10px;left:12px;font-size:13px;
-display:flex;gap:15px;color:#94a3b8;flex-wrap:wrap;
-}
-
-.green{color:#26a69a}
-.red{color:#ef5350}
-.gold{color:#f0b90b}
 </style>
 </head>
 
 <body>
 
-<div class="topbar">
-<div class="logo">FRANCIS TERMINAL V6</div>
-<div class="btn" onclick="setTF('1m')">1m</div>
-<div class="btn" onclick="setTF('5m')">5m</div>
-<div class="btn" onclick="setTF('15m')">15m</div>
-<div class="btn" onclick="setTF('1h')">1H</div>
-<div class="btn" onclick="setTF('4h')">4H</div>
-</div>
+<canvas id="c"></canvas>
 
-<div class="wrap">
-
-<div class="left">
-<canvas id="chart"></canvas>
-
-<div class="status">
-<div id="mode">--</div>
-<div id="regime">--</div>
-<div id="htf">--</div>
-<div id="price">--</div>
-</div>
-</div>
-
-<div class="right">
-<div class="card"><div class="lab">BTC.D</div><div class="val" id="btc"></div></div>
-<div class="card"><div class="lab">USDT.D</div><div class="val" id="usdt"></div></div>
-<div class="card"><div class="lab">ETHBTC</div><div class="val" id="ethbtc"></div></div>
-<div class="card"><div class="lab">ETH.D</div><div class="val" id="ethd"></div></div>
-<div class="card"><div class="lab">TOTAL</div><div class="val" id="total"></div></div>
-</div>
-
-</div>
+<div class="panel" id="info">Loading...</div>
 
 <script>
-const ctx = document.getElementById("chart").getContext("2d");
+const c=document.getElementById("c");
+const ctx=c.getContext("2d");
+const info=document.getElementById("info");
 
-const elMODE=mode, elREGIME=regime, elHTF=htf, elPRICE=price;
-const elBTC=btc, elUSDT=usdt, elETHBTC=ethbtc, elETHD=ethd, elTOTAL=total;
+let bars=[];
+let prevClose=100;
 
-let bars=[], tf="1m", signal=0, prevSignal=0, htfBias=0;
-let signals=[];
+/* RESIZE */
+function resize(){
+c.width=innerWidth;
+c.height=innerHeight;
+}
+window.onresize=resize;
+resize();
 
-/* FETCH PRICE */
-async function loadPrice(interval){
-let res=await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=150`);
-let data=await res.json();
-return data.map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4]}));
+/* NORMALIZE */
+function norm(v,min,max){
+return (v-min)/(max-min);
 }
 
-/* MACRO */
-async function loadMacro(){
+/* BUILD COMPOSITE SCORE */
+function buildScore(d){
+
+return (
+(d.total*10) +          // growth
+(d.ethbtc*500) +        // alt strength
+((10-d.usdt)*2) +       // risk-on
+(d.ethd*0.7) -          // ETH dominance
+(d.btc*0.4)             // BTC dominance
+);
+}
+
+/* CREATE CANDLE */
+function makeCandle(score){
+
+// smooth movement
+let change = (score - 100) * 0.05;
+
+// inertia
+let open = prevClose;
+let close = open + change;
+
+// wick simulation (controlled, not random noise)
+let high = Math.max(open, close) + Math.abs(change)*0.5;
+let low  = Math.min(open, close) - Math.abs(change)*0.5;
+
+prevClose = close;
+
+return {o:open,h:high,l:low,c:close};
+}
+
+/* FETCH DATA */
+async function fetchData(){
+
+try{
 const [cg,bn]=await Promise.all([
 fetch("https://api.coingecko.com/api/v3/global").then(r=>r.json()),
 fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHBTC").then(r=>r.json())
@@ -103,99 +91,50 @@ ethbtc:parseFloat(bn.price),
 total:cg.data.total_market_cap.usd/1e12
 };
 
-elBTC.innerText=d.btc.toFixed(2)+"%";
-elUSDT.innerText=d.usdt.toFixed(2)+"%";
-elETHBTC.innerText=d.ethbtc.toFixed(5);
-elETHD.innerText=d.ethd.toFixed(2)+"%";
-elTOTAL.innerText="$"+d.total.toFixed(2)+"T";
+let score=buildScore(d);
+let candle=makeCandle(score);
 
-calcSignal(d);
+bars.push(candle);
+if(bars.length>150) bars.shift();
+
+draw();
+
+info.innerHTML=`
+BTC.D: ${d.btc.toFixed(2)}%<br>
+USDT.D: ${d.usdt.toFixed(2)}%<br>
+ETHBTC: ${d.ethbtc.toFixed(5)}<br>
+ETH.D: ${d.ethd.toFixed(2)}%<br>
+TOTAL: $${d.total.toFixed(2)}T
+`;
+
+}catch(e){
+console.log("fallback");
 }
-
-/* SIGNAL ENGINE */
-function calcSignal(d){
-
-let score=
-(d.total*14)+
-(d.ethbtc*620)+
-((10-d.usdt)*2)+
-(d.ethd*0.8)-
-(d.btc*0.35);
-
-prevSignal=signal;
-signal=(score-100)/20;
-
-/* MOMENTUM */
-let momentum = bars.at(-1).c - bars.at(-5).c;
-
-/* STATE */
-let state="CHOP";
-let color="#f0b90b";
-
-if(signal>1 && momentum>0){state="TREND LONG";color="#26a69a";}
-else if(signal>0.5){state="WEAK LONG";color="#26a69a";}
-else if(signal<-1 && momentum<0){state="TREND SHORT";color="#ef5350";}
-else if(signal<-0.5){state="WEAK SHORT";color="#ef5350";}
-
-/* RISK */
-if(d.usdt>9 || d.btc>60){
-state="RISK OFF";
-color="#ef5350";
-}
-
-elMODE.innerText=state;
-elMODE.style.color=color;
-
-/* REGIME */
-if(Math.abs(momentum)<20) elREGIME.innerText="CHOP";
-else if(momentum>0) elREGIME.innerText="TRENDING BULL";
-else elREGIME.innerText="TRENDING BEAR";
-
-/* SIGNAL TRIGGERS */
-if(signal>1 && prevSignal<=1){
-signals.push({type:"buy",index:bars.length-1});
-}
-if(signal<-1 && prevSignal>=-1){
-signals.push({type:"sell",index:bars.length-1});
-}
-}
-
-/* HTF */
-async function calcHTF(){
-let htfBars=await loadPrice("1h");
-let m = htfBars.at(-1).c - htfBars.at(-10).c;
-htfBias = m>0 ? 1 : -1;
-elHTF.innerText = htfBias>0 ? "HTF BULL" : "HTF BEAR";
 }
 
 /* DRAW */
 function draw(){
 
-let canvas=ctx.canvas;
-canvas.width=window.innerWidth-280;
-canvas.height=window.innerHeight-52;
+ctx.fillStyle="#0f1722";
+ctx.fillRect(0,0,c.width,c.height);
 
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-/* BG */
-ctx.fillStyle = signal>0
-? "rgba(38,166,154,0.05)"
-: "rgba(239,83,80,0.05)";
-ctx.fillRect(0,0,canvas.width,canvas.height);
+if(bars.length<2) return;
 
 let max=Math.max(...bars.map(b=>b.h));
 let min=Math.min(...bars.map(b=>b.l));
-let range=max-min || 1;
+let range=max-min;
 
-let w=6,x=30;
+let w=8;
+let x=50;
 
-bars.forEach((b,i)=>{
-let col=b.c>b.o ? "#26a69a" : "#ef5350";
+bars.forEach(b=>{
 
-let yo=(max-b.o)/range*canvas.height;
-let yc=(max-b.c)/range*canvas.height;
-let yh=(max-b.h)/range*canvas.height;
-let yl=(max-b.l)/range*canvas.height;
+let col=b.c>b.o?"#26a69a":"#ef5350";
+
+let yo=(max-b.o)/range*c.height;
+let yc=(max-b.c)/range*c.height;
+let yh=(max-b.h)/range*c.height;
+let yl=(max-b.l)/range*c.height;
 
 ctx.strokeStyle=col;
 ctx.beginPath();
@@ -204,49 +143,16 @@ ctx.lineTo(x,yl);
 ctx.stroke();
 
 ctx.fillStyle=col;
-ctx.fillRect(x-2,Math.min(yo,yc),4,Math.abs(yc-yo));
-
-/* SIGNAL ARROWS */
-let sig=signals.find(s=>s.index===i);
-if(sig){
-ctx.fillStyle=sig.type==="buy"?"#26a69a":"#ef5350";
-ctx.beginPath();
-if(sig.type==="buy"){
-ctx.moveTo(x,yl+10);
-ctx.lineTo(x-5,yl+20);
-ctx.lineTo(x+5,yl+20);
-}else{
-ctx.moveTo(x,yh-10);
-ctx.lineTo(x-5,yh-20);
-ctx.lineTo(x+5,yh-20);
-}
-ctx.fill();
-}
+ctx.fillRect(x-3,Math.min(yo,yc),6,Math.abs(yc-yo));
 
 x+=w;
 });
-
-let last=bars.at(-1).c;
-elPRICE.innerText="BTC "+last.toFixed(0);
 }
 
 /* LOOP */
-async function update(){
-bars=await loadPrice(tf);
-await loadMacro();
-await calcHTF();
-draw();
-}
+setInterval(fetchData,3000);
+fetchData();
 
-/* TF */
-function setTF(v){
-tf=v;
-update();
-}
-
-/* START */
-update();
-setInterval(update,4000);
 </script>
 
 </body>
