@@ -1,133 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trading AI Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background:#0f1116; color:white; font-family:Arial; }
+        .card {
+            background:#1a1d26;
+            padding:20px;
+            margin:10px;
+            border-radius:10px;
+        }
+        .grid {
+            display:grid;
+            grid-template-columns: repeat(3, 1fr);
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>📊 Trading Dashboard</h1>
+
+<div class="grid">
+
+<div class="card">
+<h2>Win Rate</h2>
+<p id="winrate">Loading...</p>
+</div>
+
+<div class="card">
+<h2>Total Trades</h2>
+<p id="total">Loading...</p>
+</div>
+
+<div class="card">
+<h2>Last Signal</h2>
+<p id="last">Loading...</p>
+</div>
+
+</div>
+
+<div class="card">
+<canvas id="chart"></canvas>
+</div>
+
 <script>
-// ===============================
-// 📊 EMA
-// ===============================
-function ema(arr,len){
-let k=2/(len+1);
-let e=[];
-arr.forEach((v,i)=>{
-e[i]=i? v*k+e[i-1]*(1-k):v;
-});
-return e;
+async function loadStats() {
+    const res = await fetch("http://127.0.0.1:8000/stats");
+    const data = await res.json();
+
+    document.getElementById("winrate").innerText = data.winrate + "%";
+    document.getElementById("total").innerText = data.total_trades;
 }
 
-// ===============================
-// 🧠 TREND ENGINE (multi-candle)
-// ===============================
-function getTrend(candles){
-let up=0,down=0;
+async function loadTrades() {
+    const res = await fetch("http://127.0.0.1:8000/trades");
+    const data = await res.json();
 
-for(let i=candles.length-20;i<candles.length;i++){
-if(i<=0) continue;
+    if (data.length === 0) return;
 
-if(candles[i].c > candles[i-1].c) up++;
-else down++;
+    document.getElementById("last").innerText =
+        data[data.length - 1].type + " @ " + data[data.length - 1].price;
+
+    const prices = data.map(x => x.price);
+
+    const ctx = document.getElementById('chart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map((_, i) => i),
+            datasets: [{
+                label: 'Price',
+                data: prices,
+                borderWidth: 2
+            }]
+        }
+    });
 }
 
-if(up > down*1.3) return "BULL";
-if(down > up*1.3) return "BEAR";
-return "SIDE";
-}
-
-// ===============================
-// 🔥 MOMENTUM STRENGTH
-// ===============================
-function getMomentum(candles){
-let changes=[];
-
-for(let i=candles.length-20;i<candles.length;i++){
-if(i<=0) continue;
-changes.push(Math.abs(candles[i].c - candles[i-1].c));
-}
-
-let avg = changes.reduce((a,b)=>a+b,0)/changes.length;
-let last = Math.abs(candles.at(-1).c - candles.at(-2).c);
-
-return last / avg;
-}
-
-// ===============================
-// 🎯 CONFIDENCE (stable)
-// ===============================
-function getConfidence(candles){
-let m = getMomentum(candles);
-return Math.min(95, Math.max(20, m*40));
-}
-
-// ===============================
-// 🧠 REGIME ENGINE (REAL LOGIC)
-// ===============================
-function getRegime(candles){
-let trend = getTrend(candles);
-
-let closes = candles.map(x=>x.c);
-let ema20 = ema(closes,20).at(-1);
-let last = closes.at(-1);
-
-if(trend==="BEAR" && last > ema20) return "BEAR PULLBACK";
-if(trend==="BULL" && last < ema20) return "BULL PULLBACK";
-
-if(trend==="BULL") return "BULL TREND";
-if(trend==="BEAR") return "BEAR TREND";
-
-return "RANGE";
-}
-
-// ===============================
-// ⚡ FLOW UPDATE (FIXED)
-// ===============================
-function updateFlow(){
-
-if(candles.length < 30) return;
-
-let regime = getRegime(candles);
-let conf = getConfidence(candles);
-
-let bias = "NEUTRAL";
-if(regime.includes("BULL")) bias="LONG";
-if(regime.includes("BEAR")) bias="SHORT";
-
-// UI
-document.getElementById("reg").innerText = regime;
-document.getElementById("bias").innerText = "Bias: "+bias;
-document.getElementById("conf").innerText = "Confidence: "+conf.toFixed(0)+"%";
-
-// Probability
-document.getElementById("prob").innerHTML =
-`Bull ${(bias==="LONG"?conf:100-conf).toFixed(0)}%<br>
-Bear ${(bias==="SHORT"?conf:100-conf).toFixed(0)}%`;
-
-// Orderflow proxy (still simple)
-let delta = candles.at(-1).c - candles.at(-2).c;
-
-document.getElementById("of").innerHTML =
-`Delta: ${(delta*10000).toFixed(0)}`;
-
-// Dominance (better proxy)
-let trend = getTrend(candles);
-
-let btcD = 58;
-let ethD = 10;
-let usdtD = 7;
-
-if(trend==="BULL"){
-btcD -= 0.5;
-ethD += 0.3;
-usdtD -= 0.3;
-}
-
-if(trend==="BEAR"){
-btcD += 0.5;
-ethD -= 0.3;
-usdtD += 0.3;
-}
-
-document.getElementById("dom").innerHTML =
-`BTC.D ~ ${btcD.toFixed(2)}%<br>
-ETH.D ~ ${ethD.toFixed(2)}%<br>
-USDT.D ~ ${usdtD.toFixed(2)}%`;
-
-// Feed log
-logFeed(regime + " | Conf " + conf.toFixed(0)+"%");
-}
+loadStats();
+loadTrades();
 </script>
+
+</body>
+</html>
