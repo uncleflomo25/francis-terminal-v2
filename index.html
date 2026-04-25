@@ -2,35 +2,19 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>FRANCIS TERMINAL V9</title>
+<title>FLOW TERMINAL V9000</title>
 
 <style>
-body{margin:0;background:#0f1722;color:#fff;font-family:Arial}
-.wrap{display:grid;grid-template-columns:1fr 320px;height:100vh}
-.left{position:relative}
-.right{
-background:#0d1520;
-border-left:1px solid #1f2937;
-display:flex;
-flex-direction:column;
-}
-
-/* DOM */
-.dom{flex:1;overflow:auto;font-size:12px}
-.row{display:flex;justify-content:space-between;padding:2px}
-.bid{color:#26a69a}
-.ask{color:#ef5350}
-
-/* TAPE */
-.tape{
-height:200px;
-overflow:auto;
-border-top:1px solid #1f2937;
-font-size:12px;
-}
-.trade{display:flex;justify-content:space-between;padding:2px}
-.buy{color:#26a69a}
-.sell{color:#ef5350}
+body{margin:0;background:#020c18;color:#9fd3ff;font-family:Segoe UI}
+.wrap{display:grid;grid-template-columns:260px 1fr 260px;height:100vh}
+.panel{border:1px solid #0c2d4f;margin:5px;padding:10px;border-radius:8px;background:#031426}
+.title{font-size:11px;color:#5fbfff;margin-bottom:6px}
+.big{font-size:28px;font-weight:800}
+.green{color:#00ff9c}.red{color:#ff4d6d}
+canvas{width:100%;height:100%}
+.center{display:flex;flex-direction:column}
+.chartWrap{flex:1}
+.feed{font-size:10px;height:200px;overflow:auto}
 </style>
 </head>
 
@@ -38,148 +22,194 @@ font-size:12px;
 
 <div class="wrap">
 
-<div class="left">
-<canvas id="c"></canvas>
+<!-- LEFT -->
+<div>
+<div class="panel">
+<div class="title">AI REGIME ENGINE</div>
+<div id="reg" class="big green">SYNC</div>
+<div id="conf">Confidence: --</div>
+<div id="bias">Bias: --</div>
 </div>
 
-<div class="right">
-<div style="padding:6px">ORDER BOOK</div>
-<div id="dom" class="dom"></div>
+<div class="panel">
+<div class="title">DOMINANCE MATRIX</div>
+<div id="dom"></div>
+</div>
 
-<div style="padding:6px">TRADE TAPE</div>
-<div id="tape" class="tape"></div>
+<div class="panel">
+<div class="title">ORDERFLOW CORE</div>
+<div id="of"></div>
+</div>
+</div>
+
+<!-- CENTER -->
+<div class="center">
+<div class="panel chartWrap">
+<canvas id="chart"></canvas>
+</div>
+</div>
+
+<!-- RIGHT -->
+<div>
+<div class="panel">
+<div class="title">AI PROBABILITY</div>
+<div id="prob"></div>
+</div>
+
+<div class="panel">
+<div class="title">LIVE FEED</div>
+<div id="feed" class="feed"></div>
+</div>
+
+<div class="panel">
+<div class="title">SYSTEM</div>
+<div>Mode: LIVE</div>
+<div id="lat">Latency: 0ms</div>
+</div>
 </div>
 
 </div>
 
 <script>
-const c=document.getElementById("c");
+// ===== CHART =====
+const c=document.getElementById("chart");
 const ctx=c.getContext("2d");
-const domEl=document.getElementById("dom");
-const tapeEl=document.getElementById("tape");
 
-let bids=[],asks=[];
-let heatmap=[]; // persistent
-let trades=[];
-
-let price=0;
-
-/* RESIZE */
 function resize(){
-c.width=window.innerWidth-320;
-c.height=window.innerHeight;
+c.width=c.clientWidth;
+c.height=c.clientHeight;
 }
-window.onresize=resize;
-resize();
+resize(); window.onresize=resize;
 
-/* WEBSOCKETS */
-let depthWS=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms");
-let tradeWS=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
+let candles=[];
 
-/* DEPTH */
-depthWS.onmessage=(e)=>{
-let d=JSON.parse(e.data);
-
-bids=d.bids.map(b=>[+b[0],+b[1]]);
-asks=d.asks.map(a=>[+a[0],+a[1]]);
-price=bids[0][0];
-
-/* STORE HEAT HISTORY */
-let snapshot=[...bids,...asks];
-heatmap.push(snapshot);
-if(heatmap.length>80) heatmap.shift();
-
-renderDOM();
-};
-
-/* TRADES */
-tradeWS.onmessage=(e)=>{
-let t=JSON.parse(e.data);
-
-let trade={
-price:+t.p,
-qty:+t.q,
-side:t.m ? "sell" : "buy"
-};
-
-trades.unshift(trade);
-if(trades.length>50) trades.pop();
-
-renderTape();
-};
-
-/* DOM */
-function renderDOM(){
-domEl.innerHTML="";
-
-asks.slice().reverse().forEach(a=>{
-domEl.innerHTML+=`<div class="row ask"><span>${a[0]}</span><span>${a[1]}</span></div>`;
+function ema(arr,len){
+let k=2/(len+1);
+let e=[];
+arr.forEach((v,i)=>{
+e[i]=i? v*k+e[i-1]*(1-k):v;
 });
-
-bids.forEach(b=>{
-domEl.innerHTML+=`<div class="row bid"><span>${b[0]}</span><span>${b[1]}</span></div>`;
-});
+return e;
 }
 
-/* TAPE */
-function renderTape(){
-tapeEl.innerHTML="";
-
-trades.forEach(t=>{
-tapeEl.innerHTML+=`
-<div class="trade ${t.side}">
-<span>${t.price}</span>
-<span>${t.qty}</span>
-</div>`;
-});
-}
-
-/* DRAW */
 function draw(){
+ctx.clearRect(0,0,c.width,c.height);
+if(candles.length<2)return;
 
-ctx.fillStyle="#0f1722";
-ctx.fillRect(0,0,c.width,c.height);
+let max=Math.max(...candles.map(x=>x.h));
+let min=Math.min(...candles.map(x=>x.l));
+let w=c.width/candles.length;
 
-if(!heatmap.length) return;
+candles.forEach((d,i)=>{
+let x=i*w;
 
-/* SCALE */
-let latest=heatmap[heatmap.length-1];
-let all=[...latest];
+let yO=c.height-(d.o-min)/(max-min)*c.height;
+let yC=c.height-(d.c-min)/(max-min)*c.height;
+let yH=c.height-(d.h-min)/(max-min)*c.height;
+let yL=c.height-(d.l-min)/(max-min)*c.height;
 
-let maxP=Math.max(...all.map(x=>x[0]));
-let minP=Math.min(...all.map(x=>x[0]));
-let range=maxP-minP;
+let col=d.c>=d.o?"#00ff9c":"#ff4d6d";
 
-/* DRAW HISTORY HEATMAP */
-heatmap.forEach((snap,i)=>{
-
-let x = i*(c.width/heatmap.length);
-
-snap.forEach(([p,v])=>{
-
-let y=(maxP-p)/range*c.height;
-let intensity=Math.min(v/5,1); // normalize
-
-ctx.fillStyle = p>price
-? `rgba(239,83,80,${intensity*0.3})`
-: `rgba(38,166,154,${intensity*0.3})`;
-
-ctx.fillRect(x,y,4,2);
-});
-});
-
-/* PRICE LINE */
-let py=(maxP-price)/range*c.height;
-ctx.strokeStyle="#fff";
+ctx.strokeStyle=col;
 ctx.beginPath();
-ctx.moveTo(0,py);
-ctx.lineTo(c.width,py);
+ctx.moveTo(x+w/2,yH);
+ctx.lineTo(x+w/2,yL);
 ctx.stroke();
 
-requestAnimationFrame(draw);
+ctx.fillStyle=col;
+ctx.fillRect(x+1,Math.min(yO,yC),w-2,Math.abs(yO-yC));
+});
+
+// EMA
+let closes=candles.map(x=>x.c);
+let e=ema(closes,20);
+
+ctx.strokeStyle="#3aa0ff";
+ctx.beginPath();
+e.forEach((v,i)=>{
+let x=i*w;
+let y=c.height-(v-min)/(max-min)*c.height;
+i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+});
+ctx.stroke();
+}
+
+// ===== FLOW ENGINE =====
+function updateFlow(){
+if(candles.length<2)return;
+
+let last=candles.at(-1).c;
+let prev=candles.at(-2).c;
+
+let ch=((last-prev)/prev)*100;
+
+let reg="SIDE";
+let bias="NEUTRAL";
+let conf=Math.abs(ch*10);
+
+if(ch>0.2){reg="BULL";bias="LONG";}
+if(ch<-0.2){reg="BEAR";bias="SHORT";}
+
+document.getElementById("reg").innerText=reg;
+document.getElementById("bias").innerText="Bias: "+bias;
+document.getElementById("conf").innerText="Confidence: "+conf.toFixed(0)+"%";
+
+document.getElementById("prob").innerHTML=
+`Bull ${Math.max(conf,50)}%<br>Bear ${100-conf}%`;
+
+document.getElementById("of").innerHTML=
+`Delta: ${(ch*10000).toFixed(0)}`;
+
+document.getElementById("dom").innerHTML=
+`BTC.D ~ ${(58+ch).toFixed(2)}%<br>
+ETH.D ~ ${(10+ch/2).toFixed(2)}%<br>
+USDT.D ~ ${(7-ch/3).toFixed(2)}%`;
+
+logFeed(reg+" move");
+}
+
+// ===== FEED =====
+function logFeed(x){
+let f=document.getElementById("feed");
+f.innerHTML=`<div>${new Date().toLocaleTimeString()} | ${x}</div>`+f.innerHTML;
+}
+
+// ===== HISTORY =====
+async function load(){
+let r=await fetch("https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1m&limit=120");
+let d=await r.json();
+
+candles=d.map(k=>({
+t:k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4]
+}));
+
+draw();
+}
+
+// ===== WEBSOCKET =====
+let ws=new WebSocket("wss://stream.binance.com:9443/ws/ethusdt@kline_1m");
+
+ws.onmessage=e=>{
+let m=JSON.parse(e.data);
+let k=m.k;
+
+let cdl={
+t:k.t,o:+k.o,h:+k.h,l:+k.l,c:+k.c
+};
+
+if(candles.length && candles.at(-1).t===cdl.t){
+candles[candles.length-1]=cdl;
+}else{
+candles.push(cdl);
+if(candles.length>120)candles.shift();
 }
 
 draw();
+updateFlow();
+};
+
+// START
+load();
 </script>
 
 </body>
