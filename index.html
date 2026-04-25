@@ -1,87 +1,96 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Trading AI Dashboard</title>
+    <title>PRO Trading Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background:#0f1116; color:white; font-family:Arial; }
+        .grid {
+            display:grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
         .card {
             background:#1a1d26;
             padding:20px;
             margin:10px;
             border-radius:10px;
         }
-        .grid {
-            display:grid;
-            grid-template-columns: repeat(3, 1fr);
-        }
     </style>
 </head>
 
 <body>
 
-<h1>📊 Trading Dashboard</h1>
+<h1>🚀 PRO TRADING DASHBOARD</h1>
 
 <div class="grid">
 
 <div class="card">
-<h2>Win Rate</h2>
-<p id="winrate">Loading...</p>
+<h3>Win Rate</h3>
+<p id="winrate"></p>
 </div>
 
 <div class="card">
-<h2>Total Trades</h2>
-<p id="total">Loading...</p>
+<h3>Total Trades</h3>
+<p id="total"></p>
 </div>
 
 <div class="card">
-<h2>Last Signal</h2>
-<p id="last">Loading...</p>
+<h3>Total PnL</h3>
+<p id="pnl"></p>
+</div>
+
+<div class="card">
+<h3>Sharpe</h3>
+<p id="sharpe"></p>
 </div>
 
 </div>
 
 <div class="card">
-<canvas id="chart"></canvas>
+<h3>📈 Equity Curve</h3>
+<canvas id="equityChart"></canvas>
+</div>
+
+<div class="card">
+<h3>🧠 AI Weights</h3>
+<ul id="weights"></ul>
 </div>
 
 <script>
-async function loadStats() {
+async function loadData() {
     const res = await fetch("http://127.0.0.1:8000/stats");
     const data = await res.json();
 
     document.getElementById("winrate").innerText = data.winrate + "%";
     document.getElementById("total").innerText = data.total_trades;
-}
+    document.getElementById("pnl").innerText = data.total_pnl;
+    document.getElementById("sharpe").innerText = data.sharpe;
 
-async function loadTrades() {
-    const res = await fetch("http://127.0.0.1:8000/trades");
-    const data = await res.json();
+    // Weights
+    const w = data.weights;
+    let html = "";
+    for (let key in w) {
+        html += "<li>" + key + ": " + w[key] + "</li>";
+    }
+    document.getElementById("weights").innerHTML = html;
 
-    if (data.length === 0) return;
-
-    document.getElementById("last").innerText =
-        data[data.length - 1].type + " @ " + data[data.length - 1].price;
-
-    const prices = data.map(x => x.price);
-
-    const ctx = document.getElementById('chart').getContext('2d');
+    // Equity chart
+    const ctx = document.getElementById('equityChart').getContext('2d');
 
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: data.map((_, i) => i),
+            labels: data.equity.map((_, i) => i),
             datasets: [{
-                label: 'Price',
-                data: prices,
+                label: 'Equity',
+                data: data.equity,
                 borderWidth: 2
             }]
         }
     });
 }
 
-loadStats();
-loadTrades();
+loadData();
 </script>
 
 </body>
