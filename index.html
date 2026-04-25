@@ -15,6 +15,7 @@
             margin:10px;
             border-radius:10px;
         }
+        h1 { text-align:center; }
     </style>
 </head>
 
@@ -23,27 +24,10 @@
 <h1>🚀 PRO TRADING DASHBOARD</h1>
 
 <div class="grid">
-
-<div class="card">
-<h3>Win Rate</h3>
-<p id="winrate"></p>
-</div>
-
-<div class="card">
-<h3>Total Trades</h3>
-<p id="total"></p>
-</div>
-
-<div class="card">
-<h3>Total PnL</h3>
-<p id="pnl"></p>
-</div>
-
-<div class="card">
-<h3>Sharpe</h3>
-<p id="sharpe"></p>
-</div>
-
+<div class="card"><h3>Win Rate</h3><p id="winrate">-</p></div>
+<div class="card"><h3>Total Trades</h3><p id="total">-</p></div>
+<div class="card"><h3>Total PnL</h3><p id="pnl">-</p></div>
+<div class="card"><h3>Sharpe</h3><p id="sharpe">-</p></div>
 </div>
 
 <div class="card">
@@ -57,39 +41,63 @@
 </div>
 
 <script>
+let chart = null;
+
 async function loadData() {
-    const res = await fetch("http://127.0.0.1:8000/stats");
-    const data = await res.json();
+    try {
+        const res = await fetch("http://127.0.0.1:8000/stats");
+        const data = await res.json();
 
-    document.getElementById("winrate").innerText = data.winrate + "%";
-    document.getElementById("total").innerText = data.total_trades;
-    document.getElementById("pnl").innerText = data.total_pnl;
-    document.getElementById("sharpe").innerText = data.sharpe;
+        if (!data || !data.equity) return;
 
-    // Weights
-    const w = data.weights;
-    let html = "";
-    for (let key in w) {
-        html += "<li>" + key + ": " + w[key] + "</li>";
-    }
-    document.getElementById("weights").innerHTML = html;
+        // UI updates
+        document.getElementById("winrate").innerText = data.winrate + "%";
+        document.getElementById("total").innerText = data.total_trades;
+        document.getElementById("pnl").innerText = data.total_pnl.toFixed(2);
+        document.getElementById("sharpe").innerText = data.sharpe;
 
-    // Equity chart
-    const ctx = document.getElementById('equityChart').getContext('2d');
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.equity.map((_, i) => i),
-            datasets: [{
-                label: 'Equity',
-                data: data.equity,
-                borderWidth: 2
-            }]
+        // Weights
+        const w = data.weights || {};
+        let html = "";
+        for (let key in w) {
+            html += `<li>${key}: ${w[key]}</li>`;
         }
-    });
+        document.getElementById("weights").innerHTML = html;
+
+        // Chart
+        const ctx = document.getElementById('equityChart').getContext('2d');
+
+        if (chart) {
+            chart.data.labels = data.equity.map((_, i) => i);
+            chart.data.datasets[0].data = data.equity;
+            chart.update();
+        } else {
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.equity.map((_, i) => i),
+                    datasets: [{
+                        label: 'Equity',
+                        data: data.equity,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    animation: false,
+                    responsive: true
+                }
+            });
+        }
+
+    } catch (err) {
+        console.error("Error loading data:", err);
+    }
 }
 
+// 🔄 AUTO REFRESH EVERY 3 SECONDS
+setInterval(loadData, 3000);
+
+// INITIAL LOAD
 loadData();
 </script>
 
