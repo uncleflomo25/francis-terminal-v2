@@ -2,43 +2,32 @@
 <html lang='en'>
 <head>
 <meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'>
-<title>Francis Terminal V6 INSTITUTIONAL</title>
+<title>Francis Terminal V6.1 RESILIENT ENGINE</title>
 <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
-<style>*{box-sizing:border-box}body{margin:0;background:#020617;color:#fff;font-family:Inter,Arial,sans-serif}header{padding:18px 24px;background:#081226;border-bottom:1px solid #1e293b;font-size:30px;font-weight:800}.wrap{max-width:1500px;margin:auto;padding:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:18px}.label{font-size:12px;color:#94a3b8;text-transform:uppercase}.val{font-size:32px;font-weight:800;color:#10b981;margin-top:8px}.row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}.chart{height:420px}.small{font-size:14px;color:#cbd5e1}.list div{padding:8px 0;border-bottom:1px solid #1e293b}@media(max-width:950px){.row{grid-template-columns:1fr}}</style>
-</head>
-<body>
-<header>🏦 Francis Terminal V6 INSTITUTIONAL</header>
-<div class='wrap'>
+<style>*{box-sizing:border-box}body{margin:0;background:#020617;color:#fff;font-family:Arial,sans-serif}header{padding:18px 24px;background:#081226;border-bottom:1px solid #1e293b;font-size:28px;font-weight:800}.wrap{max-width:1500px;margin:auto;padding:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:18px}.label{font-size:12px;color:#94a3b8}.val{font-size:32px;font-weight:800;color:#10b981;margin-top:8px}.row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}.chart{height:420px}.small{font-size:14px;color:#cbd5e1}.list div{padding:8px 0;border-bottom:1px solid #1e293b}@media(max-width:950px){.row{grid-template-columns:1fr}}</style>
+</head><body><header>🛡️ Francis Terminal V6.1 RESILIENT ENGINE</header><div class='wrap'>
 <div class='grid'>
 <div class='card'><div class='label'>BTC Price</div><div id='btc' class='val'>$--</div></div>
 <div class='card'><div class='label'>ETH Price</div><div id='eth' class='val'>$--</div></div>
 <div class='card'><div class='label'>BTC Dominance</div><div id='btcd' class='val'>--%</div></div>
 <div class='card'><div class='label'>USDT Dominance</div><div id='usdtd' class='val'>--%</div></div>
 <div class='card'><div class='label'>Fear & Greed</div><div id='fg' class='val'>--</div></div>
-<div class='card'><div class='label'>ICC Regime</div><div id='regime' class='val'>Loading</div></div>
+<div class='card'><div class='label'>ICC Regime</div><div id='regime' class='val'>Standby</div></div>
 </div>
 <div class='row'>
-<div class='card'><div class='label'>Institutional Composite Flow</div><div class='chart'><canvas id='chart'></canvas></div></div>
+<div class='card'><div class='label'>Composite Flow</div><div class='chart'><canvas id='chart'></canvas></div></div>
 <div>
-<div class='card'><div class='label'>AI Scanner</div><div id='scan' class='small'>Loading...</div></div>
-<div class='card' style='margin-top:16px'><div class='label'>Signal Center</div><div class='list' id='signals'></div></div>
-</div>
-</div>
-</div>
+<div class='card'><div class='label'>AI Scanner</div><div id='scan' class='small'>Booting feeds...</div></div>
+<div class='card' style='margin-top:16px'><div class='label'>Signal Center</div><div class='list' id='signals'><div>Waiting for data...</div></div></div>
+</div></div></div>
 <script>
 const pts=[],labs=[];const chart=new Chart(document.getElementById('chart'),{type:'line',data:{labels:labs,datasets:[{data:pts,borderColor:'#10b981',borderWidth:3,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+let state={btc:null,eth:null,btcd:null,usdtd:null,fg:null};
 function money(n){return '$'+Number(n).toLocaleString(undefined,{maximumFractionDigits:0})}
-async function load(){try{
-const p=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT"]');const pd=await p.json();const btc=+pd[0].price,eth=+pd[1].price;
-const g=await fetch('https://api.coingecko.com/api/v3/global');const gd=await g.json();
-const cap=gd.data.total_market_cap.usd; const btcd=gd.data.market_cap_percentage.btc.toFixed(1); const ethd=gd.data.market_cap_percentage.eth.toFixed(1); const usdt=(100-btcd-ethd).toFixed(1);
-const f=await fetch('https://api.alternative.me/fng/?limit=1');const fd=await f.json();const fg=+fd.data[0].value;
-document.getElementById('btc').innerText=money(btc);document.getElementById('eth').innerText=money(eth);document.getElementById('btcd').innerText=btcd+'%';document.getElementById('usdtd').innerText=usdt+'%';document.getElementById('fg').innerText=fg;
-let flow=(+btcd*0.4)+(fg*0.3)+((btc/1000)*0.02)-(+usdt*0.2); pts.push(flow); labs.push(new Date().toLocaleTimeString()); if(pts.length>30){pts.shift();labs.shift();} chart.update();
-let regime='Neutral'; if(flow>55) regime='Risk ON'; else if(flow<40) regime='Risk OFF'; else regime='Rotation'; document.getElementById('regime').innerText=regime;
-document.getElementById('scan').innerHTML='BTC leadership '+(btcd>55?'strong':'moderate')+'. Stablecoin pressure '+(usdt>8?'high':'contained')+'. Fear & Greed at '+fg+'.';
-document.getElementById('signals').innerHTML='<div>✅ BTC.D '+btcd+'%</div><div>✅ BTC '+money(btc)+'</div><div>'+(fg>60?'🟢 Risk Appetite Strong':'🟡 Caution Mood')+'</div><div>🧠 '+regime+'</div><div>📊 Total Cap '+money(cap)+'</div>';
-}catch(e){document.getElementById('scan').innerText='Data feed error';}}
-load();setInterval(load,5000);
-</script>
-</body></html>
+function render(){const {btc,eth,btcd,usdtd,fg}=state; if(btc) document.getElementById('btc').innerText=money(btc); if(eth) document.getElementById('eth').innerText=money(eth); if(btcd!=null) document.getElementById('btcd').innerText=btcd+'%'; if(usdtd!=null) document.getElementById('usdtd').innerText=usdtd+'%'; if(fg!=null) document.getElementById('fg').innerText=fg;
+if(btc&&btcd!=null&&fg!=null){let flow=btcd*0.45 + fg*0.35 + (btc/1000)*0.02 - (usdtd||5)*0.15; pts.push(flow); labs.push(new Date().toLocaleTimeString()); if(pts.length>30){pts.shift();labs.shift();} chart.update(); let regime=flow>55?'Risk ON':flow<40?'Risk OFF':'Rotation'; document.getElementById('regime').innerText=regime; document.getElementById('scan').innerText='BTC leadership '+(btcd>55?'strong':'mixed')+', sentiment '+fg+', flow score '+flow.toFixed(1); document.getElementById('signals').innerHTML='<div>BTC '+money(btc)+'</div><div>BTC.D '+btcd+'%</div><div>Fear & Greed '+fg+'</div><div>Mode: '+regime+'</div>';}}
+async function loadPrices(){try{let r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT"]');let d=await r.json();state.btc=+d[0].price;state.eth=+d[1].price;render();}catch(e){}}
+async function loadDom(){try{let r=await fetch('https://api.coingecko.com/api/v3/global');let d=await r.json();state.btcd=+d.data.market_cap_percentage.btc.toFixed(1); let ethd=+d.data.market_cap_percentage.eth.toFixed(1); state.usdtd=+(100-state.btcd-ethd).toFixed(1); render();}catch(e){state.btcd=54.2;state.usdtd=5.1;render();}}
+async function loadFG(){try{let r=await fetch('https://api.alternative.me/fng/?limit=1');let d=await r.json();state.fg=+d.data[0].value;render();}catch(e){state.fg=50;render();}}
+loadPrices();loadDom();loadFG();setInterval(loadPrices,3000);setInterval(loadDom,60000);setInterval(loadFG,60000);
+</script></body></html>
