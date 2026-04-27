@@ -1,46 +1,25 @@
 <!DOCTYPE html>
 <html lang='en'>
 <head>
-<meta charset='UTF-8'>
-<meta name='viewport' content='width=device-width,initial-scale=1.0'>
-<title>Francis Terminal V4 PRO MAX</title>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'>
+<title>Francis Terminal V5 LIVE</title>
 <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#020817;color:#fff}header{padding:18px 24px;background:#081226;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.title{font-size:32px;font-weight:800}.sub{font-size:13px;color:#94a3b8}.tools{display:flex;gap:10px;align-items:center}.search{background:#0f172a;border:1px solid #1e293b;color:#fff;padding:10px 12px;border-radius:12px}.btn{background:#0f172a;border:1px solid #1e293b;color:#fff;padding:10px 12px;border-radius:12px}.wrap{max-width:1450px;margin:auto;padding:20px}.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}.label{font-size:13px;color:#94a3b8}.value{font-size:34px;font-weight:800;margin-top:8px}.green{color:#10b981}.section{margin-top:18px}.row{display:grid;grid-template-columns:2fr 1fr;gap:16px}.chart{height:430px}.small{font-size:14px;color:#94a3b8}.pill{padding:6px 10px;border-radius:999px;background:#052e16;color:#22c55e;font-size:12px}.tf{display:flex;gap:8px}.tf span{padding:6px 10px;border-radius:999px;background:#111827;font-size:12px}.tf .on{background:#059669}.list div{padding:7px 0;border-bottom:1px solid #1e293b}.bigstat{font-size:28px;font-weight:800;color:#10b981}@media(max-width:950px){.row{grid-template-columns:1fr}}</style>
-</head>
-<body>
-<header>
-<div><div class='title'>🚀 Francis Terminal V4 PRO MAX</div><div class='sub'>Institutional Crypto Intelligence Platform</div></div>
-<div class='tools'><input class='search' placeholder='Search asset'><button class='btn'>🔔</button><button class='btn'>👤</button></div>
-</header>
-<div class='wrap'>
-<div class='grid4'>
-<div class='card'><div class='label'>BTC Price</div><div class='value green' id='btc'>$0</div></div>
-<div class='card'><div class='label'>ETH Price</div><div class='value green' id='eth'>$0</div></div>
-<div class='card'><div class='label'>Monkey Brain Score</div><div class='value green'>88/100</div></div>
-<div class='card'><div class='label'>Market Regime</div><div class='value green'>Risk ON</div></div>
+<style>*{box-sizing:border-box}body{margin:0;background:#020617;color:#fff;font-family:Arial,sans-serif}header{padding:18px 24px;background:#081226;border-bottom:1px solid #1e293b;font-size:30px;font-weight:800}.wrap{max-width:1450px;margin:auto;padding:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:18px}.label{font-size:13px;color:#94a3b8}.val{font-size:34px;font-weight:800;color:#10b981;margin-top:8px}.row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}.chart{height:420px}@media(max-width:900px){.row{grid-template-columns:1fr}}</style>
+</head><body><header>🚀 Francis Terminal V5 LIVE</header><div class='wrap'>
+<div class='grid'>
+<div class='card'><div class='label'>BTC Price</div><div id='btc' class='val'>$--</div></div>
+<div class='card'><div class='label'>ETH Price</div><div id='eth' class='val'>$--</div></div>
+<div class='card'><div class='label'>Fear & Greed</div><div id='fg' class='val'>--</div></div>
+<div class='card'><div class='label'>Market Cap</div><div id='cap' class='val'>$--</div></div>
 </div>
-<div class='section row'>
-<div class='card'>
-<div style='display:flex;justify-content:space-between;align-items:center'><strong>Live Intelligence Chart</strong><div class='tf'><span>1H</span><span class='on'>4H</span><span>1D</span></div></div>
-<div class='chart'><canvas id='chart'></canvas></div>
-</div>
-<div>
-<div class='card'><strong>AI Commentary</strong><p class='small'>BTC leadership remains strong while stablecoin pressure eases. Risk appetite improving across majors.</p></div>
-<div class='card section'><strong>Signal Center</strong><div class='list'><div>✅ BTC Momentum Rising</div><div>✅ Alt Rotation Triggered</div><div>⚠ Volatility Elevated</div><div>🧠 Bias: Bullish</div></div></div>
-</div>
-</div>
-<div class='section grid4'>
-<div class='card'><div class='label'>BTC.D</div><div class='bigstat'>54.2%</div></div>
-<div class='card'><div class='label'>USDT.D</div><div class='bigstat'>5.1%</div></div>
-<div class='card'><div class='label'>Fear & Greed</div><div class='bigstat'>68</div></div>
-<div class='card'><div class='label'>Whale Flow</div><div class='bigstat'>+18%</div></div>
-</div>
-</div>
+<div class='row'>
+<div class='card'><div class='label'>Live Market Trend</div><div class='chart'><canvas id='c'></canvas></div></div>
+<div class='card'><div class='label'>Live Signals</div><div id='signals'>Loading...</div></div>
+</div></div>
 <script>
-async function loadPrices(){try{const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT"]');const d=await r.json();document.getElementById('btc').innerText='$'+Number(d[0].price).toLocaleString(undefined,{maximumFractionDigits:0});document.getElementById('eth').innerText='$'+Number(d[1].price).toLocaleString(undefined,{maximumFractionDigits:0});}catch(e){document.getElementById('btc').innerText='$76,971';document.getElementById('eth').innerText='$2,295';}}
-loadPrices();setInterval(loadPrices,5000);
-new Chart(document.getElementById('chart'),{type:'line',data:{labels:['1','2','3','4','5','6','7','8','9'],datasets:[{data:[10,12,11,15,17,16,20,22,26],borderColor:'#10b981',borderWidth:3,tension:.35,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8'}},y:{ticks:{color:'#94a3b8'}}}}});
-</script>
-</body>
-</html>
+const pts=[]; const labs=[]; const ctx=document.getElementById('c'); const chart=new Chart(ctx,{type:'line',data:{labels:labs,datasets:[{data:pts,borderColor:'#10b981',tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+function fmt(n){return '$'+Number(n).toLocaleString(undefined,{maximumFractionDigits:0})}
+async function loadMeta(){try{let r=await fetch('https://api.coingecko.com/api/v3/global');let d=await r.json();document.getElementById('cap').innerText=fmt(d.data.total_market_cap.usd);let f=await fetch('https://api.alternative.me/fng/?limit=1');let j=await f.json();document.getElementById('fg').innerText=j.data[0].value;}catch(e){}}
+loadMeta();setInterval(loadMeta,60000);
+let ws=new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr');ws.onmessage=(e)=>{let arr=JSON.parse(e.data);let b=arr.find(x=>x.s==='BTCUSDT');let h=arr.find(x=>x.s==='ETHUSDT');if(b){let p=+b.c;document.getElementById('btc').innerText=fmt(p);pts.push(p);labs.push(new Date().toLocaleTimeString());if(pts.length>20){pts.shift();labs.shift();}chart.update();document.getElementById('signals').innerHTML=(+b.P>=0?'✅ BTC Momentum Rising':'⚠ BTC Weakness')+'<br>'+(p>70000?'🧠 Bias: Bullish':'🧠 Bias: Neutral');}if(h){document.getElementById('eth').innerText=fmt(+h.c);}};
+</script></body></html>
