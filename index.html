@@ -1,28 +1,46 @@
-import { motion } from 'framer-motion';
-import { Bell, Search, User, Moon, Sun } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-const stats=[['BTC Price','$76,971','up'],['ETH Price','$2,295','up'],['Monkey Brain Score','88/100','up'],['Market Regime','Risk ON','up']];
-export default function App(){return <div className='min-h-screen bg-slate-950 text-white p-6'>
-<div className='max-w-7xl mx-auto space-y-6'>
-<header className='flex flex-col md:flex-row gap-4 md:items-center md:justify-between'>
-<div><h1 className='text-4xl font-bold'>🚀 Francis Terminal V4 PRO MAX</h1><p className='text-slate-400'>Institutional Crypto Intelligence Platform</p></div>
-<div className='flex gap-2 items-center'>
-<div className='flex items-center bg-slate-900 rounded-2xl px-3 py-2'><Search size={16}/><input className='bg-transparent outline-none ml-2 w-40' placeholder='Search asset'/></div>
-<Button variant='secondary' className='rounded-2xl'><Bell size={16}/></Button>
-<Button variant='secondary' className='rounded-2xl'><Moon size={16}/></Button>
-<Button className='rounded-2xl'><User size={16}/></Button>
-</div></header>
-<div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-{stats.map((s,i)=><motion.div key={i} initial={{opacity:0,y:15}} animate={{opacity:1,y:0}} transition={{delay:i*0.08}}><Card className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><div className='text-sm text-slate-400'>{s[0]}</div><div className='text-3xl font-bold mt-2 text-emerald-400'>{s[1]}</div></CardContent></Card></motion.div>)}
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1.0'>
+<title>Francis Terminal V4 PRO MAX</title>
+<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#020817;color:#fff}header{padding:18px 24px;background:#081226;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.title{font-size:32px;font-weight:800}.sub{font-size:13px;color:#94a3b8}.tools{display:flex;gap:10px;align-items:center}.search{background:#0f172a;border:1px solid #1e293b;color:#fff;padding:10px 12px;border-radius:12px}.btn{background:#0f172a;border:1px solid #1e293b;color:#fff;padding:10px 12px;border-radius:12px}.wrap{max-width:1450px;margin:auto;padding:20px}.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}.label{font-size:13px;color:#94a3b8}.value{font-size:34px;font-weight:800;margin-top:8px}.green{color:#10b981}.section{margin-top:18px}.row{display:grid;grid-template-columns:2fr 1fr;gap:16px}.chart{height:430px}.small{font-size:14px;color:#94a3b8}.pill{padding:6px 10px;border-radius:999px;background:#052e16;color:#22c55e;font-size:12px}.tf{display:flex;gap:8px}.tf span{padding:6px 10px;border-radius:999px;background:#111827;font-size:12px}.tf .on{background:#059669}.list div{padding:7px 0;border-bottom:1px solid #1e293b}.bigstat{font-size:28px;font-weight:800;color:#10b981}@media(max-width:950px){.row{grid-template-columns:1fr}}</style>
+</head>
+<body>
+<header>
+<div><div class='title'>🚀 Francis Terminal V4 PRO MAX</div><div class='sub'>Institutional Crypto Intelligence Platform</div></div>
+<div class='tools'><input class='search' placeholder='Search asset'><button class='btn'>🔔</button><button class='btn'>👤</button></div>
+</header>
+<div class='wrap'>
+<div class='grid4'>
+<div class='card'><div class='label'>BTC Price</div><div class='value green' id='btc'>$0</div></div>
+<div class='card'><div class='label'>ETH Price</div><div class='value green' id='eth'>$0</div></div>
+<div class='card'><div class='label'>Monkey Brain Score</div><div class='value green'>88/100</div></div>
+<div class='card'><div class='label'>Market Regime</div><div class='value green'>Risk ON</div></div>
 </div>
-<div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
-<Card className='lg:col-span-2 bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><div className='flex justify-between'><h2 className='text-xl font-semibold'>Live Intelligence Chart</h2><div className='flex gap-2 text-xs'><span className='px-3 py-1 rounded-full bg-slate-800'>1H</span><span className='px-3 py-1 rounded-full bg-emerald-600'>4H</span><span className='px-3 py-1 rounded-full bg-slate-800'>1D</span></div></div><div className='h-[420px] mt-4 rounded-2xl border border-slate-800 flex items-center justify-center text-slate-500'>TradingView / ICC Composite Chart</div></CardContent></Card>
-<div className='space-y-4'>
-<Card className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><h3 className='font-semibold'>AI Commentary</h3><p className='text-slate-300 mt-3 text-sm'>BTC leadership remains strong while stablecoin pressure eases. Risk appetite improving across majors.</p></CardContent></Card>
-<Card className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><h3 className='font-semibold'>Signal Center</h3><ul className='mt-3 space-y-2 text-sm text-slate-300'><li>✅ BTC Momentum Rising</li><li>✅ Alt Rotation Triggered</li><li>⚠ Volatility Elevated</li><li>🧠 Bias: Bullish</li></ul></CardContent></Card>
-</div></div>
-<div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-{['BTC.D 54.2%','USDT.D 5.1%','Fear & Greed 68','Whale Flow +18%'].map((x,i)=><Card key={i} className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5 text-xl font-semibold text-emerald-400'>{x}</CardContent></Card>)}
+<div class='section row'>
+<div class='card'>
+<div style='display:flex;justify-content:space-between;align-items:center'><strong>Live Intelligence Chart</strong><div class='tf'><span>1H</span><span class='on'>4H</span><span>1D</span></div></div>
+<div class='chart'><canvas id='chart'></canvas></div>
 </div>
-</div></div>}
+<div>
+<div class='card'><strong>AI Commentary</strong><p class='small'>BTC leadership remains strong while stablecoin pressure eases. Risk appetite improving across majors.</p></div>
+<div class='card section'><strong>Signal Center</strong><div class='list'><div>✅ BTC Momentum Rising</div><div>✅ Alt Rotation Triggered</div><div>⚠ Volatility Elevated</div><div>🧠 Bias: Bullish</div></div></div>
+</div>
+</div>
+<div class='section grid4'>
+<div class='card'><div class='label'>BTC.D</div><div class='bigstat'>54.2%</div></div>
+<div class='card'><div class='label'>USDT.D</div><div class='bigstat'>5.1%</div></div>
+<div class='card'><div class='label'>Fear & Greed</div><div class='bigstat'>68</div></div>
+<div class='card'><div class='label'>Whale Flow</div><div class='bigstat'>+18%</div></div>
+</div>
+</div>
+<script>
+async function loadPrices(){try{const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT"]');const d=await r.json();document.getElementById('btc').innerText='$'+Number(d[0].price).toLocaleString(undefined,{maximumFractionDigits:0});document.getElementById('eth').innerText='$'+Number(d[1].price).toLocaleString(undefined,{maximumFractionDigits:0});}catch(e){document.getElementById('btc').innerText='$76,971';document.getElementById('eth').innerText='$2,295';}}
+loadPrices();setInterval(loadPrices,5000);
+new Chart(document.getElementById('chart'),{type:'line',data:{labels:['1','2','3','4','5','6','7','8','9'],datasets:[{data:[10,12,11,15,17,16,20,22,26],borderColor:'#10b981',borderWidth:3,tension:.35,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8'}},y:{ticks:{color:'#94a3b8'}}}}});
+</script>
+</body>
+</html>
