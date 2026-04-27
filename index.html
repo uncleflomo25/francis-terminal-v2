@@ -1,43 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Francis Terminal V3 Elite</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body{margin:0;background:#0b0f19;color:#fff;font-family:Arial,sans-serif}header{padding:20px;text-align:center;font-size:28px;font-weight:700;background:#111827;border-bottom:1px solid #1f2937}.wrap{padding:20px;max-width:1400px;margin:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#111827;border:1px solid #1f2937;border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}.label{color:#9ca3af;font-size:13px}.value{font-size:30px;font-weight:700;margin-top:8px}.up{color:#10b981}.down{color:#ef4444}.section{margin-top:20px}.chartBox{height:360px}.row2{display:grid;grid-template-columns:2fr 1fr;gap:16px}.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#052e16;color:#22c55e;font-size:12px}.list{line-height:2}.small{font-size:14px;color:#9ca3af}@media(max-width:900px){.row2{grid-template-columns:1fr}}</style>
-</head>
-<body>
-<header>🚀 FRANCIS TERMINAL V3 ELITE</header>
-<div class="wrap">
-<div class="grid">
-<div class="card"><div class="label">BTC Price</div><div class="value" id="btc">$0</div><div class="small up">Live</div></div>
-<div class="card"><div class="label">ETH Price</div><div class="value" id="eth">$0</div><div class="small up">Live</div></div>
-<div class="card"><div class="label">Market Regime</div><div class="value up" id="regime">Risk ON</div><div class="small">Composite Flow</div></div>
-<div class="card"><div class="label">Altseason Score</div><div class="value" id="alt">72</div><div class="small up">Strong</div></div>
+import { motion } from 'framer-motion';
+import { Bell, Search, User, Moon, Sun } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+const stats=[['BTC Price','$76,971','up'],['ETH Price','$2,295','up'],['Monkey Brain Score','88/100','up'],['Market Regime','Risk ON','up']];
+export default function App(){return <div className='min-h-screen bg-slate-950 text-white p-6'>
+<div className='max-w-7xl mx-auto space-y-6'>
+<header className='flex flex-col md:flex-row gap-4 md:items-center md:justify-between'>
+<div><h1 className='text-4xl font-bold'>🚀 Francis Terminal V4 PRO MAX</h1><p className='text-slate-400'>Institutional Crypto Intelligence Platform</p></div>
+<div className='flex gap-2 items-center'>
+<div className='flex items-center bg-slate-900 rounded-2xl px-3 py-2'><Search size={16}/><input className='bg-transparent outline-none ml-2 w-40' placeholder='Search asset'/></div>
+<Button variant='secondary' className='rounded-2xl'><Bell size={16}/></Button>
+<Button variant='secondary' className='rounded-2xl'><Moon size={16}/></Button>
+<Button className='rounded-2xl'><User size={16}/></Button>
+</div></header>
+<div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+{stats.map((s,i)=><motion.div key={i} initial={{opacity:0,y:15}} animate={{opacity:1,y:0}} transition={{delay:i*0.08}}><Card className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><div className='text-sm text-slate-400'>{s[0]}</div><div className='text-3xl font-bold mt-2 text-emerald-400'>{s[1]}</div></CardContent></Card></motion.div>)}
 </div>
-<div class="section row2">
-<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><strong>Equity Curve</strong><span class="badge">LIVE</span></div><div class="chartBox"><canvas id="chart"></canvas></div></div>
-<div class="card"><strong>Signal Center</strong><div class="list">
-<div>✅ BTC Momentum Rising</div>
-<div>✅ USDT Pressure Falling</div>
-<div>✅ Alt Rotation Active</div>
-<div>⚠️ Volatility Elevated</div>
-<div>🧠 Smart Bias: Bullish</div>
+<div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
+<Card className='lg:col-span-2 bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><div className='flex justify-between'><h2 className='text-xl font-semibold'>Live Intelligence Chart</h2><div className='flex gap-2 text-xs'><span className='px-3 py-1 rounded-full bg-slate-800'>1H</span><span className='px-3 py-1 rounded-full bg-emerald-600'>4H</span><span className='px-3 py-1 rounded-full bg-slate-800'>1D</span></div></div><div className='h-[420px] mt-4 rounded-2xl border border-slate-800 flex items-center justify-center text-slate-500'>TradingView / ICC Composite Chart</div></CardContent></Card>
+<div className='space-y-4'>
+<Card className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><h3 className='font-semibold'>AI Commentary</h3><p className='text-slate-300 mt-3 text-sm'>BTC leadership remains strong while stablecoin pressure eases. Risk appetite improving across majors.</p></CardContent></Card>
+<Card className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5'><h3 className='font-semibold'>Signal Center</h3><ul className='mt-3 space-y-2 text-sm text-slate-300'><li>✅ BTC Momentum Rising</li><li>✅ Alt Rotation Triggered</li><li>⚠ Volatility Elevated</li><li>🧠 Bias: Bullish</li></ul></CardContent></Card>
 </div></div>
+<div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+{['BTC.D 54.2%','USDT.D 5.1%','Fear & Greed 68','Whale Flow +18%'].map((x,i)=><Card key={i} className='bg-slate-900 border-slate-800 rounded-3xl'><CardContent className='p-5 text-xl font-semibold text-emerald-400'>{x}</CardContent></Card>)}
 </div>
-<div class="section grid">
-<div class="card"><div class="label">Whale Flow Meter</div><div class="value up">+18%</div></div>
-<div class="card"><div class="label">Fear & Greed</div><div class="value">68</div></div>
-<div class="card"><div class="label">BTC Dominance</div><div class="value">54.2%</div></div>
-<div class="card"><div class="label">Alert Status</div><div class="value up">Active</div></div>
-</div>
-</div>
-<script>
-async function prices(){try{let r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT"]');let d=await r.json();document.getElementById('btc').innerText='$'+Number(d[0].price).toLocaleString(undefined,{maximumFractionDigits:0});document.getElementById('eth').innerText='$'+Number(d[1].price).toLocaleString(undefined,{maximumFractionDigits:0});}catch(e){}}
-prices();setInterval(prices,5000);
-const ctx=document.getElementById('chart');new Chart(ctx,{type:'line',data:{labels:['1','2','3','4','5','6','7','8'],datasets:[{label:'Performance',data:[10,12,11,15,17,16,20,24],borderColor:'#22c55e',tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9ca3af'}},y:{ticks:{color:'#9ca3af'}}}}});
-</script>
-</body>
-</html>
+</div></div>}
