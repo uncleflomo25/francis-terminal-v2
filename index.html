@@ -1,25 +1,11 @@
 <!DOCTYPE html>
-<html lang='en'>
-<head>
-<meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'>
-<title>Francis Terminal V5 LIVE</title>
-<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
-<style>*{box-sizing:border-box}body{margin:0;background:#020617;color:#fff;font-family:Arial,sans-serif}header{padding:18px 24px;background:#081226;border-bottom:1px solid #1e293b;font-size:30px;font-weight:800}.wrap{max-width:1450px;margin:auto;padding:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:18px}.label{font-size:13px;color:#94a3b8}.val{font-size:34px;font-weight:800;color:#10b981;margin-top:8px}.row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}.chart{height:420px}@media(max-width:900px){.row{grid-template-columns:1fr}}</style>
-</head><body><header>🚀 Francis Terminal V5 LIVE</header><div class='wrap'>
-<div class='grid'>
-<div class='card'><div class='label'>BTC Price</div><div id='btc' class='val'>$--</div></div>
-<div class='card'><div class='label'>ETH Price</div><div id='eth' class='val'>$--</div></div>
-<div class='card'><div class='label'>Fear & Greed</div><div id='fg' class='val'>--</div></div>
-<div class='card'><div class='label'>Market Cap</div><div id='cap' class='val'>$--</div></div>
-</div>
-<div class='row'>
-<div class='card'><div class='label'>Live Market Trend</div><div class='chart'><canvas id='c'></canvas></div></div>
-<div class='card'><div class='label'>Live Signals</div><div id='signals'>Loading...</div></div>
-</div></div>
-<script>
-const pts=[]; const labs=[]; const ctx=document.getElementById('c'); const chart=new Chart(ctx,{type:'line',data:{labels:labs,datasets:[{data:pts,borderColor:'#10b981',tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
-function fmt(n){return '$'+Number(n).toLocaleString(undefined,{maximumFractionDigits:0})}
-async function loadMeta(){try{let r=await fetch('https://api.coingecko.com/api/v3/global');let d=await r.json();document.getElementById('cap').innerText=fmt(d.data.total_market_cap.usd);let f=await fetch('https://api.alternative.me/fng/?limit=1');let j=await f.json();document.getElementById('fg').innerText=j.data[0].value;}catch(e){}}
-loadMeta();setInterval(loadMeta,60000);
-let ws=new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr');ws.onmessage=(e)=>{let arr=JSON.parse(e.data);let b=arr.find(x=>x.s==='BTCUSDT');let h=arr.find(x=>x.s==='ETHUSDT');if(b){let p=+b.c;document.getElementById('btc').innerText=fmt(p);pts.push(p);labs.push(new Date().toLocaleTimeString());if(pts.length>20){pts.shift();labs.shift();}chart.update();document.getElementById('signals').innerHTML=(+b.P>=0?'✅ BTC Momentum Rising':'⚠ BTC Weakness')+'<br>'+(p>70000?'🧠 Bias: Bullish':'🧠 Bias: Neutral');}if(h){document.getElementById('eth').innerText=fmt(+h.c);}};
+<html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'><title>Francis Terminal V5.2 GLOBAL FIX</title><script src='https://cdn.jsdelivr.net/npm/chart.js'></script><style>*{box-sizing:border-box}body{margin:0;background:#020617;color:#fff;font-family:Arial,sans-serif}header{padding:18px 24px;background:#081226;border-bottom:1px solid #1e293b;font-size:30px;font-weight:800}.wrap{max-width:1450px;margin:auto;padding:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:18px}.label{font-size:13px;color:#94a3b8}.val{font-size:34px;font-weight:800;color:#10b981;margin-top:8px}.row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}.chart{height:420px}.small{font-size:14px;color:#94a3b8}@media(max-width:900px){.row{grid-template-columns:1fr}}</style></head><body><header>🚀 Francis Terminal V5.2 GLOBAL FIX</header><div class='wrap'><div class='grid'><div class='card'><div class='label'>BTC Price</div><div id='btc' class='val'>$--</div></div><div class='card'><div class='label'>ETH Price</div><div id='eth' class='val'>$--</div></div><div class='card'><div class='label'>Feed Source</div><div id='src' class='val'>--</div></div><div class='card'><div class='label'>Fear & Greed</div><div id='fg' class='val'>--</div></div></div><div class='row'><div class='card'><div class='label'>BTC Global Trend</div><div class='chart'><canvas id='chart'></canvas></div></div><div class='card'><div class='label'>Signals</div><div id='sig' class='small'>Loading...</div></div></div></div><script>
+const pts=[],labs=[];const c=new Chart(document.getElementById('chart'),{type:'line',data:{labels:labs,datasets:[{data:pts,borderColor:'#10b981',borderWidth:3,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+function money(n){return '$'+Number(n).toLocaleString(undefined,{maximumFractionDigits:0})}
+async function tryBinance(){let r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT"]');if(!r.ok)throw 0;let d=await r.json();return {btc:+d[0].price,eth:+d[1].price,src:'Binance'}}
+async function tryCoinbase(){let b=await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');let e=await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot');if(!b.ok||!e.ok)throw 0;let bj=await b.json(),ej=await e.json();return {btc:+bj.data.amount,eth:+ej.data.amount,src:'Coinbase'}}
+async function tryKraken(){let r=await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD');if(!r.ok)throw 0;let d=await r.json();return {btc:+d.result.XXBTZUSD.c[0],eth:+d.result.XETHZUSD.c[0],src:'Kraken'}}
+async function prices(){let data=null;for (const fn of [tryBinance,tryCoinbase,tryKraken]){try{data=await fn();break;}catch(e){}}if(!data){document.getElementById('sig').innerText='All feeds unavailable';return;}document.getElementById('btc').innerText=money(data.btc);document.getElementById('eth').innerText=money(data.eth);document.getElementById('src').innerText=data.src;pts.push(data.btc);labs.push(new Date().toLocaleTimeString());if(pts.length>20){pts.shift();labs.shift();}c.update();document.getElementById('sig').innerHTML=(pts.length>1&&pts[pts.length-1]>pts[pts.length-2]?'✅ BTC Momentum Rising':'⚠ BTC Pullback')+'<br>🧠 Bias: '+(data.btc>70000?'Bullish':'Neutral')+'<br>📡 '+data.src+' Connected';}
+async function fg(){try{let f=await fetch('https://api.alternative.me/fng/?limit=1');let j=await f.json();document.getElementById('fg').innerText=j.data[0].value;}catch(e){}}
+prices();fg();setInterval(prices,3000);setInterval(fg,60000);
 </script></body></html>
