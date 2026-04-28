@@ -1,119 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Composite Footprint Terminal (Live)</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow Terminal - Composite Footprint Dashboard</title>
+<style>
+body{background:linear-gradient(180deg,#030712,#020617)} .panel{box-shadow:0 0 0 1px #1f2937,0 10px 30px rgba(0,0,0,.35)} .title{color:#f8fafc} .gaugeRing{width:220px;height:220px;border-radius:50%;background:conic-gradient(#22c55e 0deg, #22c55e 220deg,#ca8a04 260deg,#ef4444 360deg);display:flex;align-items:center;justify-content:center;margin:auto}.gaugeInner{width:150px;height:150px;border-radius:50%;background:#0b1220;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700}.miniChart{height:220px;background:#08101d;border-radius:14px;position:relative;overflow:hidden}.miniBar{position:absolute;bottom:0;width:14px;border-radius:4px 4px 0 0}
+body{margin:0;background:#05080d;color:#e5e7eb;font-family:Arial,sans-serif}header{padding:12px 16px;border-bottom:1px solid #1f2937;display:flex;justify-content:space-between;align-items:center}.grid{display:grid;grid-template-columns:280px 1fr 320px;gap:12px;padding:12px}.panel{background:#0b1220;border:1px solid #1f2937;border-radius:16px;padding:12px}.title{font-weight:700;margin-bottom:10px}.controls label{display:block;font-size:12px;margin-top:8px}.controls select,.controls input{width:100%;padding:8px;border-radius:10px;background:#111827;color:#fff;border:1px solid #374151}.table{width:100%;border-collapse:collapse;font-size:12px}.table td,.table th{padding:6px;border-bottom:1px solid #1f2937;text-align:right}.buy{color:#22c55e}.sell{color:#ef4444}.bars div{height:16px;margin:6px 0;background:#111827;position:relative;border-radius:8px;overflow:hidden}.bars span{position:absolute;top:0;bottom:0;left:0;background:#22c55e}.gauge{height:180px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#22c55e}.small{font-size:12px;color:#9ca3af}.heat{display:grid;grid-template-columns:repeat(30,1fr);gap:2px}.heat div{height:18px;background:#111827;border-radius:3px}.footer{padding:0 12px 12px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
 </head>
-
-<body style="background:#0b0f14; color:white; font-family:sans-serif;">
-
-<h2>🔥 Real-Time Composite Footprint</h2>
-<canvas id="chart" width="1000" height="400"></canvas>
-
+<body>
+<header><div><strong>COMPOSITE FOOTPRINT PRO</strong><div class='small'>BTC + ETHBTC + USDT.D + BTC.D</div></div><div id='clock'></div></header>
+<div class='grid'>
+<div class='panel controls'>
+<div class='title'>Settings</div>
+<label>Timeframe</label><select id='tf'><option>1m</option><option>5m</option><option>15m</option><option>1H</option><option>4H</option><option>1D</option></select>
+<label>Refresh Speed</label><select><option>1s</option><option>3s</option><option>5s</option></select>
+<label>BTC Weight</label><input type='range' min='0' max='100' value='40'>
+<label>ETHBTC Weight</label><input type='range' min='0' max='100' value='25'>
+<label>BTC.D Weight</label><input type='range' min='0' max='100' value='20'>
+<label>USDT.D Weight</label><input type='range' min='0' max='100' value='15'>
+<label>Theme</label><select><option>Dark</option><option>Midnight</option><option>Terminal</option></select>
+<label>Signal Sensitivity</label><select><option>Low</option><option>Normal</option><option>High</option></select>
+</div>
+<div class='panel'>
+<div class='title'>Footprint Matrix</div>
+<table class='table' id='tbl'><tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr></table>
+</div>
+<div class='panel'>
+<div class='title'>Composite Summary</div><div class='gaugeRing'><div class='gaugeInner' id='gaugeVal'>0</div></div>
+<div class='gauge' id='flow'>+0</div>
+<div class='small' id='signal'>NEUTRAL</div>
+<div class='title' style='margin-top:12px'>Delta Bars</div><div class='miniChart' id='miniChart'></div>
+<div class='bars' id='bars'></div>
+</div>
+</div>
+<div class='footer row2'>
+<div class='panel'><div class='title'>Heatmap</div><div class='heat' id='heat'></div></div>
+<div class='panel'><div class='title'>Customization Options</div><div class='small'>Columns on/off • Number format • Sound alerts • Auto scale • Symbol source • Export CSV • Compact mode • Multi-monitor mode</div></div>
+</div>
 <script>
-const ctx = document.getElementById('chart').getContext('2d');
-
-let data = [];
-let colors = [];
-let labels = [];
-
-// Chart
-const chart = new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: labels,
-    datasets: [{
-      label: 'Composite Delta',
-      data: data,
-      backgroundColor: colors
-    }]
-  },
-  options: {
-    animation: false,
-    scales: {
-      x: { display: false },
-      y: { ticks: { color: "white" } }
-    }
-  }
-});
-
-// ==========================
-// STATE
-// ==========================
-let btcDelta = 0;
-let ethDelta = 0;
-
-// ==========================
-// BTC STREAM
-// ==========================
-const btcSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
-
-btcSocket.onmessage = (event) => {
-  const trade = JSON.parse(event.data);
-
-  const price = parseFloat(trade.p);
-  const qty   = parseFloat(trade.q);
-
-  const isBuyerMaker = trade.m;
-
-  // If buyer is maker → sell pressure
-  const delta = isBuyerMaker ? -qty : qty;
-
-  btcDelta += delta;
-};
-
-// ==========================
-// ETHBTC STREAM
-// ==========================
-const ethSocket = new WebSocket("wss://stream.binance.com:9443/ws/ethbtc@trade");
-
-ethSocket.onmessage = (event) => {
-  const trade = JSON.parse(event.data);
-
-  const qty = parseFloat(trade.q);
-  const isBuyerMaker = trade.m;
-
-  const delta = isBuyerMaker ? -qty : qty;
-
-  ethDelta += delta;
-};
-
-// ==========================
-// UPDATE LOOP
-// ==========================
-setInterval(() => {
-
-  // Composite delta
-  let comp = (btcDelta * 1.2) + (ethDelta * 0.8);
-
-  // Normalize
-  let norm = Math.max(Math.abs(comp), 1);
-  comp = comp / norm;
-
-  // Reset for next interval
-  btcDelta = 0;
-  ethDelta = 0;
-
-  // Color logic
-  let color = "gray";
-
-  if (comp > 0.3) color = "lime";
-  else if (comp < -0.3) color = "red";
-
-  data.push(comp);
-  colors.push(color);
-  labels.push("");
-
-  if (data.length > 60) {
-    data.shift();
-    colors.shift();
-    labels.shift();
-  }
-
-  chart.update();
-
-}, 2000);
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function render(){document.body.style.background='linear-gradient(180deg,#030712,#020617)';let t=document.getElementById('tbl');t.innerHTML='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';let bars='';let net=0;for(let i=0;i<12;i++){let p=69000-i*25,b=rnd(200,3900),s=rnd(200,3900),d=b-s;net+=d;t.innerHTML+=`<tr><td>${p}</td><td class='buy'>${b}</td><td class='sell'>${s}</td><td class='${d>=0?'buy':'sell'}'>${d}</td></tr>`;bars+=`<div><span style='width:${Math.min(Math.abs(d)/40,100)}%;background:${d>=0?'#22c55e':'#ef4444'}'></span></div>`}document.getElementById('bars').innerHTML=bars;document.getElementById('flow').textContent=(net>0?'+':'')+net;document.getElementById('flow').style.color=net>=0?'#22c55e':'#ef4444';document.getElementById('signal').textContent=net>1500?'STRONG BUY':net<-1500?'STRONG SELL':'MIXED';document.getElementById('gaugeVal').textContent=net;let mc='';for(let i=0;i<30;i++){let v=rnd(-10,10);let ht=Math.abs(v)*10+10;mc+=`<div class='miniBar' style='left:${i*16}px;height:${ht}px;background:${v>=0?'#22c55e':'#ef4444'}'></div>`}document.getElementById('miniChart').innerHTML=mc;let h=';for(let i=0;i<30;i++){let v=rnd(-10,10);h+=`<div style='background:${v>0?'#16a34a':v<0?'#b91c1c':'#a16207'}'></div>`}document.getElementById('heat').innerHTML=h;document.getElementById('clock').textContent=new Date().toLocaleTimeString();}
+render();setInterval(render,2000);
 </script>
-
-</body>
-</html>
+</body></html>
