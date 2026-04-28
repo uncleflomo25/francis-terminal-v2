@@ -1,108 +1,119 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Composite Footprint Terminal (Live)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 
-export default function App(){
-  const [bars,setBars]=useState([]);
-  const [btc,setBtc]=useState(0);
-  const [btcd,setBtcd]=useState(58.1);
-  const [usdtd,setUsdtd]=useState(7.2);
-  const [usdcd,setUsdcd]=useState(2.9);
-  const [eth,setEth]=useState(0);
-  const [tick,setTick]=useState(0);
+<body style="background:#0b0f14; color:white; font-family:sans-serif;">
 
-  useEffect(()=>{
-    async function load(){
-      try{
-        const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=%5B%22BTCUSDT%22,%22ETHUSDT%22%5D');
-        const j=await r.json();
-        setBtc(parseFloat(j[0].price));
-        setEth(parseFloat(j[1].price));
-        setBtcd(v=>Math.max(40,Math.min(70,v+(Math.random()-0.5)*0.3)));
-        setUsdtd(v=>Math.max(2,Math.min(12,v+(Math.random()-0.5)*0.15)));
-        setUsdcd(v=>Math.max(1,Math.min(8,v+(Math.random()-0.5)*0.08)));
-      }catch(e){}
+<h2>🔥 Real-Time Composite Footprint</h2>
+<canvas id="chart" width="1000" height="400"></canvas>
+
+<script>
+const ctx = document.getElementById('chart').getContext('2d');
+
+let data = [];
+let colors = [];
+let labels = [];
+
+// Chart
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Composite Delta',
+      data: data,
+      backgroundColor: colors
+    }]
+  },
+  options: {
+    animation: false,
+    scales: {
+      x: { display: false },
+      y: { ticks: { color: "white" } }
     }
-    load();
-    const live=setInterval(load,5000);
+  }
+});
 
-    const seed=[];
-    let p=100;
-    for(let i=0;i<40;i++){
-      p += (Math.random()-0.5)*4;
-      seed.push(makeBar(p));
-    }
-    setBars(seed);
-    const id=setInterval(()=>{
-      setBars(prev=>{
-        const last=prev[prev.length-1]?.close || 100;
-        return [...prev.slice(-39), makeBar(last)];
-      });
-      setTick(t=>t+1);
-    },1500);
-    clearInterval(live); return ()=>clearInterval(id);
-  },[]);
+// ==========================
+// STATE
+// ==========================
+let btcDelta = 0;
+let ethDelta = 0;
 
-  function makeBar(last){
-    const btc=(Math.random()-0.48);
-    const eth=(Math.random()-0.48);
-    const total=(Math.random()-0.48);
-    const usdt=(Math.random()-0.52);
-    const score=(btc>0?1:-1)+(eth>0?1:-1)+(total>0?1:-1)+(usdt<0?1:-1);
-    const type=score>=2?'bull':score<=-2?'bear':'chop';
-    const drift= type==='bull'?2:type==='bear'?-2:0;
-    const open=last;
-    const close=Math.max(10,last+drift+(Math.random()-0.5)*2);
-    const high=Math.max(open,close)+Math.random()*1.8;
-    const low=Math.min(open,close)-Math.random()*1.8;
-    return {open,high,low,close,type,score};
+// ==========================
+// BTC STREAM
+// ==========================
+const btcSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
+
+btcSocket.onmessage = (event) => {
+  const trade = JSON.parse(event.data);
+
+  const price = parseFloat(trade.p);
+  const qty   = parseFloat(trade.q);
+
+  const isBuyerMaker = trade.m;
+
+  // If buyer is maker → sell pressure
+  const delta = isBuyerMaker ? -qty : qty;
+
+  btcDelta += delta;
+};
+
+// ==========================
+// ETHBTC STREAM
+// ==========================
+const ethSocket = new WebSocket("wss://stream.binance.com:9443/ws/ethbtc@trade");
+
+ethSocket.onmessage = (event) => {
+  const trade = JSON.parse(event.data);
+
+  const qty = parseFloat(trade.q);
+  const isBuyerMaker = trade.m;
+
+  const delta = isBuyerMaker ? -qty : qty;
+
+  ethDelta += delta;
+};
+
+// ==========================
+// UPDATE LOOP
+// ==========================
+setInterval(() => {
+
+  // Composite delta
+  let comp = (btcDelta * 1.2) + (ethDelta * 0.8);
+
+  // Normalize
+  let norm = Math.max(Math.abs(comp), 1);
+  comp = comp / norm;
+
+  // Reset for next interval
+  btcDelta = 0;
+  ethDelta = 0;
+
+  // Color logic
+  let color = "gray";
+
+  if (comp > 0.3) color = "lime";
+  else if (comp < -0.3) color = "red";
+
+  data.push(comp);
+  colors.push(color);
+  labels.push("");
+
+  if (data.length > 60) {
+    data.shift();
+    colors.shift();
+    labels.shift();
   }
 
-  const latest=bars[bars.length-1]||{};
-  const regime = latest.type==='bull'?'RISK ON':latest.type==='bear'?'RISK OFF':'CHOP';
+  chart.update();
 
-  const color=(t)=> t==='bull'?'bg-emerald-500':t==='bear'?'bg-red-500':'bg-yellow-400';
+}, 2000);
+</script>
 
-  return <div className='min-h-screen bg-slate-950 text-white p-6'>
-    <div className='text-3xl font-bold mb-6'>Francis Terminal V7 COMPOSITE LIVE DATA</div>
-    <div className='grid grid-cols-4 gap-4 mb-6'>
-      <Metric title='BTC Price' value={btc?('$'+Math.round(btc).toLocaleString()):'Loading...'} icon={<TrendingUp/>}/>
-      <Metric title='BTC Dominance' value={btcd.toFixed(1)+'%'} icon={<Activity/>}/>
-      <Metric title='USDT Dominance' value={usdtd.toFixed(1)+'%'} icon={<Activity/>}/>
-      <Metric title='USDC Dominance' value={usdcd.toFixed(1)+'%'} icon={<Activity/>}/>
-      <Metric title='Composite Score' value={latest.score ?? 0} icon={<Activity/>}/>
-      <<Metric title='ETH Price' value={eth?('$'+Math.round(eth).toLocaleString()):'Loading...'} icon={<TrendingUp/>}/>
-      <Metric title='Last Candle' value={latest.type?.toUpperCase()||'-'} icon={<TrendingDown/>}/>
-      <Metric title='Regime' value={regime} icon={<Activity/>}/>
-    </div>
-
-    <Card className='bg-slate-900 border-slate-800'>
-      <CardContent className='p-4'>
-        <div className='mb-3 text-sm text-slate-300'>3-Color Composite Candle Engine</div>
-        <div className='h-[420px] flex items-end gap-1'>
-          {bars.map((b,i)=>{
-            const range=Math.max(1,b.high-b.low);
-            const body=Math.max(8,Math.abs(b.close-b.open)*24);
-            const wickTop=(b.high-Math.max(b.open,b.close))*18;
-            const wickBot=(Math.min(b.open,b.close)-b.low)*18;
-            return <div key={i} className='flex-1 flex justify-center'>
-              <div className='relative w-3'>
-                <div className='absolute left-1/2 -translate-x-1/2 w-[2px] bg-slate-400' style={{bottom: wickBot, height: body+wickTop}}/>
-                <div className={'absolute w-3 rounded-sm '+color(b.type)} style={{bottom: wickBot, height: body}}/>
-              </div>
-            </div>
-          })}
-        </div>
-        <div className='grid grid-cols-3 gap-3 mt-4 text-sm'>
-          <Legend label='Strong Bullish' cls='bg-emerald-500'/>
-          <Legend label='Strong Bearish' cls='bg-red-500'/>
-          <Legend label='Mixed / Chop' cls='bg-yellow-400'/>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-}
-
-function Metric({title,value,icon}){return <Card className='bg-slate-900 border-slate-800'><CardContent className='p-4'><div className='text-xs text-slate-400 mb-2'>{title}</div><div className='flex items-center justify-between'><div className='text-2xl font-bold'>{value}</div><div className='text-slate-400'>{icon}</div></div></CardContent></Card>}
-function Legend({label,cls}){return <div className='flex items-center gap-2'><div className={'w-4 h-4 rounded '+cls}></div><span>{label}</span></div>}
+</body>
+</html>
