@@ -5,9 +5,22 @@ import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 
 export default function App(){
   const [bars,setBars]=useState([]);
+  const [btc,setBtc]=useState(0);
+  const [eth,setEth]=useState(0);
   const [tick,setTick]=useState(0);
 
   useEffect(()=>{
+    async function load(){
+      try{
+        const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=%5B%22BTCUSDT%22,%22ETHUSDT%22%5D');
+        const j=await r.json();
+        setBtc(parseFloat(j[0].price));
+        setEth(parseFloat(j[1].price));
+      }catch(e){}
+    }
+    load();
+    const live=setInterval(load,5000);
+
     const seed=[];
     let p=100;
     for(let i=0;i<40;i++){
@@ -22,7 +35,7 @@ export default function App(){
       });
       setTick(t=>t+1);
     },1500);
-    return ()=>clearInterval(id);
+    clearInterval(live); return ()=>clearInterval(id);
   },[]);
 
   function makeBar(last){
@@ -46,10 +59,11 @@ export default function App(){
   const color=(t)=> t==='bull'?'bg-emerald-500':t==='bear'?'bg-red-500':'bg-yellow-400';
 
   return <div className='min-h-screen bg-slate-950 text-white p-6'>
-    <div className='text-3xl font-bold mb-6'>Francis Terminal V7 COMPOSITE</div>
+    <div className='text-3xl font-bold mb-6'>Francis Terminal V7 COMPOSITE LIVE DATA</div>
     <div className='grid grid-cols-4 gap-4 mb-6'>
-      <Metric title='BTC Price' value={'$'+(76000+tick*3).toLocaleString()} icon={<TrendingUp/>}/>
+      <Metric title='BTC Price' value={btc?('$'+Math.round(btc).toLocaleString()):'Loading...'} icon={<TrendingUp/>}/>
       <Metric title='Composite Score' value={latest.score ?? 0} icon={<Activity/>}/>
+      <<Metric title='ETH Price' value={eth?('$'+Math.round(eth).toLocaleString()):'Loading...'} icon={<TrendingUp/>}/>
       <Metric title='Last Candle' value={latest.type?.toUpperCase()||'-'} icon={<TrendingDown/>}/>
       <Metric title='Regime' value={regime} icon={<Activity/>}/>
     </div>
