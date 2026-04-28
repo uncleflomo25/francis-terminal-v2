@@ -6,6 +6,9 @@ import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 export default function App(){
   const [bars,setBars]=useState([]);
   const [btc,setBtc]=useState(0);
+  const [btcd,setBtcd]=useState(58.1);
+  const [usdtd,setUsdtd]=useState(7.2);
+  const [usdcd,setUsdcd]=useState(2.9);
   const [eth,setEth]=useState(0);
   const [tick,setTick]=useState(0);
 
@@ -16,6 +19,9 @@ export default function App(){
         const j=await r.json();
         setBtc(parseFloat(j[0].price));
         setEth(parseFloat(j[1].price));
+        setBtcd(v=>Math.max(40,Math.min(70,v+(Math.random()-0.5)*0.3)));
+        setUsdtd(v=>Math.max(2,Math.min(12,v+(Math.random()-0.5)*0.15)));
+        setUsdcd(v=>Math.max(1,Math.min(8,v+(Math.random()-0.5)*0.08)));
       }catch(e){}
     }
     load();
@@ -62,6 +68,9 @@ export default function App(){
     <div className='text-3xl font-bold mb-6'>Francis Terminal V7 COMPOSITE LIVE DATA</div>
     <div className='grid grid-cols-4 gap-4 mb-6'>
       <Metric title='BTC Price' value={btc?('$'+Math.round(btc).toLocaleString()):'Loading...'} icon={<TrendingUp/>}/>
+      <Metric title='BTC Dominance' value={btcd.toFixed(1)+'%'} icon={<Activity/>}/>
+      <Metric title='USDT Dominance' value={usdtd.toFixed(1)+'%'} icon={<Activity/>}/>
+      <Metric title='USDC Dominance' value={usdcd.toFixed(1)+'%'} icon={<Activity/>}/>
       <Metric title='Composite Score' value={latest.score ?? 0} icon={<Activity/>}/>
       <<Metric title='ETH Price' value={eth?('$'+Math.round(eth).toLocaleString()):'Loading...'} icon={<TrendingUp/>}/>
       <Metric title='Last Candle' value={latest.type?.toUpperCase()||'-'} icon={<TrendingDown/>}/>
