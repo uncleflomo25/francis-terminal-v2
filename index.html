@@ -1,152 +1,210 @@
-function setTF(tf,el){
- currentTF=tf;
- document.getElementById('tfBox').textContent=tf.toUpperCase();
- document.querySelectorAll('.tf').forEach(x=>x.classList.remove('active'));
- el.classList.add('active');
- render();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>REAL GOD MODE FINAL V1</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+background:#020617;
+color:#e5e7eb;
+font-family:Arial,Helvetica,sans-serif;
+overflow:hidden;
+}
+header{
+height:58px;
+border-bottom:1px solid #1e293b;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:0 16px;
+}
+h1{font-size:18px}
+.sub{font-size:11px;color:#94a3b8}
+.wrap{
+display:grid;
+grid-template-columns:260px 1fr 320px;
+gap:12px;
+padding:12px;
+height:calc(100vh - 58px);
+}
+.panel{
+background:#07101d;
+border:1px solid #1e293b;
+border-radius:16px;
+padding:12px;
+overflow:auto;
+}
+.title{
+font-size:13px;
+font-weight:700;
+margin-bottom:8px;
+color:#fff;
+}
+.big{font-size:36px;font-weight:800}
+.mid{font-size:26px;font-weight:800}
+.small{font-size:12px;color:#94a3b8}
+.green{color:#22c55e}
+.red{color:#ef4444}
+.yellow{color:#eab308}
+.blue{color:#38bdf8}
+
+.gridtf{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:6px;
+margin-bottom:12px;
+}
+.tf{
+padding:8px;
+border-radius:8px;
+text-align:center;
+cursor:pointer;
+font-size:12px;
+background:#0f172a;
+border:1px solid #334155;
+}
+.tf.active{
+background:#1d4ed8;
 }
 
-function resetData(){
- trades=[];
- render();
+.metric{
+margin-bottom:14px;
 }
 
-function connect(){
- ws=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
+.table{
+width:100%;
+border-collapse:collapse;
+font-size:12px;
+}
+.table th,.table td{
+padding:7px;
+border-bottom:1px solid #132033;
+text-align:right;
+}
+.table th:first-child,.table td:first-child{text-align:left}
 
- ws.onopen=()=>{
-   setStatus('LIVE CONNECTED','#22c55e');
- };
-
- ws.onclose=()=>{
-   setStatus('RECONNECTING','#eab308');
-   setTimeout(connect,2000);
- };
-
- ws.onerror=()=>{
-   setStatus('ERROR','#ef4444');
- };
-
- ws.onmessage=(msg)=>{
-   const d=JSON.parse(msg.data);
-
-   const price=parseFloat(d.p);
-   const qty=parseFloat(d.q);
-   const maker=d.m; // true = sell aggression
-   lastPrice=price;
-
-   trades.push({
-     time:now(),
-     price:price,
-     qty:qty,
-     side:maker?'sell':'buy'
-   });
-
-   cleanOld();
-   render();
- };
+.heat{
+display:grid;
+grid-template-columns:repeat(20,1fr);
+gap:3px;
+margin-top:10px;
+}
+.heat div{
+height:18px;
+border-radius:4px;
 }
 
-function setStatus(txt,color){
- const s=document.getElementById('status');
- s.textContent=txt;
- s.style.color=color;
+.bar{
+height:14px;
+background:#0f172a;
+border-radius:20px;
+overflow:hidden;
+margin:6px 0 12px 0;
+}
+.fill{
+height:100%;
 }
 
-function cleanOld(){
- const cutoff=now()-86400;
- trades=trades.filter(t=>t.time>=cutoff);
+.signal{
+font-size:54px;
+font-weight:900;
+text-align:center;
+padding:10px 0;
 }
 
-function getWindowTrades(){
- const cutoff=now()-tfSec[currentTF];
- return trades.filter(t=>t.time>=cutoff);
+.reason{
+font-size:13px;
+line-height:1.4;
+color:#cbd5e1;
 }
 
-function render(){
-
- document.getElementById('clock').textContent=
- new Date().toLocaleTimeString();
-
- document.getElementById('price').textContent=
- lastPrice?lastPrice.toFixed(2):'0';
-
- const arr=getWindowTrades();
-
- let buy=0,sell=0;
-
- arr.forEach(t=>{
-   if(t.side==='buy') buy+=t.qty;
-   else sell+=t.qty;
- });
-
- const delta=buy-sell;
-
- document.getElementById('buyVol').textContent=buy.toFixed(3);
- document.getElementById('sellVol').textContent=sell.toFixed(3);
-
- const deltaBox=document.getElementById('delta');
- deltaBox.textContent=(delta>0?'+':'')+delta.toFixed(3);
-
- let sig='WAIT', cls='yellow', why='Balanced pressure.';
-
- if(delta>2){
-   sig='BUY'; cls='green';
-   why='Aggressive buyers dominate selected timeframe.';
- }
- else if(delta<-2){
-   sig='SELL'; cls='red';
-   why='Aggressive sellers dominate selected timeframe.';
- }
-
- document.getElementById('signal').className='signal '+cls;
- document.getElementById('signal').textContent=sig;
- deltaBox.className='big '+cls;
- document.getElementById('why').textContent=why;
-
- // Ladder
- let buckets={};
-
- arr.forEach(t=>{
-   const lvl=Math.round(t.price/25)*25;
-   if(!buckets[lvl]) buckets[lvl]={buy:0,sell:0};
-   buckets[lvl][t.side]+=t.qty;
- });
-
- let prices=Object.keys(buckets).map(Number).sort((a,b)=>b-a).slice(0,12);
-
- let html='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
-
- prices.forEach(p=>{
-   const b=buckets[p].buy||0;
-   const s=buckets[p].sell||0;
-   const d=b-s;
-
-   html+=`
-   <tr>
-   <td>${p}</td>
-   <td class="green">${b.toFixed(3)}</td>
-   <td class="red">${s.toFixed(3)}</td>
-   <td class="${d>=0?'green':'red'}">${d.toFixed(3)}</td>
-   </tr>`;
- });
-
- document.getElementById('tbl').innerHTML=html;
-
- // Heatmap
- let heat='';
- for(let i=0;i<20;i++){
-   const slice=arr.slice(Math.max(0,arr.length-(i+1)*5), arr.length-i*5);
-   let sd=0;
-   slice.forEach(x=> sd += x.side==='buy'?x.qty:-x.qty );
-   let c = sd>0 ? '#16a34a' : sd<0 ? '#b91c1c' : '#a16207';
-   heat='<div style="background:'+c+'"></div>'+heat;
- }
- document.getElementById('heat').innerHTML=heat;
+@media(max-width:1100px){
+.wrap{grid-template-columns:1fr}
+body{overflow:auto}
 }
+</style>
+</head>
+<body>
 
-connect();
-setInterval(render,1000);
-</script>
-</body>
-</html>
+<header>
+<div>
+<h1>REAL GOD MODE FINAL V1</h1>
+<div class="sub">Live Binance + Composite Rotation Intelligence</div>
+</div>
+<div id="clock"></div>
+</header>
+
+<div class="wrap">
+
+<!-- LEFT -->
+<div class="panel">
+<div class="title">Timeframes</div>
+<div class="gridtf">
+<div class="tf active" onclick="setTF(this)">1m</div>
+<div class="tf" onclick="setTF(this)">5m</div>
+<div class="tf" onclick="setTF(this)">15m</div>
+<div class="tf" onclick="setTF(this)">1H</div>
+<div class="tf" onclick="setTF(this)">4H</div>
+<div class="tf" onclick="setTF(this)">12H</div>
+<div class="tf" onclick="setTF(this)">1D</div>
+</div>
+
+<div class="metric">
+<div class="title">BTCUSDT</div>
+<div class="big" id="btc">76350</div>
+</div>
+
+<div class="metric">
+<div class="title">ETHBTC</div>
+<div class="mid" id="ethbtc">0.0210</div>
+</div>
+
+<div class="metric">
+<div class="title">BTC.D</div>
+<div class="mid yellow" id="btcd">54.2%</div>
+</div>
+
+<div class="metric">
+<div class="title">USDT.D</div>
+<div class="mid red" id="usdtd">6.1%</div>
+</div>
+
+<div class="metric">
+<div class="title">TOTAL</div>
+<div class="mid blue" id="total">2.54T</div>
+</div>
+
+<div class="metric">
+<div class="title">Risk Mode</div>
+<div class="mid green" id="risk">RISK ON</div>
+</div>
+
+</div>
+
+<!-- CENTER -->
+<div class="panel">
+<div class="title">Institutional Footprint Ladder</div>
+<table class="table" id="ladder"></table>
+
+<div class="title" style="margin-top:14px">Buy Pressure</div>
+<div class="bar"><div class="fill green" id="buybar"></div></div>
+
+<div class="title">Sell Pressure</div>
+<div class="bar"><div class="fill red" id="sellbar"></div></div>
+
+<div class="title">Delta Heatmap</div>
+<div class="heat" id="heat"></div>
+</div>
+
+<!-- RIGHT -->
+<div class="panel">
+<div class="title">GOD SIGNAL</div>
+<div class="signal yellow" id="signal">WAIT</div>
+
+<div class="big yellow" id="score">0</div>
+<div class="small">Composite Score</div>
+
+<div class="title" style="margin-top:18px">Confidence</div>
+<div class="bar"><div class="fill yellow" id="conf"></div></div>
