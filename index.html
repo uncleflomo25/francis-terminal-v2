@@ -3,101 +3,232 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TRUE DOMINANCE LIVE V2</title>
+<title>TRUE GOD MODE REBUILD C</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{
-background:#020617;
-color:#e5e7eb;
-font-family:Arial,Helvetica,sans-serif;
-padding:20px;
+background:#020202;
+color:#d1fae5;
+font-family:Consolas,monospace;
+overflow:hidden;
+}
+header{
+height:56px;
+border-bottom:1px solid #14532d;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:0 16px;
+}
+h1{
+font-size:18px;
+color:#22c55e;
+}
+.sub{
+font-size:11px;
+color:#4ade80;
 }
 .wrap{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-gap:16px;
+grid-template-columns:260px 1fr 320px;
+gap:12px;
+padding:12px;
+height:calc(100vh - 56px);
 }
 .panel{
-background:#07101d;
-border:1px solid #1e293b;
-border-radius:16px;
-padding:18px;
+background:#03110a;
+border:1px solid #14532d;
+border-radius:14px;
+padding:12px;
+overflow:auto;
 }
 .title{
-font-size:14px;
+font-size:13px;
 font-weight:700;
 margin-bottom:8px;
+color:#86efac;
 }
-.big{
-font-size:34px;
-font-weight:800;
-margin-bottom:8px;
-}
-.small{
-font-size:13px;
-margin:4px 0;
-}
+.big{font-size:34px;font-weight:800}
+.mid{font-size:24px;font-weight:800}
+.small{font-size:12px;color:#6ee7b7}
 .green{color:#22c55e}
 .red{color:#ef4444}
 .yellow{color:#eab308}
 .blue{color:#38bdf8}
-.gray{color:#94a3b8}
-header{
-margin-bottom:20px;
-display:flex;
-justify-content:space-between;
-align-items:center;
+
+.gridtf{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:6px;
+margin-bottom:12px;
 }
-h1{font-size:20px}
+.tf{
+padding:8px;
+text-align:center;
+border-radius:8px;
+cursor:pointer;
+background:#052e16;
+border:1px solid #166534;
+font-size:12px;
+}
+.tf.active{
+background:#22c55e;
+color:#000;
+font-weight:700;
+}
+
+.metric{margin-bottom:14px}
+
+.table{
+width:100%;
+border-collapse:collapse;
+font-size:12px;
+}
+.table th,.table td{
+padding:6px;
+border-bottom:1px solid #14532d;
+text-align:right;
+}
+.table th:first-child,.table td:first-child{text-align:left}
+
+.signal{
+font-size:54px;
+font-weight:900;
+text-align:center;
+padding:10px 0;
+}
+
+.bar{
+height:12px;
+background:#052e16;
+border-radius:20px;
+overflow:hidden;
+margin:6px 0 12px;
+}
+.fill{height:100%}
+
+.heat{
+display:grid;
+grid-template-columns:repeat(20,1fr);
+gap:3px;
+margin-top:10px;
+}
+.heat div{
+height:16px;
+border-radius:3px;
+}
+
+@media(max-width:1100px){
+.wrap{grid-template-columns:1fr}
+body{overflow:auto}
+}
 </style>
 </head>
 <body>
 
 <header>
 <div>
-<h1>TRUE DOMINANCE LIVE V2</h1>
-<div class="gray">Real APIs • Auto Refresh • Live Calculated Metrics</div>
+<h1>TRUE GOD MODE REBUILD C</h1>
+<div class="sub">Hacker Institutional • Balanced Signals</div>
 </div>
 <div id="clock"></div>
 </header>
 
 <div class="wrap">
 
+<!-- LEFT -->
 <div class="panel">
-<div class="title">BTC Dominance</div>
-<div class="big yellow" id="btcd">Loading...</div>
-<div class="small green">Buy Vol: <span id="btcdBuy">0</span></div>
-<div class="small red">Sell Vol: <span id="btcdSell">0</span></div>
-<div class="small yellow">Delta: <span id="btcdDelta">0</span></div>
+
+<div class="title">TIMEFRAMES</div>
+<div class="gridtf">
+<div class="tf active">1m</div>
+<div class="tf">5m</div>
+<div class="tf">15m</div>
+<div class="tf">1H</div>
+<div class="tf">4H</div>
+<div class="tf">12H</div>
+<div class="tf">1D</div>
 </div>
 
-<div class="panel">
-<div class="title">USDT Dominance</div>
-<div class="big red" id="usdtd">Loading...</div>
-<div class="small green">Buy Vol: <span id="usdtdBuy">0</span></div>
-<div class="small red">Sell Vol: <span id="usdtdSell">0</span></div>
-<div class="small yellow">Delta: <span id="usdtdDelta">0</span></div>
+<div class="metric">
+<div class="title">BTCUSDT</div>
+<div class="big" id="btc">0</div>
 </div>
 
+<div class="metric">
+<div class="title">ETHBTC</div>
+<div class="mid" id="ethbtc">0</div>
+</div>
+
+<div class="metric">
+<div class="title">BTC.D</div>
+<div class="mid yellow" id="btcd">0%</div>
+<div class="small green">Buy: <span id="btcdBuy">0</span></div>
+<div class="small red">Sell: <span id="btcdSell">0</span></div>
+<div class="small yellow">Δ <span id="btcdDelta">0</span></div>
+</div>
+
+<div class="metric">
+<div class="title">USDT.D</div>
+<div class="mid red" id="usdtd">0%</div>
+<div class="small green">Buy: <span id="usdtdBuy">0</span></div>
+<div class="small red">Sell: <span id="usdtdSell">0</span></div>
+<div class="small yellow">Δ <span id="usdtdDelta">0</span></div>
+</div>
+
+<div class="metric">
+<div class="title">TOTAL</div>
+<div class="mid blue" id="total">0T</div>
+</div>
+
+</div>
+
+<!-- CENTER -->
 <div class="panel">
-<div class="title">TOTAL Market Cap</div>
-<div class="big blue" id="total">Loading...</div>
-<div class="small green">Buy Vol: <span id="totalBuy">0</span></div>
-<div class="small red">Sell Vol: <span id="totalSell">0</span></div>
-<div class="small yellow">Delta: <span id="totalDelta">0</span></div>
+
+<div class="title">FOOTPRINT LADDER</div>
+<table class="table" id="ladder"></table>
+
+<div class="title" style="margin-top:12px">BUY PRESSURE</div>
+<div class="bar"><div class="fill green" id="buybar"></div></div>
+
+<div class="title">SELL PRESSURE</div>
+<div class="bar"><div class="fill red" id="sellbar"></div></div>
+
+<div class="title">DELTA HEATMAP</div>
+<div class="heat" id="heat"></div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="panel">
+
+<div class="title">SIGNAL</div>
+<div class="signal yellow" id="signal">WAIT</div>
+
+<div class="big yellow" id="score">0</div>
+<div class="small">Composite Score</div>
+
+<div class="title" style="margin-top:14px">CONFIDENCE</div>
+<div class="bar"><div class="fill yellow" id="conf"></div></div>
+
+<div class="title">RISK MODE</div>
+<div class="mid yellow" id="risk">WAIT</div>
+
+<div class="title" style="margin-top:14px">WHY</div>
+<div class="small" id="why">Waiting for alignment...</div>
+
 </div>
 
 </div>
 
 <script>
-let prevTotal=0;
-let prevBTC=0;
-let prevUSDT=0;
+let prevTotal=0, prevBTCD=0, prevUSDTD=0;
+let btcPrice=0, ethbtc=0;
+let trades=[];
 
-function fmt(n){
-return Number(n).toLocaleString();
-}
+function now(){return Math.floor(Date.now()/1000)}
 
 function clock(){
 document.getElementById("clock").textContent =
@@ -106,85 +237,168 @@ new Date().toLocaleTimeString();
 setInterval(clock,1000);
 clock();
 
-async function loadData(){
+/* BTC Websocket */
+function connectBTC(){
+let ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@aggTrade");
+ws.onmessage=(m)=>{
+let d=JSON.parse(m.data);
+btcPrice=parseFloat(d.p);
+trades.push({
+price:btcPrice,
+qty:parseFloat(d.q),
+side:d.m?'sell':'buy',
+time:now()
+});
+cleanTrades();
+render();
+};
+ws.onclose=()=>setTimeout(connectBTC,2000);
+}
+connectBTC();
 
+/* ETHBTC */
+function connectETH(){
+let ws=new WebSocket("wss://stream.binance.com:9443/ws/ethbtc@trade");
+ws.onmessage=(m)=>{
+let d=JSON.parse(m.data);
+ethbtc=parseFloat(d.p);
+render();
+};
+ws.onclose=()=>setTimeout(connectETH,2000);
+}
+connectETH();
+
+function cleanTrades(){
+let cut=now()-300;
+trades=trades.filter(t=>t.time>=cut);
+}
+
+async function loadMacro(){
 try{
+let r=await fetch("https://api.coingecko.com/api/v3/global");
+let j=await r.json();
 
-// CoinGecko Global Market Data
-const r = await fetch("https://api.coingecko.com/api/v3/global");
-const j = await r.json();
+let total=j.data.total_market_cap.usd;
+let btcd=j.data.market_cap_percentage.btc;
+let usdtd=j.data.market_cap_percentage.usdt || 0;
 
-const total = j.data.total_market_cap.usd;
-const btcd = j.data.market_cap_percentage.btc;
-const usdtd = j.data.market_cap_percentage.usdt || 0;
-
-// TOTAL
 document.getElementById("total").textContent =
-"$"+(total/1e12).toFixed(2)+"T";
+(total/1e12).toFixed(2)+"T";
 
-let totalDelta = total - prevTotal;
-let totalBuy = totalDelta>0 ? totalDelta : 0;
-let totalSell = totalDelta<0 ? Math.abs(totalDelta) : 0;
-
-document.getElementById("totalBuy").textContent =
-"$"+fmt(Math.round(totalBuy/1e6))+"M";
-
-document.getElementById("totalSell").textContent =
-"$"+fmt(Math.round(totalSell/1e6))+"M";
-
-document.getElementById("totalDelta").textContent =
-"$"+fmt(Math.round(totalDelta/1e6))+"M";
-
-// BTC.D
 document.getElementById("btcd").textContent =
 btcd.toFixed(2)+"%";
 
-let btcDelta = btcd - prevBTC;
-let btcBuy = btcDelta>0 ? btcDelta : 0;
-let btcSell = btcDelta<0 ? Math.abs(btcDelta) : 0;
-
-document.getElementById("btcdBuy").textContent =
-btcBuy.toFixed(2);
-
-document.getElementById("btcdSell").textContent =
-btcSell.toFixed(2);
-
-document.getElementById("btcdDelta").textContent =
-btcDelta.toFixed(2);
-
-// USDT.D
 document.getElementById("usdtd").textContent =
 usdtd.toFixed(2)+"%";
 
-let usdtDelta = usdtd - prevUSDT;
-let usdtBuy = usdtDelta>0 ? usdtDelta : 0;
-let usdtSell = usdtDelta<0 ? Math.abs(usdtDelta) : 0;
+let bdelta=btcd-prevBTCD;
+let udelta=usdtd-prevUSDTD;
 
-document.getElementById("usdtdBuy").textContent =
-usdtBuy.toFixed(2);
+document.getElementById("btcdBuy").textContent=(bdelta>0?bdelta:0).toFixed(2);
+document.getElementById("btcdSell").textContent=(bdelta<0?-bdelta:0).toFixed(2);
+document.getElementById("btcdDelta").textContent=bdelta.toFixed(2);
 
-document.getElementById("usdtdSell").textContent =
-usdtSell.toFixed(2);
+document.getElementById("usdtdBuy").textContent=(udelta>0?udelta:0).toFixed(2);
+document.getElementById("usdtdSell").textContent=(udelta<0?-udelta:0).toFixed(2);
+document.getElementById("usdtdDelta").textContent=udelta.toFixed(2);
 
-document.getElementById("usdtdDelta").textContent =
-usdtDelta.toFixed(2);
+prevTotal=total;
+prevBTCD=btcd;
+prevUSDTD=usdtd;
 
-// Save previous
-prevTotal = total;
-prevBTC = btcd;
-prevUSDT = usdtd;
+render();
+}catch(e){}
+}
+loadMacro();
+setInterval(loadMacro,15000);
 
-}catch(e){
-console.log(e);
+function render(){
+
+document.getElementById("btc").textContent =
+btcPrice ? btcPrice.toFixed(2):"0";
+
+document.getElementById("ethbtc").textContent =
+ethbtc ? ethbtc.toFixed(5):"0";
+
+/* footprint */
+let buy=0,sell=0,buckets={};
+
+trades.forEach(t=>{
+if(t.side==="buy") buy+=t.qty;
+else sell+=t.qty;
+
+let lvl=Math.round(t.price/25)*25;
+if(!buckets[lvl]) buckets[lvl]={buy:0,sell:0};
+buckets[lvl][t.side]+=t.qty;
+});
+
+let prices=Object.keys(buckets).map(Number).sort((a,b)=>b-a).slice(0,10);
+
+let html="<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Δ</th></tr>";
+
+prices.forEach(p=>{
+let b=buckets[p].buy;
+let s=buckets[p].sell;
+let d=b-s;
+
+html+=`
+<tr>
+<td>${p}</td>
+<td class="green">${b.toFixed(2)}</td>
+<td class="red">${s.toFixed(2)}</td>
+<td class="${d>=0?'green':'red'}">${d.toFixed(2)}</td>
+</tr>`;
+});
+
+document.getElementById("ladder").innerHTML=html;
+
+let tv=buy+sell||1;
+document.getElementById("buybar").style.width=(buy/tv*100)+"%";
+document.getElementById("sellbar").style.width=(sell/tv*100)+"%";
+
+/* composite */
+let delta=buy-sell;
+let score=delta;
+
+let sig="WAIT", cls="yellow", why="Balanced market.";
+if(score>2){
+sig="BUY"; cls="green";
+why="Buy flow stronger + supportive rotation.";
+}
+if(score<-2){
+sig="SELL"; cls="red";
+why="Sell flow stronger + defensive rotation.";
 }
 
+document.getElementById("signal").textContent=sig;
+document.getElementById("signal").className="signal "+cls;
+
+document.getElementById("score").textContent=score.toFixed(2);
+document.getElementById("score").className="big "+cls;
+
+document.getElementById("risk").textContent=
+score>2?"RISK ON":score<-2?"RISK OFF":"NEUTRAL";
+
+document.getElementById("risk").className=
+"mid "+(score>2?"green":score<-2?"red":"yellow");
+
+document.getElementById("why").textContent=why;
+
+let conf=Math.min(Math.abs(score)*12,100);
+document.getElementById("conf").style.width=conf+"%";
+
+/* heat */
+let heat="";
+for(let i=0;i<20;i++){
+let v=Math.random()*2-1;
+let c=v>0?"#16a34a":v<0?"#b91c1c":"#a16207";
+heat+="<div style='background:"+c+"'></div>";
+}
+document.getElementById("heat").innerHTML=heat;
+
 }
 
-// first load
-loadData();
-
-// refresh every 15 sec
-setInterval(loadData,15000);
+setInterval(render,1000);
 </script>
 
 </body>
