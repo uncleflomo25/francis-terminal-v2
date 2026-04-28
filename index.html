@@ -3,134 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>LIVE BINANCE PRO - Multi Timeframe</title>
-
+<title>TRUE LIVE BINANCE FOOTPRINT ELITE</title>
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#020617;
-  color:#e5e7eb;
-}
-header{
-  padding:14px 18px;
-  border-bottom:1px solid #1e293b;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+body{margin:0;font-family:Arial,sans-serif;background:#020617;color:#e5e7eb}
+header{padding:12px 16px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
 h1{margin:0;font-size:18px}
 .sub{font-size:12px;color:#94a3b8}
-
-.wrap{
-  display:grid;
-  grid-template-columns:250px 1fr 320px;
-  gap:12px;
-  padding:12px;
-  min-height:calc(100vh - 58px);
-}
-
-.panel{
-  background:#07101d;
-  border:1px solid #1e293b;
-  border-radius:16px;
-  padding:12px;
-}
-
-.title{
-  font-size:13px;
-  font-weight:700;
-  margin-bottom:10px;
-}
-
-.big{
-  font-size:34px;
-  font-weight:800;
-}
-
-.signal{
-  font-size:42px;
-  font-weight:900;
-  text-align:center;
-  padding:16px 0;
-}
-
-.green{color:#22c55e}
-.red{color:#ef4444}
-.yellow{color:#eab308}
-
-.table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-
-.table th,.table td{
-  padding:7px;
-  border-bottom:1px solid #132033;
-  text-align:right;
-}
-
-.table th:first-child,.table td:first-child{
-  text-align:left;
-}
-
-.btn,select{
-  width:100%;
-  padding:10px;
-  margin-top:8px;
-  border:none;
-  border-radius:10px;
-  background:#0f172a;
-  color:#fff;
-  border:1px solid #334155;
-}
-
-.tabs{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:6px;
-  margin-bottom:10px;
-}
-
-.tab{
-  padding:8px;
-  border-radius:8px;
-  background:#0f172a;
-  text-align:center;
-  cursor:pointer;
-  font-size:12px;
-}
-
-.active{
-  background:#1d4ed8;
-}
-
-.heat{
-  display:grid;
-  grid-template-columns:repeat(20,1fr);
-  gap:3px;
-  margin-top:10px;
-}
-
-.heat div{
-  height:18px;
-  border-radius:4px;
-}
-
-@media(max-width:1100px){
-.wrap{grid-template-columns:1fr;}
-}
+.wrap{display:grid;grid-template-columns:260px 1fr 320px;gap:12px;padding:12px;min-height:calc(100vh - 58px)}
+.panel{background:#07101d;border:1px solid #1e293b;border-radius:16px;padding:12px}
+.title{font-size:13px;font-weight:700;margin-bottom:8px}
+.big{font-size:34px;font-weight:800}
+.green{color:#22c55e}.red{color:#ef4444}.yellow{color:#eab308}
+.signal{font-size:42px;font-weight:900;text-align:center;padding:16px 0}
+.gridtf{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tf{padding:8px;border-radius:8px;background:#0f172a;border:1px solid #334155;text-align:center;cursor:pointer;font-size:12px}
+.tf.active{background:#1d4ed8}
+.btn{width:100%;padding:10px;margin-top:8px;border-radius:10px;background:#0f172a;border:1px solid #334155;color:#fff;cursor:pointer}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th,.table td{padding:7px;border-bottom:1px solid #132033;text-align:right}
+.table th:first-child,.table td:first-child{text-align:left}
+.heat{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;margin-top:10px}
+.heat div{height:18px;border-radius:4px}
+.small{font-size:12px;color:#94a3b8}
+.status{padding:6px 8px;border-radius:8px;background:#0f172a;display:inline-block;font-size:12px}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}}
 </style>
 </head>
-
 <body>
-
 <header>
 <div>
-<h1>LIVE BINANCE PRO</h1>
-<div class="sub">Multiple Timeframe Composite Engine</div>
+<h1>TRUE LIVE BINANCE FOOTPRINT ELITE</h1>
+<div class="sub">BTCUSDT Real-Time WebSocket | 1m to 1D including 12H</div>
 </div>
 <div id="clock"></div>
 </header>
@@ -139,170 +43,230 @@ h1{margin:0;font-size:18px}
 
 <!-- LEFT -->
 <div class="panel">
-
 <div class="title">Timeframes</div>
-
-<div class="tabs">
-<div class="tab active" onclick="setTF('1m',this)">1m</div>
-<div class="tab" onclick="setTF('5m',this)">5m</div>
-<div class="tab" onclick="setTF('15m',this)">15m</div>
-<div class="tab" onclick="setTF('1h',this)">1H</div>
-<div class="tab" onclick="setTF('4h',this)">4H</div>
+<div class="gridtf">
+<div class="tf active" onclick="setTF('1m',this)">1m</div>
+<div class="tf" onclick="setTF('3m',this)">3m</div>
+<div class="tf" onclick="setTF('5m',this)">5m</div>
+<div class="tf" onclick="setTF('15m',this)">15m</div>
+<div class="tf" onclick="setTF('30m',this)">30m</div>
+<div class="tf" onclick="setTF('1h',this)">1H</div>
+<div class="tf" onclick="setTF('4h',this)">4H</div>
+<div class="tf" onclick="setTF('12h',this)">12H</div>
+<div class="tf" onclick="setTF('1d',this)">1D</div>
 </div>
 
-<div class="title">Current TF</div>
+<div class="title" style="margin-top:14px;">Selected TF</div>
 <div class="big yellow" id="tfBox">1m</div>
 
-<button class="btn" onclick="refreshNow()">Refresh</button>
-<button class="btn" onclick="toggleLive()">Live OFF</button>
+<button class="btn" onclick="resetData()">Reset Window</button>
 
-<div class="title" style="margin-top:14px;">Price</div>
+<div class="title" style="margin-top:14px;">Connection</div>
+<div id="status" class="status yellow">Connecting...</div>
+
+<div class="title" style="margin-top:14px;">Live Price</div>
 <div class="big" id="price">0</div>
-
+<div class="small">BTCUSDT</div>
 </div>
 
 <!-- CENTER -->
 <div class="panel">
-
-<div class="title">Footprint Ladder</div>
+<div class="title">Footprint Ladder (Recent Buckets)</div>
 <table class="table" id="tbl"></table>
 
 <div class="title" style="margin-top:14px;">Pressure Heatmap</div>
 <div class="heat" id="heat"></div>
-
 </div>
 
 <!-- RIGHT -->
 <div class="panel">
-
 <div class="title">Signal</div>
 <div class="signal yellow" id="signal">WAIT</div>
 
 <div class="big yellow" id="delta">0</div>
-<div class="sub">Net Delta</div>
+<div class="small">Net Delta</div>
+
+<div class="title" style="margin-top:14px;">Buy Volume</div>
+<div class="big green" style="font-size:26px" id="buyVol">0</div>
+
+<div class="title" style="margin-top:14px;">Sell Volume</div>
+<div class="big red" style="font-size:26px" id="sellVol">0</div>
 
 <div class="title" style="margin-top:14px;">Why</div>
-<div class="sub" id="why">Waiting for flow confirmation.</div>
-
+<div class="small" id="why">Waiting for sufficient live flow.</div>
 </div>
 
 </div>
 
 <script>
-let currentTF="1m";
-let live=false;
-let timer=null;
+let currentTF='1m';
+let trades=[];
+let ws=null;
+let lastPrice=0;
 
-let tfMultiplier={
- "1m":1,
- "5m":2,
- "15m":3,
- "1h":5,
- "4h":8
+const tfSec={
+'1m':60,
+'3m':180,
+'5m':300,
+'15m':900,
+'30m':1800,
+'1h':3600,
+'4h':14400,
+'12h':43200,
+'1d':86400
 };
 
-function rnd(a,b){
- return Math.floor(Math.random()*(b-a+1))+a;
-}
+function now(){ return Math.floor(Date.now()/1000); }
 
 function setTF(tf,el){
  currentTF=tf;
- document.getElementById("tfBox").textContent=tf;
-
- document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
- el.classList.add("active");
-
+ document.getElementById('tfBox').textContent=tf.toUpperCase();
+ document.querySelectorAll('.tf').forEach(x=>x.classList.remove('active'));
+ el.classList.add('active');
  render();
 }
 
-function refreshNow(){
+function resetData(){
+ trades=[];
  render();
 }
 
-function toggleLive(){
- live=!live;
+function connect(){
+ ws=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
 
- document.querySelectorAll(".btn")[1].textContent=
- live ? "Live ON":"Live OFF";
+ ws.onopen=()=>{
+   setStatus('LIVE CONNECTED','#22c55e');
+ };
 
- if(live){
-   timer=setInterval(render,3000);
- }else{
-   clearInterval(timer);
- }
+ ws.onclose=()=>{
+   setStatus('RECONNECTING','#eab308');
+   setTimeout(connect,2000);
+ };
+
+ ws.onerror=()=>{
+   setStatus('ERROR','#ef4444');
+ };
+
+ ws.onmessage=(msg)=>{
+   const d=JSON.parse(msg.data);
+
+   const price=parseFloat(d.p);
+   const qty=parseFloat(d.q);
+   const maker=d.m; // true = sell aggression
+   lastPrice=price;
+
+   trades.push({
+     time:now(),
+     price:price,
+     qty:qty,
+     side:maker?'sell':'buy'
+   });
+
+   cleanOld();
+   render();
+ };
+}
+
+function setStatus(txt,color){
+ const s=document.getElementById('status');
+ s.textContent=txt;
+ s.style.color=color;
+}
+
+function cleanOld(){
+ const cutoff=now()-86400;
+ trades=trades.filter(t=>t.time>=cutoff);
+}
+
+function getWindowTrades(){
+ const cutoff=now()-tfSec[currentTF];
+ return trades.filter(t=>t.time>=cutoff);
 }
 
 function render(){
 
- document.getElementById("clock").textContent=
+ document.getElementById('clock').textContent=
  new Date().toLocaleTimeString();
 
- let mult=tfMultiplier[currentTF];
+ document.getElementById('price').textContent=
+ lastPrice?lastPrice.toFixed(2):'0';
 
- let price=69000+rnd(-300,300);
- document.getElementById("price").textContent=price;
+ const arr=getWindowTrades();
 
- let t='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
+ let buy=0,sell=0;
 
- let net=0;
+ arr.forEach(t=>{
+   if(t.side==='buy') buy+=t.qty;
+   else sell+=t.qty;
+ });
 
- for(let i=0;i<10;i++){
+ const delta=buy-sell;
 
-   let p=price-(i*25);
+ document.getElementById('buyVol').textContent=buy.toFixed(3);
+ document.getElementById('sellVol').textContent=sell.toFixed(3);
 
-   let buy=rnd(500,3000)*mult;
-   let sell=rnd(500,3000)*mult;
+ const deltaBox=document.getElementById('delta');
+ deltaBox.textContent=(delta>0?'+':'')+delta.toFixed(3);
 
-   let d=buy-sell;
-   net+=d;
+ let sig='WAIT', cls='yellow', why='Balanced pressure.';
 
-   t+=`
+ if(delta>2){
+   sig='BUY'; cls='green';
+   why='Aggressive buyers dominate selected timeframe.';
+ }
+ else if(delta<-2){
+   sig='SELL'; cls='red';
+   why='Aggressive sellers dominate selected timeframe.';
+ }
+
+ document.getElementById('signal').className='signal '+cls;
+ document.getElementById('signal').textContent=sig;
+ deltaBox.className='big '+cls;
+ document.getElementById('why').textContent=why;
+
+ // Ladder
+ let buckets={};
+
+ arr.forEach(t=>{
+   const lvl=Math.round(t.price/25)*25;
+   if(!buckets[lvl]) buckets[lvl]={buy:0,sell:0};
+   buckets[lvl][t.side]+=t.qty;
+ });
+
+ let prices=Object.keys(buckets).map(Number).sort((a,b)=>b-a).slice(0,12);
+
+ let html='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
+
+ prices.forEach(p=>{
+   const b=buckets[p].buy||0;
+   const s=buckets[p].sell||0;
+   const d=b-s;
+
+   html+=`
    <tr>
    <td>${p}</td>
-   <td class="green">${buy}</td>
-   <td class="red">${sell}</td>
-   <td class="${d>=0?'green':'red'}">${d}</td>
+   <td class="green">${b.toFixed(3)}</td>
+   <td class="red">${s.toFixed(3)}</td>
+   <td class="${d>=0?'green':'red'}">${d.toFixed(3)}</td>
    </tr>`;
- }
+ });
 
- document.getElementById("tbl").innerHTML=t;
+ document.getElementById('tbl').innerHTML=html;
 
- let sig="WAIT";
- let cls="yellow";
- let why="Balanced pressure.";
-
- if(net>3000*mult){
-   sig="BUY";
-   cls="green";
-   why="Buyers dominant on "+currentTF+".";
- }
- else if(net<-3000*mult){
-   sig="SELL";
-   cls="red";
-   why="Sellers dominant on "+currentTF+".";
- }
-
- document.getElementById("signal").className="signal "+cls;
- document.getElementById("signal").textContent=sig;
-
- document.getElementById("delta").className="big "+cls;
- document.getElementById("delta").textContent=
- (net>0?"+":"")+net;
-
- document.getElementById("why").textContent=why;
-
- let h="";
+ // Heatmap
+ let heat='';
  for(let i=0;i<20;i++){
-   let v=rnd(-10,10);
-   let c=v>0?"#16a34a":v<0?"#b91c1c":"#a16207";
-   h+=`<div style="background:${c}"></div>`;
+   const slice=arr.slice(Math.max(0,arr.length-(i+1)*5), arr.length-i*5);
+   let sd=0;
+   slice.forEach(x=> sd += x.side==='buy'?x.qty:-x.qty );
+   let c = sd>0 ? '#16a34a' : sd<0 ? '#b91c1c' : '#a16207';
+   heat='<div style="background:'+c+'"></div>'+heat;
  }
-
- document.getElementById("heat").innerHTML=h;
+ document.getElementById('heat').innerHTML=heat;
 }
 
-render();
+connect();
+setInterval(render,1000);
 </script>
-
 </body>
 </html>
