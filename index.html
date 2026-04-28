@@ -3,413 +3,188 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>REAL GOD MODE FINAL V1 - TRUE LIVE</title>
+<title>TRUE DOMINANCE LIVE V2</title>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{margin:0;padding:0;box-sizing:border-box}
 body{
 background:#020617;
 color:#e5e7eb;
 font-family:Arial,Helvetica,sans-serif;
-overflow:hidden;
+padding:20px;
 }
-header{
-height:58px;
-border-bottom:1px solid #1e293b;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 16px;
-}
-h1{font-size:18px}
-.sub{font-size:11px;color:#94a3b8}
-
 .wrap{
 display:grid;
-grid-template-columns:260px 1fr 320px;
-gap:12px;
-padding:12px;
-height:calc(100vh - 58px);
+grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+gap:16px;
 }
-
 .panel{
 background:#07101d;
 border:1px solid #1e293b;
 border-radius:16px;
-padding:12px;
-overflow:auto;
+padding:18px;
 }
-
 .title{
-font-size:13px;
+font-size:14px;
 font-weight:700;
 margin-bottom:8px;
-color:#fff;
 }
-
-.big{font-size:36px;font-weight:800}
-.mid{font-size:26px;font-weight:800}
-.small{font-size:12px;color:#94a3b8}
-
+.big{
+font-size:34px;
+font-weight:800;
+margin-bottom:8px;
+}
+.small{
+font-size:13px;
+margin:4px 0;
+}
 .green{color:#22c55e}
 .red{color:#ef4444}
 .yellow{color:#eab308}
 .blue{color:#38bdf8}
-
-.gridtf{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:6px;
-margin-bottom:12px;
+.gray{color:#94a3b8}
+header{
+margin-bottom:20px;
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
-
-.tf{
-padding:8px;
-border-radius:8px;
-text-align:center;
-cursor:pointer;
-font-size:12px;
-background:#0f172a;
-border:1px solid #334155;
-}
-
-.tf.active{background:#1d4ed8}
-
-.metric{margin-bottom:14px}
-
-.table{
-width:100%;
-border-collapse:collapse;
-font-size:12px;
-}
-
-.table th,.table td{
-padding:7px;
-border-bottom:1px solid #132033;
-text-align:right;
-}
-
-.table th:first-child,.table td:first-child{text-align:left}
-
-.heat{
-display:grid;
-grid-template-columns:repeat(20,1fr);
-gap:3px;
-margin-top:10px;
-}
-
-.heat div{
-height:18px;
-border-radius:4px;
-}
-
-.bar{
-height:14px;
-background:#0f172a;
-border-radius:20px;
-overflow:hidden;
-margin:6px 0 12px 0;
-}
-
-.fill{height:100%}
-
-.signal{
-font-size:54px;
-font-weight:900;
-text-align:center;
-padding:10px 0;
-}
-
-.reason{
-font-size:13px;
-line-height:1.4;
-color:#cbd5e1;
-}
-
-@media(max-width:1100px){
-.wrap{grid-template-columns:1fr}
-body{overflow:auto}
-}
+h1{font-size:20px}
 </style>
 </head>
 <body>
 
 <header>
 <div>
-<h1>REAL GOD MODE FINAL V1</h1>
-<div class="sub">TRUE LIVE Binance WebSocket + Live Metrics</div>
+<h1>TRUE DOMINANCE LIVE V2</h1>
+<div class="gray">Real APIs • Auto Refresh • Live Calculated Metrics</div>
 </div>
 <div id="clock"></div>
 </header>
 
 <div class="wrap">
 
-<!-- LEFT -->
 <div class="panel">
-
-<div class="title">Timeframes</div>
-<div class="gridtf">
-<div class="tf active" onclick="setTF('1m',this)">1m</div>
-<div class="tf" onclick="setTF('5m',this)">5m</div>
-<div class="tf" onclick="setTF('15m',this)">15m</div>
-<div class="tf" onclick="setTF('1h',this)">1H</div>
-<div class="tf" onclick="setTF('4h',this)">4H</div>
-<div class="tf" onclick="setTF('12h',this)">12H</div>
-<div class="tf" onclick="setTF('1d',this)">1D</div>
+<div class="title">BTC Dominance</div>
+<div class="big yellow" id="btcd">Loading...</div>
+<div class="small green">Buy Vol: <span id="btcdBuy">0</span></div>
+<div class="small red">Sell Vol: <span id="btcdSell">0</span></div>
+<div class="small yellow">Delta: <span id="btcdDelta">0</span></div>
 </div>
 
-<div class="metric">
-<div class="title">BTCUSDT</div>
-<div class="big" id="btc">0</div>
-</div>
-
-<div class="metric">
-<div class="title">ETHBTC</div>
-<div class="mid" id="ethbtc">0</div>
-</div>
-
-<div class="metric">
-<div class="title">BTC.D</div>
-<div class="mid yellow" id="btcd">LIVE</div>
-</div>
-
-<div class="metric">
-<div class="title">USDT.D</div>
-<div class="mid red" id="usdtd">LIVE</div>
-</div>
-
-<div class="metric">
-<div class="title">TOTAL</div>
-<div class="mid blue" id="total">LIVE</div>
-</div>
-
-<div class="metric">
-<div class="title">Risk Mode</div>
-<div class="mid yellow" id="risk">WAIT</div>
-</div>
-
-</div>
-
-<!-- CENTER -->
 <div class="panel">
-
-<div class="title">Institutional Footprint Ladder</div>
-<table class="table" id="ladder"></table>
-
-<div class="title" style="margin-top:14px">Buy Pressure</div>
-<div class="bar"><div class="fill green" id="buybar"></div></div>
-
-<div class="title">Sell Pressure</div>
-<div class="bar"><div class="fill red" id="sellbar"></div></div>
-
-<div class="title">Delta Heatmap</div>
-<div class="heat" id="heat"></div>
-
+<div class="title">USDT Dominance</div>
+<div class="big red" id="usdtd">Loading...</div>
+<div class="small green">Buy Vol: <span id="usdtdBuy">0</span></div>
+<div class="small red">Sell Vol: <span id="usdtdSell">0</span></div>
+<div class="small yellow">Delta: <span id="usdtdDelta">0</span></div>
 </div>
 
-<!-- RIGHT -->
 <div class="panel">
-
-<div class="title">GOD SIGNAL</div>
-<div class="signal yellow" id="signal">WAIT</div>
-
-<div class="big yellow" id="score">0</div>
-<div class="small">Composite Score</div>
-
-<div class="title" style="margin-top:18px">Confidence</div>
-<div class="bar"><div class="fill yellow" id="conf"></div></div>
-
-<div class="title">Why</div>
-<div class="reason" id="why">Waiting for live flow...</div>
-
+<div class="title">TOTAL Market Cap</div>
+<div class="big blue" id="total">Loading...</div>
+<div class="small green">Buy Vol: <span id="totalBuy">0</span></div>
+<div class="small red">Sell Vol: <span id="totalSell">0</span></div>
+<div class="small yellow">Delta: <span id="totalDelta">0</span></div>
 </div>
 
 </div>
 
 <script>
-let currentTF='1m';
+let prevTotal=0;
+let prevBTC=0;
+let prevUSDT=0;
 
-const tfSec={
-'1m':60,
-'5m':300,
-'15m':900,
-'1h':3600,
-'4h':14400,
-'12h':43200,
-'1d':86400
-};
-
-let trades=[];
-let btcPrice=0;
-let ethbtc=0;
-
-function now(){ return Math.floor(Date.now()/1000); }
-
-function setTF(tf,el){
-currentTF=tf;
-document.querySelectorAll('.tf').forEach(x=>x.classList.remove('active'));
-el.classList.add('active');
-render();
+function fmt(n){
+return Number(n).toLocaleString();
 }
 
-function connectBTC(){
-const ws=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
-
-ws.onmessage=(msg)=>{
-const d=JSON.parse(msg.data);
-
-btcPrice=parseFloat(d.p);
-
-trades.push({
-time:now(),
-price:btcPrice,
-qty:parseFloat(d.q),
-side:d.m ? 'sell':'buy'
-});
-
-cleanOld();
-render();
-};
-
-ws.onclose=()=>setTimeout(connectBTC,2000);
-}
-
-function connectETHBTC(){
-const ws=new WebSocket('wss://stream.binance.com:9443/ws/ethbtc@trade');
-
-ws.onmessage=(msg)=>{
-const d=JSON.parse(msg.data);
-ethbtc=parseFloat(d.p);
-render();
-};
-
-ws.onclose=()=>setTimeout(connectETHBTC,2000);
-}
-
-function cleanOld(){
-const cutoff=now()-86400;
-trades=trades.filter(t=>t.time>=cutoff);
-}
-
-function getTrades(){
-const cutoff=now()-tfSec[currentTF];
-return trades.filter(t=>t.time>=cutoff);
-}
-
-function render(){
-
-document.getElementById('clock').textContent =
+function clock(){
+document.getElementById("clock").textContent =
 new Date().toLocaleTimeString();
-
-document.getElementById('btc').textContent =
-btcPrice ? btcPrice.toFixed(2) : '0';
-
-document.getElementById('ethbtc').textContent =
-ethbtc ? ethbtc.toFixed(5) : '0';
-
-const arr=getTrades();
-
-let buy=0,sell=0;
-
-arr.forEach(t=>{
-if(t.side==='buy') buy+=t.qty;
-else sell+=t.qty;
-});
-
-const delta=buy-sell;
-
-let buckets={};
-
-arr.forEach(t=>{
-const lvl=Math.round(t.price/25)*25;
-if(!buckets[lvl]) buckets[lvl]={buy:0,sell:0};
-buckets[lvl][t.side]+=t.qty;
-});
-
-let prices=Object.keys(buckets).map(Number).sort((a,b)=>b-a).slice(0,10);
-
-let html='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
-
-prices.forEach(p=>{
-let b=buckets[p].buy;
-let s=buckets[p].sell;
-let d=b-s;
-
-html+=`
-<tr>
-<td>${p}</td>
-<td class="green">${b.toFixed(3)}</td>
-<td class="red">${s.toFixed(3)}</td>
-<td class="${d>=0?'green':'red'}">${d.toFixed(3)}</td>
-</tr>`;
-});
-
-document.getElementById('ladder').innerHTML=html;
-
-const totalVol=buy+sell || 1;
-
-document.getElementById('buybar').style.width=(buy/totalVol*100)+'%';
-document.getElementById('sellbar').style.width=(sell/totalVol*100)+'%';
-
-let score = delta*2;
-
-let signal='WAIT';
-let cls='yellow';
-let why='Balanced market.';
-
-if(score>3){
-signal='BUY';
-cls='green';
-why='Buy pressure dominates selected timeframe.';
 }
-else if(score<-3){
-signal='SELL';
-cls='red';
-why='Sell pressure dominates selected timeframe.';
-}
+setInterval(clock,1000);
+clock();
 
-document.getElementById('signal').textContent=signal;
-document.getElementById('signal').className='signal '+cls;
+async function loadData(){
 
-document.getElementById('score').textContent=score.toFixed(2);
-document.getElementById('score').className='big '+cls;
+try{
 
-document.getElementById('why').textContent=why;
+// CoinGecko Global Market Data
+const r = await fetch("https://api.coingecko.com/api/v3/global");
+const j = await r.json();
 
-let conf=Math.min(Math.abs(score)*10,100);
-document.getElementById('conf').style.width=conf+'%';
+const total = j.data.total_market_cap.usd;
+const btcd = j.data.market_cap_percentage.btc;
+const usdtd = j.data.market_cap_percentage.usdt || 0;
 
-document.getElementById('risk').textContent=
-score>3?'RISK ON':score<-3?'RISK OFF':'NEUTRAL';
+// TOTAL
+document.getElementById("total").textContent =
+"$"+(total/1e12).toFixed(2)+"T";
 
-document.getElementById('risk').className=
-'mid '+(score>3?'green':score<-3?'red':'yellow');
+let totalDelta = total - prevTotal;
+let totalBuy = totalDelta>0 ? totalDelta : 0;
+let totalSell = totalDelta<0 ? Math.abs(totalDelta) : 0;
 
-document.getElementById('btcd').textContent='LIVE';
-document.getElementById('usdtd').textContent='LIVE';
-document.getElementById('total').textContent='LIVE';
+document.getElementById("totalBuy").textContent =
+"$"+fmt(Math.round(totalBuy/1e6))+"M";
 
-let heat='';
+document.getElementById("totalSell").textContent =
+"$"+fmt(Math.round(totalSell/1e6))+"M";
 
-for(let i=0;i<20;i++){
-const slice=arr.slice(Math.max(0,arr.length-(i+1)*5),arr.length-i*5);
-let sd=0;
+document.getElementById("totalDelta").textContent =
+"$"+fmt(Math.round(totalDelta/1e6))+"M";
 
-slice.forEach(x=>{
-sd += x.side==='buy' ? x.qty : -x.qty;
-});
+// BTC.D
+document.getElementById("btcd").textContent =
+btcd.toFixed(2)+"%";
 
-let c=sd>0?'#16a34a':sd<0?'#b91c1c':'#a16207';
+let btcDelta = btcd - prevBTC;
+let btcBuy = btcDelta>0 ? btcDelta : 0;
+let btcSell = btcDelta<0 ? Math.abs(btcDelta) : 0;
 
-heat='<div style="background:'+c+'"></div>'+heat;
+document.getElementById("btcdBuy").textContent =
+btcBuy.toFixed(2);
+
+document.getElementById("btcdSell").textContent =
+btcSell.toFixed(2);
+
+document.getElementById("btcdDelta").textContent =
+btcDelta.toFixed(2);
+
+// USDT.D
+document.getElementById("usdtd").textContent =
+usdtd.toFixed(2)+"%";
+
+let usdtDelta = usdtd - prevUSDT;
+let usdtBuy = usdtDelta>0 ? usdtDelta : 0;
+let usdtSell = usdtDelta<0 ? Math.abs(usdtDelta) : 0;
+
+document.getElementById("usdtdBuy").textContent =
+usdtBuy.toFixed(2);
+
+document.getElementById("usdtdSell").textContent =
+usdtSell.toFixed(2);
+
+document.getElementById("usdtdDelta").textContent =
+usdtDelta.toFixed(2);
+
+// Save previous
+prevTotal = total;
+prevBTC = btcd;
+prevUSDT = usdtd;
+
+}catch(e){
+console.log(e);
 }
 
-document.getElementById('heat').innerHTML=heat;
 }
 
-connectBTC();
-connectETHBTC();
-setInterval(render,1000);
+// first load
+loadData();
+
+// refresh every 15 sec
+setInterval(loadData,15000);
 </script>
 
 </body>
