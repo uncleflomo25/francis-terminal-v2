@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Composite Footprint - Simple Trader (Freeze Mode)</title>
+<title>LIVE BINANCE PRO - Multi Timeframe</title>
+
 <style>
 *{box-sizing:border-box}
 body{
@@ -19,47 +20,63 @@ header{
   justify-content:space-between;
   align-items:center;
 }
-h1{
-  margin:0;
-  font-size:18px;
-}
-.sub{
-  font-size:12px;
-  color:#94a3b8;
-}
+h1{margin:0;font-size:18px}
+.sub{font-size:12px;color:#94a3b8}
+
 .wrap{
   display:grid;
-  grid-template-columns:240px 1fr 300px;
+  grid-template-columns:250px 1fr 320px;
   gap:12px;
   padding:12px;
-  min-height:calc(100vh - 60px);
+  min-height:calc(100vh - 58px);
 }
+
 .panel{
   background:#07101d;
   border:1px solid #1e293b;
   border-radius:16px;
   padding:12px;
 }
+
 .title{
   font-size:13px;
   font-weight:700;
   margin-bottom:10px;
 }
+
 .big{
   font-size:34px;
   font-weight:800;
 }
+
 .signal{
   font-size:42px;
   font-weight:900;
   text-align:center;
-  padding:20px 0;
+  padding:16px 0;
 }
-.green{color:#22c55e;}
-.red{color:#ef4444;}
-.yellow{color:#eab308;}
 
-.btn{
+.green{color:#22c55e}
+.red{color:#ef4444}
+.yellow{color:#eab308}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+.table th,.table td{
+  padding:7px;
+  border-bottom:1px solid #132033;
+  text-align:right;
+}
+
+.table th:first-child,.table td:first-child{
+  text-align:left;
+}
+
+.btn,select{
   width:100%;
   padding:10px;
   margin-top:8px;
@@ -67,26 +84,27 @@ h1{
   border-radius:10px;
   background:#0f172a;
   color:#fff;
-  cursor:pointer;
   border:1px solid #334155;
 }
-.btn:hover{
-  background:#1e293b;
+
+.tabs{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+  margin-bottom:10px;
 }
 
-.table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
+.tab{
+  padding:8px;
+  border-radius:8px;
+  background:#0f172a;
+  text-align:center;
+  cursor:pointer;
+  font-size:12px;
 }
-.table th,.table td{
-  padding:7px;
-  border-bottom:1px solid #132033;
-  text-align:right;
-}
-.table th:first-child,
-.table td:first-child{
-  text-align:left;
+
+.active{
+  background:#1d4ed8;
 }
 
 .heat{
@@ -95,22 +113,24 @@ h1{
   gap:3px;
   margin-top:10px;
 }
+
 .heat div{
   height:18px;
   border-radius:4px;
 }
 
 @media(max-width:1100px){
-  .wrap{grid-template-columns:1fr;}
+.wrap{grid-template-columns:1fr;}
 }
 </style>
 </head>
+
 <body>
 
 <header>
 <div>
-<h1>COMPOSITE FOOTPRINT - SIMPLE TRADER</h1>
-<div class="sub">Freeze Mode • Manual Refresh Only</div>
+<h1>LIVE BINANCE PRO</h1>
+<div class="sub">Multiple Timeframe Composite Engine</div>
 </div>
 <div id="clock"></div>
 </header>
@@ -119,125 +139,169 @@ h1{
 
 <!-- LEFT -->
 <div class="panel">
-<div class="title">Market Bias</div>
-<div class="big green" id="bias">BULLISH</div>
-<div class="sub">BTC + ETHBTC + Dominance</div>
 
-<div class="title" style="margin-top:18px;">Controls</div>
-<button class="btn" onclick="render()">Refresh Now</button>
-<button class="btn" onclick="toggleLive()">Live: OFF</button>
-<div class="sub" style="margin-top:10px;">No auto movement unless Live ON</div>
+<div class="title">Timeframes</div>
+
+<div class="tabs">
+<div class="tab active" onclick="setTF('1m',this)">1m</div>
+<div class="tab" onclick="setTF('5m',this)">5m</div>
+<div class="tab" onclick="setTF('15m',this)">15m</div>
+<div class="tab" onclick="setTF('1h',this)">1H</div>
+<div class="tab" onclick="setTF('4h',this)">4H</div>
+</div>
+
+<div class="title">Current TF</div>
+<div class="big yellow" id="tfBox">1m</div>
+
+<button class="btn" onclick="refreshNow()">Refresh</button>
+<button class="btn" onclick="toggleLive()">Live OFF</button>
+
+<div class="title" style="margin-top:14px;">Price</div>
+<div class="big" id="price">0</div>
+
 </div>
 
 <!-- CENTER -->
 <div class="panel">
+
 <div class="title">Footprint Ladder</div>
 <table class="table" id="tbl"></table>
 
 <div class="title" style="margin-top:14px;">Pressure Heatmap</div>
 <div class="heat" id="heat"></div>
+
 </div>
 
 <!-- RIGHT -->
 <div class="panel">
-<div class="title">Trade Decision</div>
-<div class="signal green" id="decision">BUY</div>
 
-<div class="big green" id="delta">+1250</div>
-<div class="sub">Net Composite Delta</div>
+<div class="title">Signal</div>
+<div class="signal yellow" id="signal">WAIT</div>
 
-<div class="title" style="margin-top:18px;">Why</div>
-<div class="sub" id="why">
-Buy pressure stronger than sell pressure.
-</div>
+<div class="big yellow" id="delta">0</div>
+<div class="sub">Net Delta</div>
+
+<div class="title" style="margin-top:14px;">Why</div>
+<div class="sub" id="why">Waiting for flow confirmation.</div>
+
 </div>
 
 </div>
 
 <script>
-function rnd(a,b){
-  return Math.floor(Math.random()*(b-a+1))+a;
-}
-
-let liveMode=false;
+let currentTF="1m";
+let live=false;
 let timer=null;
 
-function render(){
-  document.getElementById("clock").textContent =
-    new Date().toLocaleTimeString();
+let tfMultiplier={
+ "1m":1,
+ "5m":2,
+ "15m":3,
+ "1h":5,
+ "4h":8
+};
 
-  let t='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
-  let net=0;
+function rnd(a,b){
+ return Math.floor(Math.random()*(b-a+1))+a;
+}
 
-  for(let i=0;i<10;i++){
-    let price=69000-(i*25);
-    let buy=rnd(500,3500);
-    let sell=rnd(500,3500);
-    let delta=buy-sell;
-    net+=delta;
+function setTF(tf,el){
+ currentTF=tf;
+ document.getElementById("tfBox").textContent=tf;
 
-    t+=`
-    <tr>
-      <td>${price}</td>
-      <td class="green">${buy}</td>
-      <td class="red">${sell}</td>
-      <td class="${delta>=0?'green':'red'}">${delta}</td>
-    </tr>`;
-  }
+ document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+ el.classList.add("active");
 
-  document.getElementById("tbl").innerHTML=t;
+ render();
+}
 
-  let signal="WAIT";
-  let color="yellow";
-  let why="Balanced market pressure.";
-
-  if(net>1200){
-    signal="BUY";
-    color="green";
-    why="Buy pressure stronger than sell pressure.";
-  }else if(net<-1200){
-    signal="SELL";
-    color="red";
-    why="Sell pressure stronger than buy pressure.";
-  }
-
-  document.getElementById("decision").className="signal "+color;
-  document.getElementById("decision").textContent=signal;
-
-  document.getElementById("delta").className="big "+color;
-  document.getElementById("delta").textContent=
-    (net>0?"+":"")+net;
-
-  document.getElementById("bias").className="big "+color;
-  document.getElementById("bias").textContent=
-    signal==="WAIT"?"NEUTRAL":signal;
-
-  document.getElementById("why").textContent=why;
-
-  let h="";
-  for(let i=0;i<20;i++){
-    let v=rnd(-10,10);
-    let c=v>0?"#16a34a":v<0?"#b91c1c":"#a16207";
-    h+=`<div style="background:${c}"></div>`;
-  }
-  document.getElementById("heat").innerHTML=h;
+function refreshNow(){
+ render();
 }
 
 function toggleLive(){
-  liveMode=!liveMode;
+ live=!live;
 
-  const btn=document.querySelectorAll(".btn")[1];
+ document.querySelectorAll(".btn")[1].textContent=
+ live ? "Live ON":"Live OFF";
 
-  if(liveMode){
-    btn.textContent="Live: ON";
-    timer=setInterval(render,3000);
-  }else{
-    btn.textContent="Live: OFF";
-    clearInterval(timer);
-  }
+ if(live){
+   timer=setInterval(render,3000);
+ }else{
+   clearInterval(timer);
+ }
 }
 
-render(); // only once on load
+function render(){
+
+ document.getElementById("clock").textContent=
+ new Date().toLocaleTimeString();
+
+ let mult=tfMultiplier[currentTF];
+
+ let price=69000+rnd(-300,300);
+ document.getElementById("price").textContent=price;
+
+ let t='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
+
+ let net=0;
+
+ for(let i=0;i<10;i++){
+
+   let p=price-(i*25);
+
+   let buy=rnd(500,3000)*mult;
+   let sell=rnd(500,3000)*mult;
+
+   let d=buy-sell;
+   net+=d;
+
+   t+=`
+   <tr>
+   <td>${p}</td>
+   <td class="green">${buy}</td>
+   <td class="red">${sell}</td>
+   <td class="${d>=0?'green':'red'}">${d}</td>
+   </tr>`;
+ }
+
+ document.getElementById("tbl").innerHTML=t;
+
+ let sig="WAIT";
+ let cls="yellow";
+ let why="Balanced pressure.";
+
+ if(net>3000*mult){
+   sig="BUY";
+   cls="green";
+   why="Buyers dominant on "+currentTF+".";
+ }
+ else if(net<-3000*mult){
+   sig="SELL";
+   cls="red";
+   why="Sellers dominant on "+currentTF+".";
+ }
+
+ document.getElementById("signal").className="signal "+cls;
+ document.getElementById("signal").textContent=sig;
+
+ document.getElementById("delta").className="big "+cls;
+ document.getElementById("delta").textContent=
+ (net>0?"+":"")+net;
+
+ document.getElementById("why").textContent=why;
+
+ let h="";
+ for(let i=0;i<20;i++){
+   let v=rnd(-10,10);
+   let c=v>0?"#16a34a":v<0?"#b91c1c":"#a16207";
+   h+=`<div style="background:${c}"></div>`;
+ }
+
+ document.getElementById("heat").innerHTML=h;
+}
+
+render();
 </script>
 
 </body>
