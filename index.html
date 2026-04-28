@@ -1,405 +1,152 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TRUE GOD MODE REBUILD C</title>
-
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-background:#020202;
-color:#d1fae5;
-font-family:Consolas,monospace;
-overflow:hidden;
-}
-header{
-height:56px;
-border-bottom:1px solid #14532d;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 16px;
-}
-h1{
-font-size:18px;
-color:#22c55e;
-}
-.sub{
-font-size:11px;
-color:#4ade80;
-}
-.wrap{
-display:grid;
-grid-template-columns:260px 1fr 320px;
-gap:12px;
-padding:12px;
-height:calc(100vh - 56px);
-}
-.panel{
-background:#03110a;
-border:1px solid #14532d;
-border-radius:14px;
-padding:12px;
-overflow:auto;
-}
-.title{
-font-size:13px;
-font-weight:700;
-margin-bottom:8px;
-color:#86efac;
-}
-.big{font-size:34px;font-weight:800}
-.mid{font-size:24px;font-weight:800}
-.small{font-size:12px;color:#6ee7b7}
-.green{color:#22c55e}
-.red{color:#ef4444}
-.yellow{color:#eab308}
-.blue{color:#38bdf8}
-
-.gridtf{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:6px;
-margin-bottom:12px;
-}
-.tf{
-padding:8px;
-text-align:center;
-border-radius:8px;
-cursor:pointer;
-background:#052e16;
-border:1px solid #166534;
-font-size:12px;
-}
-.tf.active{
-background:#22c55e;
-color:#000;
-font-weight:700;
+function setTF(tf,el){
+ currentTF=tf;
+ document.getElementById('tfBox').textContent=tf.toUpperCase();
+ document.querySelectorAll('.tf').forEach(x=>x.classList.remove('active'));
+ el.classList.add('active');
+ render();
 }
 
-.metric{margin-bottom:14px}
-
-.table{
-width:100%;
-border-collapse:collapse;
-font-size:12px;
-}
-.table th,.table td{
-padding:6px;
-border-bottom:1px solid #14532d;
-text-align:right;
-}
-.table th:first-child,.table td:first-child{text-align:left}
-
-.signal{
-font-size:54px;
-font-weight:900;
-text-align:center;
-padding:10px 0;
+function resetData(){
+ trades=[];
+ render();
 }
 
-.bar{
-height:12px;
-background:#052e16;
-border-radius:20px;
-overflow:hidden;
-margin:6px 0 12px;
-}
-.fill{height:100%}
+function connect(){
+ ws=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
 
-.heat{
-display:grid;
-grid-template-columns:repeat(20,1fr);
-gap:3px;
-margin-top:10px;
-}
-.heat div{
-height:16px;
-border-radius:3px;
-}
+ ws.onopen=()=>{
+   setStatus('LIVE CONNECTED','#22c55e');
+ };
 
-@media(max-width:1100px){
-.wrap{grid-template-columns:1fr}
-body{overflow:auto}
-}
-</style>
-</head>
-<body>
+ ws.onclose=()=>{
+   setStatus('RECONNECTING','#eab308');
+   setTimeout(connect,2000);
+ };
 
-<header>
-<div>
-<h1>TRUE GOD MODE REBUILD C</h1>
-<div class="sub">Hacker Institutional • Balanced Signals</div>
-</div>
-<div id="clock"></div>
-</header>
+ ws.onerror=()=>{
+   setStatus('ERROR','#ef4444');
+ };
 
-<div class="wrap">
+ ws.onmessage=(msg)=>{
+   const d=JSON.parse(msg.data);
 
-<!-- LEFT -->
-<div class="panel">
+   const price=parseFloat(d.p);
+   const qty=parseFloat(d.q);
+   const maker=d.m; // true = sell aggression
+   lastPrice=price;
 
-<div class="title">TIMEFRAMES</div>
-<div class="gridtf">
-<div class="tf active">1m</div>
-<div class="tf">5m</div>
-<div class="tf">15m</div>
-<div class="tf">1H</div>
-<div class="tf">4H</div>
-<div class="tf">12H</div>
-<div class="tf">1D</div>
-</div>
+   trades.push({
+     time:now(),
+     price:price,
+     qty:qty,
+     side:maker?'sell':'buy'
+   });
 
-<div class="metric">
-<div class="title">BTCUSDT</div>
-<div class="big" id="btc">0</div>
-</div>
-
-<div class="metric">
-<div class="title">ETHBTC</div>
-<div class="mid" id="ethbtc">0</div>
-</div>
-
-<div class="metric">
-<div class="title">BTC.D</div>
-<div class="mid yellow" id="btcd">0%</div>
-<div class="small green">Buy: <span id="btcdBuy">0</span></div>
-<div class="small red">Sell: <span id="btcdSell">0</span></div>
-<div class="small yellow">Δ <span id="btcdDelta">0</span></div>
-</div>
-
-<div class="metric">
-<div class="title">USDT.D</div>
-<div class="mid red" id="usdtd">0%</div>
-<div class="small green">Buy: <span id="usdtdBuy">0</span></div>
-<div class="small red">Sell: <span id="usdtdSell">0</span></div>
-<div class="small yellow">Δ <span id="usdtdDelta">0</span></div>
-</div>
-
-<div class="metric">
-<div class="title">TOTAL</div>
-<div class="mid blue" id="total">0T</div>
-</div>
-
-</div>
-
-<!-- CENTER -->
-<div class="panel">
-
-<div class="title">FOOTPRINT LADDER</div>
-<table class="table" id="ladder"></table>
-
-<div class="title" style="margin-top:12px">BUY PRESSURE</div>
-<div class="bar"><div class="fill green" id="buybar"></div></div>
-
-<div class="title">SELL PRESSURE</div>
-<div class="bar"><div class="fill red" id="sellbar"></div></div>
-
-<div class="title">DELTA HEATMAP</div>
-<div class="heat" id="heat"></div>
-
-</div>
-
-<!-- RIGHT -->
-<div class="panel">
-
-<div class="title">SIGNAL</div>
-<div class="signal yellow" id="signal">WAIT</div>
-
-<div class="big yellow" id="score">0</div>
-<div class="small">Composite Score</div>
-
-<div class="title" style="margin-top:14px">CONFIDENCE</div>
-<div class="bar"><div class="fill yellow" id="conf"></div></div>
-
-<div class="title">RISK MODE</div>
-<div class="mid yellow" id="risk">WAIT</div>
-
-<div class="title" style="margin-top:14px">WHY</div>
-<div class="small" id="why">Waiting for alignment...</div>
-
-</div>
-
-</div>
-
-<script>
-let prevTotal=0, prevBTCD=0, prevUSDTD=0;
-let btcPrice=0, ethbtc=0;
-let trades=[];
-
-function now(){return Math.floor(Date.now()/1000)}
-
-function clock(){
-document.getElementById("clock").textContent =
-new Date().toLocaleTimeString();
-}
-setInterval(clock,1000);
-clock();
-
-/* BTC Websocket */
-function connectBTC(){
-let ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@aggTrade");
-ws.onmessage=(m)=>{
-let d=JSON.parse(m.data);
-btcPrice=parseFloat(d.p);
-trades.push({
-price:btcPrice,
-qty:parseFloat(d.q),
-side:d.m?'sell':'buy',
-time:now()
-});
-cleanTrades();
-render();
-};
-ws.onclose=()=>setTimeout(connectBTC,2000);
-}
-connectBTC();
-
-/* ETHBTC */
-function connectETH(){
-let ws=new WebSocket("wss://stream.binance.com:9443/ws/ethbtc@trade");
-ws.onmessage=(m)=>{
-let d=JSON.parse(m.data);
-ethbtc=parseFloat(d.p);
-render();
-};
-ws.onclose=()=>setTimeout(connectETH,2000);
-}
-connectETH();
-
-function cleanTrades(){
-let cut=now()-300;
-trades=trades.filter(t=>t.time>=cut);
+   cleanOld();
+   render();
+ };
 }
 
-async function loadMacro(){
-try{
-let r=await fetch("https://api.coingecko.com/api/v3/global");
-let j=await r.json();
-
-let total=j.data.total_market_cap.usd;
-let btcd=j.data.market_cap_percentage.btc;
-let usdtd=j.data.market_cap_percentage.usdt || 0;
-
-document.getElementById("total").textContent =
-(total/1e12).toFixed(2)+"T";
-
-document.getElementById("btcd").textContent =
-btcd.toFixed(2)+"%";
-
-document.getElementById("usdtd").textContent =
-usdtd.toFixed(2)+"%";
-
-let bdelta=btcd-prevBTCD;
-let udelta=usdtd-prevUSDTD;
-
-document.getElementById("btcdBuy").textContent=(bdelta>0?bdelta:0).toFixed(2);
-document.getElementById("btcdSell").textContent=(bdelta<0?-bdelta:0).toFixed(2);
-document.getElementById("btcdDelta").textContent=bdelta.toFixed(2);
-
-document.getElementById("usdtdBuy").textContent=(udelta>0?udelta:0).toFixed(2);
-document.getElementById("usdtdSell").textContent=(udelta<0?-udelta:0).toFixed(2);
-document.getElementById("usdtdDelta").textContent=udelta.toFixed(2);
-
-prevTotal=total;
-prevBTCD=btcd;
-prevUSDTD=usdtd;
-
-render();
-}catch(e){}
+function setStatus(txt,color){
+ const s=document.getElementById('status');
+ s.textContent=txt;
+ s.style.color=color;
 }
-loadMacro();
-setInterval(loadMacro,15000);
+
+function cleanOld(){
+ const cutoff=now()-86400;
+ trades=trades.filter(t=>t.time>=cutoff);
+}
+
+function getWindowTrades(){
+ const cutoff=now()-tfSec[currentTF];
+ return trades.filter(t=>t.time>=cutoff);
+}
 
 function render(){
 
-document.getElementById("btc").textContent =
-btcPrice ? btcPrice.toFixed(2):"0";
+ document.getElementById('clock').textContent=
+ new Date().toLocaleTimeString();
 
-document.getElementById("ethbtc").textContent =
-ethbtc ? ethbtc.toFixed(5):"0";
+ document.getElementById('price').textContent=
+ lastPrice?lastPrice.toFixed(2):'0';
 
-/* footprint */
-let buy=0,sell=0,buckets={};
+ const arr=getWindowTrades();
 
-trades.forEach(t=>{
-if(t.side==="buy") buy+=t.qty;
-else sell+=t.qty;
+ let buy=0,sell=0;
 
-let lvl=Math.round(t.price/25)*25;
-if(!buckets[lvl]) buckets[lvl]={buy:0,sell:0};
-buckets[lvl][t.side]+=t.qty;
-});
+ arr.forEach(t=>{
+   if(t.side==='buy') buy+=t.qty;
+   else sell+=t.qty;
+ });
 
-let prices=Object.keys(buckets).map(Number).sort((a,b)=>b-a).slice(0,10);
+ const delta=buy-sell;
 
-let html="<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Δ</th></tr>";
+ document.getElementById('buyVol').textContent=buy.toFixed(3);
+ document.getElementById('sellVol').textContent=sell.toFixed(3);
 
-prices.forEach(p=>{
-let b=buckets[p].buy;
-let s=buckets[p].sell;
-let d=b-s;
+ const deltaBox=document.getElementById('delta');
+ deltaBox.textContent=(delta>0?'+':'')+delta.toFixed(3);
 
-html+=`
-<tr>
-<td>${p}</td>
-<td class="green">${b.toFixed(2)}</td>
-<td class="red">${s.toFixed(2)}</td>
-<td class="${d>=0?'green':'red'}">${d.toFixed(2)}</td>
-</tr>`;
-});
+ let sig='WAIT', cls='yellow', why='Balanced pressure.';
 
-document.getElementById("ladder").innerHTML=html;
+ if(delta>2){
+   sig='BUY'; cls='green';
+   why='Aggressive buyers dominate selected timeframe.';
+ }
+ else if(delta<-2){
+   sig='SELL'; cls='red';
+   why='Aggressive sellers dominate selected timeframe.';
+ }
 
-let tv=buy+sell||1;
-document.getElementById("buybar").style.width=(buy/tv*100)+"%";
-document.getElementById("sellbar").style.width=(sell/tv*100)+"%";
+ document.getElementById('signal').className='signal '+cls;
+ document.getElementById('signal').textContent=sig;
+ deltaBox.className='big '+cls;
+ document.getElementById('why').textContent=why;
 
-/* composite */
-let delta=buy-sell;
-let score=delta;
+ // Ladder
+ let buckets={};
 
-let sig="WAIT", cls="yellow", why="Balanced market.";
-if(score>2){
-sig="BUY"; cls="green";
-why="Buy flow stronger + supportive rotation.";
-}
-if(score<-2){
-sig="SELL"; cls="red";
-why="Sell flow stronger + defensive rotation.";
-}
+ arr.forEach(t=>{
+   const lvl=Math.round(t.price/25)*25;
+   if(!buckets[lvl]) buckets[lvl]={buy:0,sell:0};
+   buckets[lvl][t.side]+=t.qty;
+ });
 
-document.getElementById("signal").textContent=sig;
-document.getElementById("signal").className="signal "+cls;
+ let prices=Object.keys(buckets).map(Number).sort((a,b)=>b-a).slice(0,12);
 
-document.getElementById("score").textContent=score.toFixed(2);
-document.getElementById("score").className="big "+cls;
+ let html='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
 
-document.getElementById("risk").textContent=
-score>2?"RISK ON":score<-2?"RISK OFF":"NEUTRAL";
+ prices.forEach(p=>{
+   const b=buckets[p].buy||0;
+   const s=buckets[p].sell||0;
+   const d=b-s;
 
-document.getElementById("risk").className=
-"mid "+(score>2?"green":score<-2?"red":"yellow");
+   html+=`
+   <tr>
+   <td>${p}</td>
+   <td class="green">${b.toFixed(3)}</td>
+   <td class="red">${s.toFixed(3)}</td>
+   <td class="${d>=0?'green':'red'}">${d.toFixed(3)}</td>
+   </tr>`;
+ });
 
-document.getElementById("why").textContent=why;
+ document.getElementById('tbl').innerHTML=html;
 
-let conf=Math.min(Math.abs(score)*12,100);
-document.getElementById("conf").style.width=conf+"%";
-
-/* heat */
-let heat="";
-for(let i=0;i<20;i++){
-let v=Math.random()*2-1;
-let c=v>0?"#16a34a":v<0?"#b91c1c":"#a16207";
-heat+="<div style='background:"+c+"'></div>";
-}
-document.getElementById("heat").innerHTML=heat;
-
+ // Heatmap
+ let heat='';
+ for(let i=0;i<20;i++){
+   const slice=arr.slice(Math.max(0,arr.length-(i+1)*5), arr.length-i*5);
+   let sd=0;
+   slice.forEach(x=> sd += x.side==='buy'?x.qty:-x.qty );
+   let c = sd>0 ? '#16a34a' : sd<0 ? '#b91c1c' : '#a16207';
+   heat='<div style="background:'+c+'"></div>'+heat;
+ }
+ document.getElementById('heat').innerHTML=heat;
 }
 
+connect();
 setInterval(render,1000);
 </script>
-
 </body>
 </html>
