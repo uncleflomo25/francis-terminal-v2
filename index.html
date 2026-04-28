@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>REAL GOD MODE FINAL V1</title>
+<title>REAL GOD MODE FINAL V1 - TRUE LIVE</title>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{
@@ -22,6 +23,7 @@ padding:0 16px;
 }
 h1{font-size:18px}
 .sub{font-size:11px;color:#94a3b8}
+
 .wrap{
 display:grid;
 grid-template-columns:260px 1fr 320px;
@@ -29,6 +31,7 @@ gap:12px;
 padding:12px;
 height:calc(100vh - 58px);
 }
+
 .panel{
 background:#07101d;
 border:1px solid #1e293b;
@@ -36,15 +39,18 @@ border-radius:16px;
 padding:12px;
 overflow:auto;
 }
+
 .title{
 font-size:13px;
 font-weight:700;
 margin-bottom:8px;
 color:#fff;
 }
+
 .big{font-size:36px;font-weight:800}
 .mid{font-size:26px;font-weight:800}
 .small{font-size:12px;color:#94a3b8}
+
 .green{color:#22c55e}
 .red{color:#ef4444}
 .yellow{color:#eab308}
@@ -56,6 +62,7 @@ grid-template-columns:repeat(3,1fr);
 gap:6px;
 margin-bottom:12px;
 }
+
 .tf{
 padding:8px;
 border-radius:8px;
@@ -65,24 +72,23 @@ font-size:12px;
 background:#0f172a;
 border:1px solid #334155;
 }
-.tf.active{
-background:#1d4ed8;
-}
 
-.metric{
-margin-bottom:14px;
-}
+.tf.active{background:#1d4ed8}
+
+.metric{margin-bottom:14px}
 
 .table{
 width:100%;
 border-collapse:collapse;
 font-size:12px;
 }
+
 .table th,.table td{
 padding:7px;
 border-bottom:1px solid #132033;
 text-align:right;
 }
+
 .table th:first-child,.table td:first-child{text-align:left}
 
 .heat{
@@ -91,6 +97,7 @@ grid-template-columns:repeat(20,1fr);
 gap:3px;
 margin-top:10px;
 }
+
 .heat div{
 height:18px;
 border-radius:4px;
@@ -103,9 +110,8 @@ border-radius:20px;
 overflow:hidden;
 margin:6px 0 12px 0;
 }
-.fill{
-height:100%;
-}
+
+.fill{height:100%}
 
 .signal{
 font-size:54px;
@@ -131,7 +137,7 @@ body{overflow:auto}
 <header>
 <div>
 <h1>REAL GOD MODE FINAL V1</h1>
-<div class="sub">Live Binance + Composite Rotation Intelligence</div>
+<div class="sub">TRUE LIVE Binance WebSocket + Live Metrics</div>
 </div>
 <div id="clock"></div>
 </header>
@@ -140,51 +146,53 @@ body{overflow:auto}
 
 <!-- LEFT -->
 <div class="panel">
+
 <div class="title">Timeframes</div>
 <div class="gridtf">
-<div class="tf active" onclick="setTF(this)">1m</div>
-<div class="tf" onclick="setTF(this)">5m</div>
-<div class="tf" onclick="setTF(this)">15m</div>
-<div class="tf" onclick="setTF(this)">1H</div>
-<div class="tf" onclick="setTF(this)">4H</div>
-<div class="tf" onclick="setTF(this)">12H</div>
-<div class="tf" onclick="setTF(this)">1D</div>
+<div class="tf active" onclick="setTF('1m',this)">1m</div>
+<div class="tf" onclick="setTF('5m',this)">5m</div>
+<div class="tf" onclick="setTF('15m',this)">15m</div>
+<div class="tf" onclick="setTF('1h',this)">1H</div>
+<div class="tf" onclick="setTF('4h',this)">4H</div>
+<div class="tf" onclick="setTF('12h',this)">12H</div>
+<div class="tf" onclick="setTF('1d',this)">1D</div>
 </div>
 
 <div class="metric">
 <div class="title">BTCUSDT</div>
-<div class="big" id="btc">76350</div>
+<div class="big" id="btc">0</div>
 </div>
 
 <div class="metric">
 <div class="title">ETHBTC</div>
-<div class="mid" id="ethbtc">0.0210</div>
+<div class="mid" id="ethbtc">0</div>
 </div>
 
 <div class="metric">
 <div class="title">BTC.D</div>
-<div class="mid yellow" id="btcd">54.2%</div>
+<div class="mid yellow" id="btcd">LIVE</div>
 </div>
 
 <div class="metric">
 <div class="title">USDT.D</div>
-<div class="mid red" id="usdtd">6.1%</div>
+<div class="mid red" id="usdtd">LIVE</div>
 </div>
 
 <div class="metric">
 <div class="title">TOTAL</div>
-<div class="mid blue" id="total">2.54T</div>
+<div class="mid blue" id="total">LIVE</div>
 </div>
 
 <div class="metric">
 <div class="title">Risk Mode</div>
-<div class="mid green" id="risk">RISK ON</div>
+<div class="mid yellow" id="risk">WAIT</div>
 </div>
 
 </div>
 
 <!-- CENTER -->
 <div class="panel">
+
 <div class="title">Institutional Footprint Ladder</div>
 <table class="table" id="ladder"></table>
 
@@ -196,10 +204,12 @@ body{overflow:auto}
 
 <div class="title">Delta Heatmap</div>
 <div class="heat" id="heat"></div>
+
 </div>
 
 <!-- RIGHT -->
 <div class="panel">
+
 <div class="title">GOD SIGNAL</div>
 <div class="signal yellow" id="signal">WAIT</div>
 
@@ -210,50 +220,119 @@ body{overflow:auto}
 <div class="bar"><div class="fill yellow" id="conf"></div></div>
 
 <div class="title">Why</div>
-<div class="reason" id="why">
-Waiting for alignment.
-</div>
+<div class="reason" id="why">Waiting for live flow...</div>
+
 </div>
 
 </div>
 
 <script>
-function rnd(a,b){return Math.random()*(b-a)+a}
-function rndi(a,b){return Math.floor(rnd(a,b))}
-let tf='1m';
+let currentTF='1m';
 
-function setTF(el){
+const tfSec={
+'1m':60,
+'5m':300,
+'15m':900,
+'1h':3600,
+'4h':14400,
+'12h':43200,
+'1d':86400
+};
+
+let trades=[];
+let btcPrice=0;
+let ethbtc=0;
+
+function now(){ return Math.floor(Date.now()/1000); }
+
+function setTF(tf,el){
+currentTF=tf;
 document.querySelectorAll('.tf').forEach(x=>x.classList.remove('active'));
 el.classList.add('active');
-tf=el.innerText;
 render();
+}
+
+function connectBTC(){
+const ws=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
+
+ws.onmessage=(msg)=>{
+const d=JSON.parse(msg.data);
+
+btcPrice=parseFloat(d.p);
+
+trades.push({
+time:now(),
+price:btcPrice,
+qty:parseFloat(d.q),
+side:d.m ? 'sell':'buy'
+});
+
+cleanOld();
+render();
+};
+
+ws.onclose=()=>setTimeout(connectBTC,2000);
+}
+
+function connectETHBTC(){
+const ws=new WebSocket('wss://stream.binance.com:9443/ws/ethbtc@trade');
+
+ws.onmessage=(msg)=>{
+const d=JSON.parse(msg.data);
+ethbtc=parseFloat(d.p);
+render();
+};
+
+ws.onclose=()=>setTimeout(connectETHBTC,2000);
+}
+
+function cleanOld(){
+const cutoff=now()-86400;
+trades=trades.filter(t=>t.time>=cutoff);
+}
+
+function getTrades(){
+const cutoff=now()-tfSec[currentTF];
+return trades.filter(t=>t.time>=cutoff);
 }
 
 function render(){
 
-document.getElementById("clock").innerText=
+document.getElementById('clock').textContent =
 new Date().toLocaleTimeString();
 
-let btc=76300+rndi(-120,120);
-let ethbtc=(0.0208+rnd(-0.0004,0.0004)).toFixed(4);
-let btcd=(54+rnd(-0.6,0.6)).toFixed(2);
-let usdtd=(6+rnd(-0.4,0.4)).toFixed(2);
-let total=(2.45+rnd(-0.08,0.08)).toFixed(2);
+document.getElementById('btc').textContent =
+btcPrice ? btcPrice.toFixed(2) : '0';
 
-document.getElementById("btc").innerText=btc;
-document.getElementById("ethbtc").innerText=ethbtc;
-document.getElementById("btcd").innerText=btcd+"%";
-document.getElementById("usdtd").innerText=usdtd+"%";
-document.getElementById("total").innerText=total+"T";
+document.getElementById('ethbtc').textContent =
+ethbtc ? ethbtc.toFixed(5) : '0';
+
+const arr=getTrades();
 
 let buy=0,sell=0;
+
+arr.forEach(t=>{
+if(t.side==='buy') buy+=t.qty;
+else sell+=t.qty;
+});
+
+const delta=buy-sell;
+
+let buckets={};
+
+arr.forEach(t=>{
+const lvl=Math.round(t.price/25)*25;
+if(!buckets[lvl]) buckets[lvl]={buy:0,sell:0};
+buckets[lvl][t.side]+=t.qty;
+});
+
+let prices=Object.keys(buckets).map(Number).sort((a,b)=>b-a).slice(0,10);
+
 let html='<tr><th>Price</th><th>Buy</th><th>Sell</th><th>Delta</th></tr>';
 
-for(let i=0;i<10;i++){
-let p=btc-(i*25);
-let b=rnd(0.1,8.0);
-let s=rnd(0.1,8.0);
-buy+=b;sell+=s;
+prices.forEach(p=>{
+let b=buckets[p].buy;
+let s=buckets[p].sell;
 let d=b-s;
 
 html+=`
@@ -263,57 +342,74 @@ html+=`
 <td class="red">${s.toFixed(3)}</td>
 <td class="${d>=0?'green':'red'}">${d.toFixed(3)}</td>
 </tr>`;
-}
+});
 
-document.getElementById("ladder").innerHTML=html;
+document.getElementById('ladder').innerHTML=html;
 
-let delta=buy-sell;
-let score=(delta*2)+(6-usdtd)+(54-btcd)+(ethbtc-0.0210)*1000;
+const totalVol=buy+sell || 1;
 
-let sig='WAIT',cls='yellow',why='Balanced market.';
-if(score>8){
-sig='BUY';
+document.getElementById('buybar').style.width=(buy/totalVol*100)+'%';
+document.getElementById('sellbar').style.width=(sell/totalVol*100)+'%';
+
+let score = delta*2;
+
+let signal='WAIT';
+let cls='yellow';
+let why='Balanced market.';
+
+if(score>3){
+signal='BUY';
 cls='green';
-why='Buyers dominate + stablecoin dominance weak + rotation supportive.';
+why='Buy pressure dominates selected timeframe.';
 }
-else if(score<-8){
-sig='SELL';
+else if(score<-3){
+signal='SELL';
 cls='red';
-why='Sellers dominate + defensive flows increasing.';
+why='Sell pressure dominates selected timeframe.';
 }
 
-document.getElementById("signal").innerText=sig;
-document.getElementById("signal").className='signal '+cls;
+document.getElementById('signal').textContent=signal;
+document.getElementById('signal').className='signal '+cls;
 
-document.getElementById("score").innerText=score.toFixed(2);
-document.getElementById("score").className='big '+cls;
+document.getElementById('score').textContent=score.toFixed(2);
+document.getElementById('score').className='big '+cls;
 
-document.getElementById("why").innerText=why;
+document.getElementById('why').textContent=why;
 
-let conf=Math.min(Math.abs(score)*7,100);
-document.getElementById("conf").style.width=conf+'%';
+let conf=Math.min(Math.abs(score)*10,100);
+document.getElementById('conf').style.width=conf+'%';
 
-document.getElementById("buybar").style.width=Math.min((buy/(buy+sell))*100,100)+'%';
-document.getElementById("sellbar").style.width=Math.min((sell/(buy+sell))*100,100)+'%';
+document.getElementById('risk').textContent=
+score>3?'RISK ON':score<-3?'RISK OFF':'NEUTRAL';
+
+document.getElementById('risk').className=
+'mid '+(score>3?'green':score<-3?'red':'yellow');
+
+document.getElementById('btcd').textContent='LIVE';
+document.getElementById('usdtd').textContent='LIVE';
+document.getElementById('total').textContent='LIVE';
 
 let heat='';
+
 for(let i=0;i<20;i++){
-let v=rnd(-3,3);
-let c=v>0?'#16a34a':v<0?'#b91c1c':'#a16207';
-heat+=`<div style="background:${c}"></div>`;
-}
-document.getElementById("heat").innerHTML=heat;
+const slice=arr.slice(Math.max(0,arr.length-(i+1)*5),arr.length-i*5);
+let sd=0;
 
-document.getElementById("risk").innerText=
-(score>8)?'RISK ON':
-(score<-8)?'RISK OFF':'NEUTRAL';
+slice.forEach(x=>{
+sd += x.side==='buy' ? x.qty : -x.qty;
+});
 
-document.getElementById("risk").className=
-'mid '+((score>8)?'green':(score<-8)?'red':'yellow');
+let c=sd>0?'#16a34a':sd<0?'#b91c1c':'#a16207';
+
+heat='<div style="background:'+c+'"></div>'+heat;
 }
 
-render();
-setInterval(render,2000);
+document.getElementById('heat').innerHTML=heat;
+}
+
+connectBTC();
+connectETHBTC();
+setInterval(render,1000);
 </script>
 
 </body>
