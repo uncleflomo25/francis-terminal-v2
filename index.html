@@ -24,7 +24,7 @@ header{
 .container{
   display:grid;
   grid-template-columns: 260px 1fr 260px;
-  height:calc(100vh - 50px);
+  height:calc(100vh - 90px);
 }
 
 .panel{
@@ -45,6 +45,7 @@ header{
   padding:10px;
   border-bottom:1px solid #1f2937;
 }
+
 .card{
   background:#0b1220;
   padding:10px;
@@ -54,6 +55,29 @@ header{
 .green{color:#22c55e}
 .red{color:#ef4444}
 .gray{color:#9ca3af}
+
+/* TIMEFRAME BAR */
+.tfbar{
+  display:flex;
+  gap:8px;
+  padding:8px 10px;
+  border-bottom:1px solid #1f2937;
+  flex-wrap:wrap;
+}
+.tfbtn{
+  padding:5px 10px;
+  font-size:11px;
+  border-radius:4px;
+  cursor:pointer;
+  background:#111827;
+  border:1px solid #1f2937;
+  color:#9ca3af;
+}
+.tfbtn.active{
+  border-color:#22c55e;
+  color:#22c55e;
+  background:rgba(34,197,94,0.1);
+}
 
 .grid{
   flex:1;
@@ -131,11 +155,30 @@ header{
       <div class="card">ETHBTC: 0.053</div>
     </div>
 
+    <!-- TIMEFRAME SWITCH -->
+    <div class="tfbar">
+      <div class="tfbtn active" data-tf="1">M1</div>
+      <div class="tfbtn" data-tf="5">M5</div>
+      <div class="tfbtn" data-tf="15">M15</div>
+      <div class="tfbtn" data-tf="60">H1</div>
+      <div class="tfbtn" data-tf="240">H4</div>
+      <div class="tfbtn" data-tf="360">H6</div>
+      <div class="tfbtn" data-tf="720">H12</div>
+      <div class="tfbtn" data-tf="D">D1</div>
+      <div class="tfbtn" data-tf="W">W1</div>
+    </div>
+      <div class="tfbtn" data-tf="5">M5</div>
+      <div class="tfbtn" data-tf="15">M15</div>
+      <div class="tfbtn" data-tf="60">H1</div>
+      <div class="tfbtn" data-tf="240">H4</div>
+      <div class="tfbtn" data-tf="D">D1</div>
+    </div>
+
     <div class="grid" id="grid"></div>
 
     <div class="footer">
-      <div>DELTA FLOW: +175</div>
-      <div class="green">BUY PRESSURE ACTIVE</div>
+      <div id="delta">DELTA FLOW: +175</div>
+      <div class="green" id="pressure">BUY PRESSURE ACTIVE</div>
     </div>
 
   </div>
@@ -160,8 +203,21 @@ header{
 </div>
 
 <script>
-// SIMPLE SIMULATED FOOTPRINT
 const grid = document.getElementById('grid');
+const tfButtons = document.querySelectorAll('.tfbtn');
+let currentTF = 1;
+
+const tfSpeed = {
+  1: 500,
+  5: 800,
+  15: 1000,
+  60: 1200,
+  240: 1500,
+  360: 1700,
+  720: 1900,
+  D: 2000,
+  W: 2500
+};
 
 function randomCell(){
   const r = Math.random();
@@ -178,13 +234,50 @@ function randomCell(){
 
 function buildGrid(){
   grid.innerHTML = '';
-  for(let i=0;i<120;i++){
+
+  const intensity = currentTF >= 60 ? 140 : currentTF >= 15 ? 120 : 100;
+
+  for(let i=0;i<intensity;i++){
     grid.appendChild(randomCell());
+  }
+
+  updateDelta();
+}
+
+function updateDelta(){
+  const delta = Math.floor((Math.random()*400)-100);
+  document.getElementById('delta').textContent = `DELTA FLOW: ${delta > 0 ? '+' : ''}${delta}`;
+
+  const pressure = document.getElementById('pressure');
+  if(delta > 100){
+    pressure.textContent = 'BUY PRESSURE ACTIVE';
+    pressure.className = 'green';
+  } else if(delta < -100){
+    pressure.textContent = 'SELL PRESSURE ACTIVE';
+    pressure.className = 'red';
+  } else {
+    pressure.textContent = 'NEUTRAL FLOW';
+    pressure.className = 'gray';
   }
 }
 
-buildGrid();
-setInterval(buildGrid, 1200);
+function setTF(tf){
+  currentTF = tf;
+  buildGrid();
+
+  clearInterval(window.loop);
+  window.loop = setInterval(buildGrid, tfSpeed[tf]);
+}
+
+tfButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tfButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setTF(btn.dataset.tf);
+  });
+});
+
+setTF(1);
 </script>
 
 </body>
