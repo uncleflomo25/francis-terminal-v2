@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Composite Crypto Footprint V2 - LIVE DATA</title>
+<title>Composite Crypto Footprint V3 - TIME ENGINE</title>
 <style>
 body{
   margin:0;
@@ -52,6 +52,7 @@ header{
   border-radius:6px;
   font-size:12px;
 }
+
 .green{color:#22c55e}
 .red{color:#ef4444}
 .gray{color:#9ca3af}
@@ -63,6 +64,7 @@ header{
   border-bottom:1px solid #1f2937;
   flex-wrap:wrap;
 }
+
 .tfbtn{
   padding:5px 10px;
   font-size:11px;
@@ -72,6 +74,7 @@ header{
   border:1px solid #1f2937;
   color:#9ca3af;
 }
+
 .tfbtn.active{
   border-color:#22c55e;
   color:#22c55e;
@@ -81,7 +84,7 @@ header{
 .grid{
   flex:1;
   display:grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   gap:6px;
   padding:10px;
   overflow:auto;
@@ -118,20 +121,19 @@ header{
 
 <header>
   <div>
-    <div class="title">COMPOSITE CRYPTO FOOTPRINT V2</div>
-    <div class="sub">REAL-TIME BINANCE + LIVE MARKET STREAM ENGINE</div>
+    <div class="title">COMPOSITE CRYPTO FOOTPRINT V3</div>
+    <div class="sub">REAL TIME TIMEFRAME ENGINE (BUCKETED CANDLES)</div>
   </div>
-  <div class="small" id="connStatus">CONNECTING...</div>
+  <div class="small" id="status">CONNECTING...</div>
 </header>
 
 <div class="container">
 
   <div class="panel">
     <div class="card">
-      <b>COMPOSITE BIAS</b><br/>
-      <span class="gray" id="bias">LOADING...</span>
-      <div class="small" id="score">Score: --</div>
-      <div class="small" id="delta">Delta: --</div>
+      <b>TIMEFRAME ENGINE</b><br/>
+      Active TF: <span id="activeTf">M1</span><br/>
+      Candle Buffer: <span id="bufferSize">0</span>
     </div>
   </div>
 
@@ -140,26 +142,26 @@ header{
     <div class="topbar">
       <div class="card" id="btc">BTC: --</div>
       <div class="card" id="eth">ETH: --</div>
-      <div class="card" id="usdt">USDT.D: --</div>
-      <div class="card" id="btcd">BTC.D: --</div>
+      <div class="card" id="delta">DELTA: --</div>
+      <div class="card" id="flow">FLOW: --</div>
     </div>
 
     <div class="tfbar">
-      <div class="tfbtn active" data-tf="1">M1</div>
-      <div class="tfbtn" data-tf="5">M5</div>
-      <div class="tfbtn" data-tf="15">M15</div>
-      <div class="tfbtn" data-tf="60">H1</div>
-      <div class="tfbtn" data-tf="360">H6</div>
-      <div class="tfbtn" data-tf="720">H12</div>
-      <div class="tfbtn" data-tf="D">D1</div>
-      <div class="tfbtn" data-tf="W">W1</div>
+      <div class="tfbtn active" data-tf="60000">M1</div>
+      <div class="tfbtn" data-tf="300000">M5</div>
+      <div class="tfbtn" data-tf="900000">M15</div>
+      <div class="tfbtn" data-tf="3600000">H1</div>
+      <div class="tfbtn" data-tf="21600000">H6</div>
+      <div class="tfbtn" data-tf="43200000">H12</div>
+      <div class="tfbtn" data-tf="86400000">D1</div>
+      <div class="tfbtn" data-tf="604800000">W1</div>
     </div>
 
     <div class="grid" id="grid"></div>
 
     <div class="footer">
-      <div id="flow">FLOW: --</div>
-      <div id="pressure">WAITING DATA...</div>
+      <div id="info">WAITING STREAM...</div>
+      <div id="pressure">--</div>
     </div>
 
   </div>
@@ -167,8 +169,7 @@ header{
   <div class="panel">
     <div class="card">
       <b>LIVE ENGINE</b><br/>
-      Binance WebSocket: <span id="ws">OFF</span><br/>
-      Feed: Trades + Ticker
+      Binance WebSocket: <span id="ws">OFF</span>
     </div>
   </div>
 
@@ -177,81 +178,107 @@ header{
 <script>
 const grid = document.getElementById('grid');
 let ws;
-let tradeBuffer = [];
-let currentTF = 1;
+let trades = [];
+let currentTF = 60000;
+let candles = [];
 
 function connectWS(){
   ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
 
   ws.onopen = () => {
     document.getElementById("ws").textContent = "LIVE";
-    document.getElementById("connStatus").textContent = "CONNECTED";
+    document.getElementById("status").textContent = "CONNECTED";
   };
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+  ws.onmessage = (e) => {
+    const t = JSON.parse(e.data);
 
-    tradeBuffer.push({
-      price: parseFloat(data.p),
-      qty: parseFloat(data.q),
-      side: data.m ? "sell" : "buy"
+    trades.push({
+      price: +t.p,
+      qty: +t.q,
+      side: t.m ? "sell" : "buy",
+      time: Date.now()
     });
 
-    if(tradeBuffer.length > 200) tradeBuffer.shift();
+    if(trades.length > 500) trades.shift();
 
-    updateFootprint();
-  };
-
-  ws.onclose = () => {
-    document.getElementById("ws").textContent = "RECONNECTING...";
-    setTimeout(connectWS, 2000);
+    buildCandles();
   };
 }
 
-function updateFootprint(){
-  grid.innerHTML = "";
+function buildCandles(){
+  const now = Date.now();
+  const tf = currentTF;
 
-  let buy = 0;
-  let sell = 0;
+  let grouped = {};
 
-  tradeBuffer.forEach(t => {
-    if(t.side === "buy") buy += t.qty;
-    else sell += t.qty;
+  for(let t of trades){
+    const bucket = Math.floor(t.time / tf) * tf;
 
-    const cell = document.createElement("div");
-    cell.className = "cell " + (t.side === "buy" ? "buy" : "sell");
-    cell.textContent = t.qty.toFixed(2);
-    grid.appendChild(cell);
-  });
+    if(!grouped[bucket]){
+      grouped[bucket] = {open:t.price, high:t.price, low:t.price, close:t.price, buy:0, sell:0};
+    }
 
-  const delta = buy - sell;
+    let c = grouped[bucket];
 
-  document.getElementById("flow").textContent = "FLOW: " + delta.toFixed(2);
+    c.high = Math.max(c.high, t.price);
+    c.low = Math.min(c.low, t.price);
+    c.close = t.price;
 
-  if(delta > 0){
-    document.getElementById("pressure").textContent = "BUY PRESSURE";
-    document.getElementById("pressure").className = "green";
-    document.getElementById("bias").textContent = "BULLISH";
-    document.getElementById("bias").className = "green";
-  } else {
-    document.getElementById("pressure").textContent = "SELL PRESSURE";
-    document.getElementById("pressure").className = "red";
-    document.getElementById("bias").textContent = "BEARISH";
-    document.getElementById("bias").className = "red";
+    if(t.side === "buy") c.buy += t.qty;
+    else c.sell += t.qty;
   }
 
-  document.getElementById("score").textContent = "Score: " + Math.round(Math.abs(delta) / 10);
+  candles = Object.keys(grouped).map(k => grouped[k]);
+
+  render();
 }
 
-function fakeMarketData(){
-  // placeholder for BTC/ETH/DOMINANCE APIs
-  document.getElementById("btc").textContent = "BTC: live";
-  document.getElementById("eth").textContent = "ETH: live";
-  document.getElementById("usdt").textContent = "USDT.D: sync";
-  document.getElementById("btcd").textContent = "BTC.D: sync";
+function render(){
+  grid.innerHTML = "";
+
+  let totalBuy = 0;
+  let totalSell = 0;
+
+  candles.slice(-120).forEach(c => {
+    const delta = c.buy - c.sell;
+
+    totalBuy += c.buy;
+    totalSell += c.sell;
+
+    const div = document.createElement("div");
+    div.className = "cell";
+    div.textContent = delta.toFixed(1);
+
+    if(delta > 0) div.classList.add("buy");
+    else if(delta < 0) div.classList.add("sell");
+    else div.classList.add("neutral");
+
+    grid.appendChild(div);
+  });
+
+  document.getElementById("bufferSize").textContent = candles.length;
+  document.getElementById("delta").textContent = "DELTA: " + (totalBuy - totalSell).toFixed(2);
+  document.getElementById("flow").textContent = totalBuy > totalSell ? "BUY FLOW" : "SELL FLOW";
+
+  document.getElementById("pressure").textContent = totalBuy > totalSell ? "BULLISH" : "BEARISH";
 }
 
-fakeMarketData();
+// TIMEFRAME SWITCH FIX
+
+document.querySelectorAll('.tfbtn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tfbtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    currentTF = parseInt(btn.dataset.tf);
+
+    document.getElementById("activeTf").textContent = btn.textContent;
+
+    buildCandles();
+  };
+});
+
 connectWS();
 </script>
 
