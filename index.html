@@ -1,119 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TRUE LIVE BINANCE FOOTPRINT ELITE</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Composite Crypto Footprint V1</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#020617;color:#e5e7eb}
-header{padding:12px 16px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
-h1{margin:0;font-size:18px}
-.sub{font-size:12px;color:#94a3b8}
-.wrap{display:grid;grid-template-columns:260px 1fr 320px;gap:12px;padding:12px;min-height:calc(100vh - 58px)}
-.panel{background:#07101d;border:1px solid #1e293b;border-radius:16px;padding:12px}
-.title{font-size:13px;font-weight:700;margin-bottom:8px}
-.big{font-size:34px;font-weight:800}
-.green{color:#22c55e}.red{color:#ef4444}.yellow{color:#eab308}
-.signal{font-size:42px;font-weight:900;text-align:center;padding:16px 0}
-.gridtf{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.tf{padding:8px;border-radius:8px;background:#0f172a;border:1px solid #334155;text-align:center;cursor:pointer;font-size:12px}
-.tf.active{background:#1d4ed8}
-.btn{width:100%;padding:10px;margin-top:8px;border-radius:10px;background:#0f172a;border:1px solid #334155;color:#fff;cursor:pointer}
-.table{width:100%;border-collapse:collapse;font-size:13px}
-.table th,.table td{padding:7px;border-bottom:1px solid #132033;text-align:right}
-.table th:first-child,.table td:first-child{text-align:left}
-.heat{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;margin-top:10px}
-.heat div{height:18px;border-radius:4px}
-.small{font-size:12px;color:#94a3b8}
-.status{padding:6px 8px;border-radius:8px;background:#0f172a;display:inline-block;font-size:12px}
-@media(max-width:1100px){.wrap{grid-template-columns:1fr}}
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#05070d;
+  color:#e5e7eb;
+}
+header{
+  padding:10px 14px;
+  border-bottom:1px solid #1f2937;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.title{font-weight:700;font-size:14px;letter-spacing:1px}
+.sub{font-size:12px;color:#9ca3af}
+
+.container{
+  display:grid;
+  grid-template-columns: 260px 1fr 260px;
+  height:calc(100vh - 50px);
+}
+
+.panel{
+  border-right:1px solid #1f2937;
+  padding:10px;
+  overflow:auto;
+}
+
+.center{
+  display:flex;
+  flex-direction:column;
+}
+
+.topbar{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap:10px;
+  padding:10px;
+  border-bottom:1px solid #1f2937;
+}
+.card{
+  background:#0b1220;
+  padding:10px;
+  border-radius:6px;
+  font-size:12px;
+}
+.green{color:#22c55e}
+.red{color:#ef4444}
+.gray{color:#9ca3af}
+
+.grid{
+  flex:1;
+  display:grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap:6px;
+  padding:10px;
+  overflow:auto;
+}
+
+.cell{
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  border-radius:4px;
+  background:#111827;
+  border:1px solid #1f2937;
+}
+
+.buy{background:rgba(34,197,94,0.25);border-color:#22c55e}
+.sell{background:rgba(239,68,68,0.25);border-color:#ef4444}
+.neutral{background:#111827}
+
+.footer{
+  padding:8px;
+  border-top:1px solid #1f2937;
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+}
+
+.small{font-size:11px;color:#9ca3af}
+
 </style>
 </head>
 <body>
+
 <header>
-<div>
-<h1>TRUE LIVE BINANCE FOOTPRINT ELITE</h1>
-<div class="sub">BTCUSDT Real-Time WebSocket | 1m to 1D including 12H</div>
-</div>
-<div id="clock"></div>
+  <div>
+    <div class="title">COMPOSITE CRYPTO FOOTPRINT V1</div>
+    <div class="sub">USDT.D • ETHBTC • BTC.D • TOTAL SYNTH ENGINE</div>
+  </div>
+  <div class="small">LIVE SIMULATION MODE</div>
 </header>
 
-<div class="wrap">
+<div class="container">
 
-<!-- LEFT -->
-<div class="panel">
-<div class="title">Timeframes</div>
-<div class="gridtf">
-<div class="tf active" onclick="setTF('1m',this)">1m</div>
-<div class="tf" onclick="setTF('3m',this)">3m</div>
-<div class="tf" onclick="setTF('5m',this)">5m</div>
-<div class="tf" onclick="setTF('15m',this)">15m</div>
-<div class="tf" onclick="setTF('30m',this)">30m</div>
-<div class="tf" onclick="setTF('1h',this)">1H</div>
-<div class="tf" onclick="setTF('4h',this)">4H</div>
-<div class="tf" onclick="setTF('12h',this)">12H</div>
-<div class="tf" onclick="setTF('1d',this)">1D</div>
-</div>
+  <!-- LEFT PANEL -->
+  <div class="panel">
+    <div class="card">
+      <b>COMPOSITE BIAS</b><br/>
+      <span class="green">BULLISH</span>
+      <div class="small">Score: 3 / 4</div>
+      <div class="small green">Delta: +4.21B</div>
+    </div>
+    <br/>
+    <div class="card">
+      <b>COMPONENTS</b><br/>
+      USDT.D <span class="red">-0.32%</span><br/>
+      ETHBTC <span class="green">+0.41%</span><br/>
+      BTC.D <span class="red">-0.18%</span><br/>
+      TOTAL <span class="green">+0.19%</span>
+    </div>
+  </div>
 
-<div class="title" style="margin-top:14px;">Selected TF</div>
-<div class="big yellow" id="tfBox">1m</div>
+  <!-- CENTER -->
+  <div class="center">
 
-<button class="btn" onclick="resetData()">Reset Window</button>
+    <div class="topbar">
+      <div class="card">TOTAL: 2.16T</div>
+      <div class="card">BTC.D: 54.6</div>
+      <div class="card">USDT.D: 5.23</div>
+      <div class="card">ETHBTC: 0.053</div>
+    </div>
 
-<div class="title" style="margin-top:14px;">Connection</div>
-<div id="status" class="status yellow">Connecting...</div>
+    <div class="grid" id="grid"></div>
 
-<div class="title" style="margin-top:14px;">Live Price</div>
-<div class="big" id="price">0</div>
-<div class="small">BTCUSDT</div>
-</div>
+    <div class="footer">
+      <div>DELTA FLOW: +175</div>
+      <div class="green">BUY PRESSURE ACTIVE</div>
+    </div>
 
-<!-- CENTER -->
-<div class="panel">
-<div class="title">Footprint Ladder (Recent Buckets)</div>
-<table class="table" id="tbl"></table>
+  </div>
 
-<div class="title" style="margin-top:14px;">Pressure Heatmap</div>
-<div class="heat" id="heat"></div>
-</div>
-
-<!-- RIGHT -->
-<div class="panel">
-<div class="title">Signal</div>
-<div class="signal yellow" id="signal">WAIT</div>
-
-<div class="big yellow" id="delta">0</div>
-<div class="small">Net Delta</div>
-
-<div class="title" style="margin-top:14px;">Buy Volume</div>
-<div class="big green" style="font-size:26px" id="buyVol">0</div>
-
-<div class="title" style="margin-top:14px;">Sell Volume</div>
-<div class="big red" style="font-size:26px" id="sellVol">0</div>
-
-<div class="title" style="margin-top:14px;">Why</div>
-<div class="small" id="why">Waiting for sufficient live flow.</div>
-</div>
+  <!-- RIGHT PANEL -->
+  <div class="panel">
+    <div class="card">
+      <b>PRICE STATS</b><br/>
+      High: 2.167T<br/>
+      Low: 2.158T<br/>
+      Close: 2.165T
+    </div>
+    <br/>
+    <div class="card">
+      <b>LEGEND</b><br/>
+      <span class="green">■ Buy</span><br/>
+      <span class="red">■ Sell</span><br/>
+      <span class="gray">■ Neutral</span>
+    </div>
+  </div>
 
 </div>
 
 <script>
-let currentTF='1m';
-let trades=[];
-let ws=null;
-let lastPrice=0;
+// SIMPLE SIMULATED FOOTPRINT
+const grid = document.getElementById('grid');
 
-const tfSec={
-'1m':60,
-'3m':180,
-'5m':300,
-'15m':900,
-'30m':1800,
-'1h':3600,
-'4h':14400,
-'12h':43200,
-'1d':86400
-};
+function randomCell(){
+  const r = Math.random();
+  const div = document.createElement('div');
+  div.className = 'cell';
+  div.textContent = Math.floor(Math.random()*200);
 
-function now(){ return Math.floor(Date.now()/1000); }
+  if(r > 0.66) div.classList.add('buy');
+  else if(r < 0.33) div.classList.add('sell');
+  else div.classList.add('neutral');
+
+  return div;
+}
+
+function buildGrid(){
+  grid.innerHTML = '';
+  for(let i=0;i<120;i++){
+    grid.appendChild(randomCell());
+  }
+}
+
+buildGrid();
+setInterval(buildGrid, 1200);
+</script>
+
+</body>
+</html>
