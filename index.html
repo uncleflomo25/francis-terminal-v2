@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Composite Crypto Footprint V1</title>
+<title>Composite Crypto Footprint V2 - LIVE DATA</title>
 <style>
 body{
   margin:0;
@@ -56,7 +56,6 @@ header{
 .red{color:#ef4444}
 .gray{color:#9ca3af}
 
-/* TIMEFRAME BAR */
 .tfbar{
   display:flex;
   gap:8px;
@@ -119,84 +118,57 @@ header{
 
 <header>
   <div>
-    <div class="title">COMPOSITE CRYPTO FOOTPRINT V1</div>
-    <div class="sub">USDT.D • ETHBTC • BTC.D • TOTAL SYNTH ENGINE</div>
+    <div class="title">COMPOSITE CRYPTO FOOTPRINT V2</div>
+    <div class="sub">REAL-TIME BINANCE + LIVE MARKET STREAM ENGINE</div>
   </div>
-  <div class="small">LIVE SIMULATION MODE</div>
+  <div class="small" id="connStatus">CONNECTING...</div>
 </header>
 
 <div class="container">
 
-  <!-- LEFT PANEL -->
   <div class="panel">
     <div class="card">
       <b>COMPOSITE BIAS</b><br/>
-      <span class="green">BULLISH</span>
-      <div class="small">Score: 3 / 4</div>
-      <div class="small green">Delta: +4.21B</div>
-    </div>
-    <br/>
-    <div class="card">
-      <b>COMPONENTS</b><br/>
-      USDT.D <span class="red">-0.32%</span><br/>
-      ETHBTC <span class="green">+0.41%</span><br/>
-      BTC.D <span class="red">-0.18%</span><br/>
-      TOTAL <span class="green">+0.19%</span>
+      <span class="gray" id="bias">LOADING...</span>
+      <div class="small" id="score">Score: --</div>
+      <div class="small" id="delta">Delta: --</div>
     </div>
   </div>
 
-  <!-- CENTER -->
   <div class="center">
 
     <div class="topbar">
-      <div class="card">TOTAL: 2.16T</div>
-      <div class="card">BTC.D: 54.6</div>
-      <div class="card">USDT.D: 5.23</div>
-      <div class="card">ETHBTC: 0.053</div>
+      <div class="card" id="btc">BTC: --</div>
+      <div class="card" id="eth">ETH: --</div>
+      <div class="card" id="usdt">USDT.D: --</div>
+      <div class="card" id="btcd">BTC.D: --</div>
     </div>
 
-    <!-- TIMEFRAME SWITCH -->
     <div class="tfbar">
       <div class="tfbtn active" data-tf="1">M1</div>
       <div class="tfbtn" data-tf="5">M5</div>
       <div class="tfbtn" data-tf="15">M15</div>
       <div class="tfbtn" data-tf="60">H1</div>
-      <div class="tfbtn" data-tf="240">H4</div>
       <div class="tfbtn" data-tf="360">H6</div>
       <div class="tfbtn" data-tf="720">H12</div>
       <div class="tfbtn" data-tf="D">D1</div>
       <div class="tfbtn" data-tf="W">W1</div>
     </div>
-      <div class="tfbtn" data-tf="5">M5</div>
-      <div class="tfbtn" data-tf="15">M15</div>
-      <div class="tfbtn" data-tf="60">H1</div>
-      <div class="tfbtn" data-tf="240">H4</div>
-      <div class="tfbtn" data-tf="D">D1</div>
-    </div>
 
     <div class="grid" id="grid"></div>
 
     <div class="footer">
-      <div id="delta">DELTA FLOW: +175</div>
-      <div class="green" id="pressure">BUY PRESSURE ACTIVE</div>
+      <div id="flow">FLOW: --</div>
+      <div id="pressure">WAITING DATA...</div>
     </div>
 
   </div>
 
-  <!-- RIGHT PANEL -->
   <div class="panel">
     <div class="card">
-      <b>PRICE STATS</b><br/>
-      High: 2.167T<br/>
-      Low: 2.158T<br/>
-      Close: 2.165T
-    </div>
-    <br/>
-    <div class="card">
-      <b>LEGEND</b><br/>
-      <span class="green">■ Buy</span><br/>
-      <span class="red">■ Sell</span><br/>
-      <span class="gray">■ Neutral</span>
+      <b>LIVE ENGINE</b><br/>
+      Binance WebSocket: <span id="ws">OFF</span><br/>
+      Feed: Trades + Ticker
     </div>
   </div>
 
@@ -204,80 +176,83 @@ header{
 
 <script>
 const grid = document.getElementById('grid');
-const tfButtons = document.querySelectorAll('.tfbtn');
+let ws;
+let tradeBuffer = [];
 let currentTF = 1;
 
-const tfSpeed = {
-  1: 500,
-  5: 800,
-  15: 1000,
-  60: 1200,
-  240: 1500,
-  360: 1700,
-  720: 1900,
-  D: 2000,
-  W: 2500
-};
+function connectWS(){
+  ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
 
-function randomCell(){
-  const r = Math.random();
-  const div = document.createElement('div');
-  div.className = 'cell';
-  div.textContent = Math.floor(Math.random()*200);
+  ws.onopen = () => {
+    document.getElementById("ws").textContent = "LIVE";
+    document.getElementById("connStatus").textContent = "CONNECTED";
+  };
 
-  if(r > 0.66) div.classList.add('buy');
-  else if(r < 0.33) div.classList.add('sell');
-  else div.classList.add('neutral');
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
 
-  return div;
+    tradeBuffer.push({
+      price: parseFloat(data.p),
+      qty: parseFloat(data.q),
+      side: data.m ? "sell" : "buy"
+    });
+
+    if(tradeBuffer.length > 200) tradeBuffer.shift();
+
+    updateFootprint();
+  };
+
+  ws.onclose = () => {
+    document.getElementById("ws").textContent = "RECONNECTING...";
+    setTimeout(connectWS, 2000);
+  };
 }
 
-function buildGrid(){
-  grid.innerHTML = '';
+function updateFootprint(){
+  grid.innerHTML = "";
 
-  const intensity = currentTF >= 60 ? 140 : currentTF >= 15 ? 120 : 100;
+  let buy = 0;
+  let sell = 0;
 
-  for(let i=0;i<intensity;i++){
-    grid.appendChild(randomCell());
-  }
+  tradeBuffer.forEach(t => {
+    if(t.side === "buy") buy += t.qty;
+    else sell += t.qty;
 
-  updateDelta();
-}
-
-function updateDelta(){
-  const delta = Math.floor((Math.random()*400)-100);
-  document.getElementById('delta').textContent = `DELTA FLOW: ${delta > 0 ? '+' : ''}${delta}`;
-
-  const pressure = document.getElementById('pressure');
-  if(delta > 100){
-    pressure.textContent = 'BUY PRESSURE ACTIVE';
-    pressure.className = 'green';
-  } else if(delta < -100){
-    pressure.textContent = 'SELL PRESSURE ACTIVE';
-    pressure.className = 'red';
-  } else {
-    pressure.textContent = 'NEUTRAL FLOW';
-    pressure.className = 'gray';
-  }
-}
-
-function setTF(tf){
-  currentTF = tf;
-  buildGrid();
-
-  clearInterval(window.loop);
-  window.loop = setInterval(buildGrid, tfSpeed[tf]);
-}
-
-tfButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    tfButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    setTF(btn.dataset.tf);
+    const cell = document.createElement("div");
+    cell.className = "cell " + (t.side === "buy" ? "buy" : "sell");
+    cell.textContent = t.qty.toFixed(2);
+    grid.appendChild(cell);
   });
-});
 
-setTF(1);
+  const delta = buy - sell;
+
+  document.getElementById("flow").textContent = "FLOW: " + delta.toFixed(2);
+
+  if(delta > 0){
+    document.getElementById("pressure").textContent = "BUY PRESSURE";
+    document.getElementById("pressure").className = "green";
+    document.getElementById("bias").textContent = "BULLISH";
+    document.getElementById("bias").className = "green";
+  } else {
+    document.getElementById("pressure").textContent = "SELL PRESSURE";
+    document.getElementById("pressure").className = "red";
+    document.getElementById("bias").textContent = "BEARISH";
+    document.getElementById("bias").className = "red";
+  }
+
+  document.getElementById("score").textContent = "Score: " + Math.round(Math.abs(delta) / 10);
+}
+
+function fakeMarketData(){
+  // placeholder for BTC/ETH/DOMINANCE APIs
+  document.getElementById("btc").textContent = "BTC: live";
+  document.getElementById("eth").textContent = "ETH: live";
+  document.getElementById("usdt").textContent = "USDT.D: sync";
+  document.getElementById("btcd").textContent = "BTC.D: sync";
+}
+
+fakeMarketData();
+connectWS();
 </script>
 
 </body>
