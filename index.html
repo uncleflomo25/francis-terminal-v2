@@ -1,285 +1,144 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Composite Crypto Footprint V3 - TIME ENGINE</title>
+<meta charset="UTF-8">
+<title>Composite Candle Footprint Terminal</title>
 <style>
-body{
+body {
   margin:0;
-  font-family:Arial, sans-serif;
-  background:#05070d;
-  color:#e5e7eb;
+  background:#0b0f14;
+  color:#d1d4dc;
+  font-family: monospace;
 }
-header{
-  padding:10px 14px;
-  border-bottom:1px solid #1f2937;
+#header {
+  padding:10px;
+  background:#111827;
   display:flex;
   justify-content:space-between;
-  align-items:center;
 }
-.title{font-weight:700;font-size:14px;letter-spacing:1px}
-.sub{font-size:12px;color:#9ca3af}
-
-.container{
-  display:grid;
-  grid-template-columns: 260px 1fr 260px;
-  height:calc(100vh - 90px);
+#chart {
+  width:100%;
+  height:90vh;
 }
-
-.panel{
-  border-right:1px solid #1f2937;
-  padding:10px;
-  overflow:auto;
-}
-
-.center{
+.panel {
   display:flex;
-  flex-direction:column;
+  gap:20px;
 }
-
-.topbar{
-  display:grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap:10px;
-  padding:10px;
-  border-bottom:1px solid #1f2937;
-}
-
-.card{
-  background:#0b1220;
-  padding:10px;
-  border-radius:6px;
-  font-size:12px;
-}
-
-.green{color:#22c55e}
-.red{color:#ef4444}
-.gray{color:#9ca3af}
-
-.tfbar{
-  display:flex;
-  gap:8px;
-  padding:8px 10px;
-  border-bottom:1px solid #1f2937;
-  flex-wrap:wrap;
-}
-
-.tfbtn{
+.box {
   padding:5px 10px;
-  font-size:11px;
-  border-radius:4px;
-  cursor:pointer;
-  background:#111827;
-  border:1px solid #1f2937;
-  color:#9ca3af;
+  background:#1f2937;
+  border-radius:6px;
 }
-
-.tfbtn.active{
-  border-color:#22c55e;
-  color:#22c55e;
-  background:rgba(34,197,94,0.1);
-}
-
-.grid{
-  flex:1;
-  display:grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap:6px;
-  padding:10px;
-  overflow:auto;
-}
-
-.cell{
-  height:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:11px;
-  border-radius:4px;
-  background:#111827;
-  border:1px solid #1f2937;
-}
-
-.buy{background:rgba(34,197,94,0.25);border-color:#22c55e}
-.sell{background:rgba(239,68,68,0.25);border-color:#ef4444}
-.neutral{background:#111827}
-
-.footer{
-  padding:8px;
-  border-top:1px solid #1f2937;
-  display:flex;
-  justify-content:space-between;
-  font-size:11px;
-}
-
-.small{font-size:11px;color:#9ca3af}
-
 </style>
 </head>
+
 <body>
 
-<header>
-  <div>
-    <div class="title">COMPOSITE CRYPTO FOOTPRINT V3</div>
-    <div class="sub">REAL TIME TIMEFRAME ENGINE (BUCKETED CANDLES)</div>
-  </div>
-  <div class="small" id="status">CONNECTING...</div>
-</header>
-
-<div class="container">
-
+<div id="header">
   <div class="panel">
-    <div class="card">
-      <b>TIMEFRAME ENGINE</b><br/>
-      Active TF: <span id="activeTf">M1</span><br/>
-      Candle Buffer: <span id="bufferSize">0</span>
-    </div>
+    <div class="box">TOTAL: <span id="totalVal">0</span></div>
+    <div class="box">USDT.D: <span id="usdtVal">0</span></div>
+    <div class="box">COMPOSITE: <span id="compVal">0</span></div>
   </div>
-
-  <div class="center">
-
-    <div class="topbar">
-      <div class="card" id="btc">BTC: --</div>
-      <div class="card" id="eth">ETH: --</div>
-      <div class="card" id="delta">DELTA: --</div>
-      <div class="card" id="flow">FLOW: --</div>
-    </div>
-
-    <div class="tfbar">
-      <div class="tfbtn active" data-tf="60000">M1</div>
-      <div class="tfbtn" data-tf="300000">M5</div>
-      <div class="tfbtn" data-tf="900000">M15</div>
-      <div class="tfbtn" data-tf="3600000">H1</div>
-      <div class="tfbtn" data-tf="21600000">H6</div>
-      <div class="tfbtn" data-tf="43200000">H12</div>
-      <div class="tfbtn" data-tf="86400000">D1</div>
-      <div class="tfbtn" data-tf="604800000">W1</div>
-    </div>
-
-    <div class="grid" id="grid"></div>
-
-    <div class="footer">
-      <div id="info">WAITING STREAM...</div>
-      <div id="pressure">--</div>
-    </div>
-
-  </div>
-
-  <div class="panel">
-    <div class="card">
-      <b>LIVE ENGINE</b><br/>
-      Binance WebSocket: <span id="ws">OFF</span>
-    </div>
-  </div>
-
 </div>
 
+<canvas id="chart"></canvas>
+
 <script>
-const grid = document.getElementById('grid');
-let ws;
-let trades = [];
-let currentTF = 60000;
-let candles = [];
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
 
-function connectWS(){
-  ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight * 0.9;
 
-  ws.onopen = () => {
-    document.getElementById("ws").textContent = "LIVE";
-    document.getElementById("status").textContent = "CONNECTED";
-  };
+let data = [];
 
-  ws.onmessage = (e) => {
-    const t = JSON.parse(e.data);
+function randomWalk(prev) {
+  return prev + (Math.random() - 0.5) * 2;
+}
 
-    trades.push({
-      price: +t.p,
-      qty: +t.q,
-      side: t.m ? "sell" : "buy",
-      time: Date.now()
-    });
+// INIT BASE VALUES
+let TOTAL = 100;
+let USDT = 10;
 
-    if(trades.length > 500) trades.shift();
+function generateCandle() {
 
-    buildCandles();
+  TOTAL = randomWalk(TOTAL);
+  USDT = randomWalk(USDT);
+
+  // Normalize inverse flow logic
+  let buyPressure = (TOTAL - USDT) / 10;
+  let sellPressure = (USDT - TOTAL) / 10;
+
+  let open = buyPressure;
+  let close = buyPressure + (Math.random() - 0.5);
+
+  let high = Math.max(open, close) + Math.random();
+  let low = Math.min(open, close) - Math.random();
+
+  let volume = Math.abs(TOTAL - USDT) * (1 + Math.random());
+
+  return {
+    open, high, low, close,
+    volume,
+    total: TOTAL,
+    usdt: USDT
   };
 }
 
-function buildCandles(){
-  const now = Date.now();
-  const tf = currentTF;
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  let grouped = {};
+  let w = canvas.width;
+  let h = canvas.height;
 
-  for(let t of trades){
-    const bucket = Math.floor(t.time / tf) * tf;
+  let candleWidth = 10;
+  let x = 50;
 
-    if(!grouped[bucket]){
-      grouped[bucket] = {open:t.price, high:t.price, low:t.price, close:t.price, buy:0, sell:0};
-    }
+  for (let i = 0; i < data.length; i++) {
+    let c = data[i];
 
-    let c = grouped[bucket];
+    let scale = 40;
 
-    c.high = Math.max(c.high, t.price);
-    c.low = Math.min(c.low, t.price);
-    c.close = t.price;
+    let o = h/2 - c.open * scale;
+    let cl = h/2 - c.close * scale;
+    let hi = h/2 - c.high * scale;
+    let lo = h/2 - c.low * scale;
 
-    if(t.side === "buy") c.buy += t.qty;
-    else c.sell += t.qty;
+    // wick
+    ctx.strokeStyle = "#9ca3af";
+    ctx.beginPath();
+    ctx.moveTo(x, hi);
+    ctx.lineTo(x, lo);
+    ctx.stroke();
+
+    // body
+    ctx.fillStyle = c.close > c.open ? "#22c55e" : "#ef4444";
+    ctx.fillRect(x - 5, Math.min(o, cl), candleWidth, Math.abs(cl - o));
+
+    // FOOTPRINT volume bar
+    ctx.fillStyle = "rgba(59,130,246,0.4)";
+    ctx.fillRect(x - 5, h - c.volume * 2, candleWidth, c.volume * 2);
+
+    x += 15;
   }
-
-  candles = Object.keys(grouped).map(k => grouped[k]);
-
-  render();
 }
 
-function render(){
-  grid.innerHTML = "";
+function update() {
+  let candle = generateCandle();
 
-  let totalBuy = 0;
-  let totalSell = 0;
+  data.push(candle);
+  if (data.length > 80) data.shift();
 
-  candles.slice(-120).forEach(c => {
-    const delta = c.buy - c.sell;
+  document.getElementById("totalVal").innerText = candle.total.toFixed(2);
+  document.getElementById("usdtVal").innerText = candle.usdt.toFixed(2);
+  document.getElementById("compVal").innerText = (candle.total - candle.usdt).toFixed(2);
 
-    totalBuy += c.buy;
-    totalSell += c.sell;
-
-    const div = document.createElement("div");
-    div.className = "cell";
-    div.textContent = delta.toFixed(1);
-
-    if(delta > 0) div.classList.add("buy");
-    else if(delta < 0) div.classList.add("sell");
-    else div.classList.add("neutral");
-
-    grid.appendChild(div);
-  });
-
-  document.getElementById("bufferSize").textContent = candles.length;
-  document.getElementById("delta").textContent = "DELTA: " + (totalBuy - totalSell).toFixed(2);
-  document.getElementById("flow").textContent = totalBuy > totalSell ? "BUY FLOW" : "SELL FLOW";
-
-  document.getElementById("pressure").textContent = totalBuy > totalSell ? "BULLISH" : "BEARISH";
+  draw();
 }
 
-// TIMEFRAME SWITCH FIX
+setInterval(update, 1000);
 
-document.querySelectorAll('.tfbtn').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.tfbtn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    currentTF = parseInt(btn.dataset.tf);
-
-    document.getElementById("activeTf").textContent = btn.textContent;
-
-    buildCandles();
-  };
-});
-
-connectWS();
 </script>
 
 </body>
