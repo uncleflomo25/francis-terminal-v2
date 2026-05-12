@@ -1,202 +1,117 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>V7 Liquidity Rotation + Footprint Terminal</title>
-
+<meta charset="UTF-8" />
+<title>DEX Institutional Flow Terminal PRO</title>
 <style>
-body {
-  margin:0;
-  background:#05070c;
-  color:#cbd5e1;
-  font-family: monospace;
-}
+  body {
+    background: #0b0f14;
+    color: #e6e6e6;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }.grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
 
-#topbar {
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  padding:10px;
-  background:#0f172a;
-  border-bottom:1px solid #1f2937;
-}
+.card { background: #121823; padding: 15px; border-radius: 12px; }
 
-.box {
-  padding:6px 10px;
-  background:#111827;
-  border-radius:6px;
-}
+h1 { font-size: 18px; } h2 { font-size: 14px; margin-bottom: 10px; }
 
-#chart {
-  width:100%;
-  height:85vh;
-}
+.row { display:flex; justify-content: space-between; align-items:center; margin-bottom:10px; }
+
+button { margin:2px; padding:5px 8px; border:none; border-radius:6px; cursor:pointer; background:#1f2a3a; color:white; }
+
+button:hover { background:#2d3d55; }
+
+.signal { font-size:18px; font-weight:bold; }
+
+.price { font-size:12px; opacity:0.8; }
+
 </style>
-</head>
+</head><body><div class="card">
+<h1>DEX INSTITUTIONAL FLOW TERMINAL PRO</h1>
+<div class="price">Live Macro + Liquidity + Execution Engine</div>
+</div><br/><div class="grid"><!-- MARKET DATA --><div class="card">
+<h2>LIVE MARKET FEED</h2>
+<div>BTC: <span id="btcPrice">loading...</span></div>
+<div>ETH: <span id="ethPrice">loading...</span></div>
+<div>GOLD: <span id="goldPrice">loading...</span></div>
+<div>USDT.D: <span id="usdtDom">loading...</span></div>
+<div>BTC.D: <span id="btcDom">loading...</span></div>
+</div><!-- MACRO PANEL --><div class="card">
+<h2>MACRO FLOW</h2>
+<div class="row">USDT.D <button onclick="set('usdt','up')">UP</button><button onclick="set('usdt','down')">DOWN</button></div>
+<div class="row">BTC.D <button onclick="set('btc','up')">UP</button><button onclick="set('btc','down')">DOWN</button></div>
+<div class="row">ETH/BTC <button onclick="set('eth','up')">UP</button><button onclick="set('eth','down')">DOWN</button></div>
+<div class="row">GOLD <button onclick="set('gold','up')">UP</button><button onclick="set('gold','down')">DOWN</button></div>
+</div><!-- REGIME ENGINE --><div class="card">
+<h2>REGIME ENGINE</h2>
+<div class="signal" id="regime">NEUTRAL</div>
+<div id="action">WAIT</div><br/>
+<h2>LIQUIDITY SIGNAL</h2>
+<div id="liq">NO SWEEP DETECTED</div>
+</div><!-- EXECUTION PANEL --><div class="card">
+<h2>OSTIUM EXECUTION PANEL</h2>
+<button onclick="exec('btc','long')">LONG BTC</button>
+<button onclick="exec('btc','short')">SHORT BTC</button>
+<br/><br/>
+<button onclick="exec('eth','long')">LONG ETH</button>
+<button onclick="exec('eth','short')">SHORT ETH</button><div id="execStatus" style="margin-top:10px;font-size:12px;opacity:0.8;"></div>
+</div></div><script>
+let state = {usdt:"neutral",btc:"neutral",eth:"neutral",gold:"neutral"};
 
-<body>
+function set(k,v){ state[k]=v; update(); }
 
-<div id="topbar">
-  <div class="box">FLOW: <span id="flow">--</span></div>
-  <div class="box">BTC STRENGTH: <span id="btc"></span></div>
-  <div class="box">ALT STRENGTH: <span id="alt"></span></div>
-  <div class="box">USDT FLOW: <span id="usdt"></span></div>
-  <div class="box">DELTA: <span id="delta"></span></div>
-</div>
+function update(){
 
-<canvas id="chart"></canvas>
+let regime="NEUTRAL";
+let action="WAIT";
 
-<script>
-
-const canvas = document.getElementById("chart");
-const ctx = canvas.getContext("2d");
-
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight * 0.85;
-
-// -----------------------------
-// MARKET STATE (SIMULATED STREAM)
-// -----------------------------
-let TOTAL = 1200;
-let USDT_D = 6;
-let BTC_D = 50;
-let ETHBTC = 0.05;
-
-function rand() {
-  return (Math.random() - 0.5) * 2;
+if(state.usdt=="up" && state.btc=="up"){
+regime="RISK OFF";
+action="SHORT BTC / DEFENSIVE FLOW";
+}
+else if(state.usdt=="down" && state.eth=="up"){
+regime="RISK ON";
+action="LONG ETH EXPANSION";
+}
+else if(state.gold=="up" && state.btc=="down"){
+regime="DIVERGENCE";
+action="SHORT BTC / GOLD LEAD";
 }
 
-// -----------------------------
-// HISTORY
-// -----------------------------
-let history = [];
+document.getElementById("regime").innerText=regime;
+document.getElementById("action").innerText=action;
 
-// -----------------------------
-// Z SCORE
-// -----------------------------
-function mean(a){return a.reduce((x,y)=>x+y,0)/a.length;}
-function std(a){let m=mean(a);return Math.sqrt(a.map(x=>(x-m)**2).reduce((x,y)=>x+y,0)/a.length);}
-function z(v,a){let s=std(a)||1;return (v-mean(a))/s;}
-
-// -----------------------------
-// UPDATE MARKET (SIMULATION OR API HOOK)
-// -----------------------------
-function updateMarket(){
-
-  // 🔌 HERE YOU CAN REPLACE WITH REAL DATA:
-  // TOTAL = fetch(DeFiLlama)
-  // BTC_D = fetch(Binance dominance proxy)
-  // USDT_D = stablecoin supply change
-
-  TOTAL += rand()*6;
-  USDT_D += rand()*0.2;
-  BTC_D += rand()*0.3;
-  ETHBTC += rand()*0.001;
+// fake liquidity logic
+let sweep=Math.random()>0.7;
+if(sweep) document.getElementById("liq").innerText="LIQUIDITY SWEEP DETECTED ⚡";
+else document.getElementById("liq").innerText="NO SWEEP";
 }
 
-// -----------------------------
-// CORE ROTATION ENGINE
-// -----------------------------
-function compute(){
-
-  updateMarket();
-
-  let BTC_STRENGTH =
-    z(BTC_D, history.map(h=>h.BTC_D || BTC_D));
-
-  let ALT_STRENGTH =
-    z(ETHBTC, history.map(h=>h.ETHBTC || ETHBTC)) +
-    (z(TOTAL, history.map(h=>h.TOTAL || TOTAL)) - BTC_STRENGTH);
-
-  let USDT_FLOW =
-    z(USDT_D, history.map(h=>h.USDT_D || USDT_D));
-
-  // -----------------------------
-  // LIQUIDITY ROTATION SCORE
-  // -----------------------------
-  let ROTATION =
-    (ALT_STRENGTH - BTC_STRENGTH) - USDT_FLOW;
-
-  // -----------------------------
-  // FOOTPRINT DELTA (EXECUTION LAYER)
-  // -----------------------------
-  let BUY_PRESSURE = BTC_STRENGTH + ALT_STRENGTH;
-  let SELL_PRESSURE = USDT_FLOW;
-
-  let DELTA = BUY_PRESSURE - SELL_PRESSURE;
-
-  // -----------------------------
-  // FLOW STATE
-  // -----------------------------
-  let FLOW = "NEUTRAL";
-
-  if(ROTATION > 1 && DELTA > 0) FLOW = "ALT RISK-ON FLOW";
-  else if(BTC_STRENGTH > ALT_STRENGTH && DELTA > 0) FLOW = "BTC SAFE FLOW";
-  else if(DELTA < 0) FLOW = "DISTRIBUTION / EXIT FLOW";
-
-  // -----------------------------
-  // STORE HISTORY
-  // -----------------------------
-  history.push({
-    TOTAL,
-    USDT_D,
-    BTC_D,
-    ETHBTC,
-    ROTATION,
-    DELTA
-  });
-
-  if(history.length > 120) history.shift();
-
-  // -----------------------------
-  // UI
-  // -----------------------------
-  document.getElementById("flow").innerText = FLOW;
-  document.getElementById("btc").innerText = BTC_STRENGTH.toFixed(2);
-  document.getElementById("alt").innerText = ALT_STRENGTH.toFixed(2);
-  document.getElementById("usdt").innerText = USDT_FLOW.toFixed(2);
-  document.getElementById("delta").innerText = DELTA.toFixed(2);
-
-  return {ROTATION, DELTA};
+function exec(asset,side){
+let msg=`EXECUTED: ${side.toUpperCase()} ${asset.toUpperCase()} ON OSTIUM`;
+document.getElementById("execStatus").innerText=msg;
 }
 
-// -----------------------------
-// DRAW FOOTPRINT FLOW
-// -----------------------------
-function draw(){
+// fake live data feed
+async function feed(){
 
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+let btc=65000+Math.random()*1000;
+let eth=3200+Math.random()*100;
+let gold=2300+Math.random()*20;
 
-  let x = 50;
-  let scale = 60;
+let usdt=(5+Math.random()).toFixed(2);
+let btcD=(50+Math.random()*2).toFixed(2);
 
-  for(let i=0;i<history.length;i++){
-
-    let h = history[i];
-
-    let y = canvas.height/2 - h.ROTATION * scale;
-
-    // footprint style bar
-    ctx.fillStyle = h.DELTA > 0 ? "#22c55e" : "#ef4444";
-    ctx.fillRect(x,y,6,6);
-
-    // delta intensity overlay
-    ctx.fillStyle = "rgba(59,130,246,0.3)";
-    ctx.fillRect(x, canvas.height - Math.abs(h.DELTA)*20, 6, Math.abs(h.DELTA)*20);
-
-    x += 8;
-  }
+document.getElementById("btcPrice").innerText=btc.toFixed(2);
+document.getElementById("ethPrice").innerText=eth.toFixed(2);
+document.getElementById("goldPrice").innerText=gold.toFixed(2);
+document.getElementById("usdtDom").innerText=usdt+"%";
+document.getElementById("btcDom").innerText=btcD+"%";
 }
 
-// -----------------------------
-// LOOP
-// -----------------------------
-setInterval(()=>{
-  compute();
-  draw();
-}, 400);
+setInterval(feed,2000);
+setInterval(update,3000);
 
-</script>
-
-</body>
+feed();
+update();
+</script></body>
 </html>
