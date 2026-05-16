@@ -115,7 +115,7 @@ function generateMockBars(count) {
         
         bars.push({
             time: time + (i * 60000),
-            isBull = isBullish,
+            isBull: isBullish,
             high: segments[0].price,
             low: segments[segments.length - 1].price,
             open: isBullish ? segments[segments.length-3].price : segments[2].price,
