@@ -1,462 +1,190 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AED Trade Risk Calculator</title>
+<!-- ========================= -->
+<!-- REPLACE THIS ENTIRE BLOCK -->
+<!-- ========================= -->
 
-<style>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
-
-body{
-  background:#081018;
-  color:white;
-  font-family:Arial;
-  padding:30px;
-}
-
-.container{
-  max-width:1200px;
-  margin:auto;
-}
-
-.card{
-  background:#111827;
-  border:1px solid #1f2937;
-  padding:25px;
-  border-radius:14px;
-  margin-bottom:20px;
-}
-
-h1{
-  color:#00ff99;
-  margin-bottom:10px;
-}
-
-h2{
-  margin-bottom:20px;
-  color:#60a5fa;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:20px;
-}
-
-@media(max-width:900px){
-  .grid{
-    grid-template-columns:1fr;
-  }
-}
-
-.input-group{
-  margin-bottom:18px;
-}
-
-label{
-  display:block;
-  margin-bottom:8px;
-  color:#94a3b8;
-  font-size:13px;
-}
-
-input,select,textarea{
-  width:100%;
-  background:#0f172a;
-  border:1px solid #334155;
-  color:white;
-  padding:14px;
-  border-radius:10px;
-}
-
-button{
-  width:100%;
-  padding:15px;
-  border:none;
-  border-radius:10px;
-  background:#2563eb;
-  color:white;
-  font-weight:bold;
-  cursor:pointer;
-  margin-top:10px;
-}
-
-button:hover{
-  opacity:0.9;
-}
-
-.result-box{
-  background:#0f172a;
-  border:1px solid #1e293b;
-  padding:15px;
-  border-radius:10px;
-  margin-bottom:15px;
-}
-
-.result-row{
-  display:flex;
-  justify-content:space-between;
-  margin:10px 0;
-}
-
-.green{
-  color:#00ff99;
-}
-
-.red{
-  color:#ff4d4d;
-}
-
-.upload-box{
-  border:2px dashed #334155;
-  padding:30px;
-  border-radius:10px;
-  text-align:center;
-}
-
-.preview{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
-  gap:10px;
-  margin-top:20px;
-}
-
-.preview img{
-  width:100%;
-  height:100px;
-  object-fit:cover;
-  border-radius:8px;
-}
-
-.trade-card{
-  background:#0f172a;
-  border:1px solid #1e293b;
-  padding:20px;
-  border-radius:12px;
-  margin-top:15px;
-}
-
-.trade-header{
-  display:flex;
-  justify-content:space-between;
-  margin-bottom:15px;
-}
-
-.buy{
-  color:#00ff99;
-}
-
-.sell{
-  color:#ff4d4d;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<h1>📊 AED Trade Journal</h1>
-
-<div class="grid">
-
-<div class="card">
-
-<h2>Trade Setup</h2>
-
-<div class="input-group">
-<label>Instrument</label>
-<input type="text" id="symbol" placeholder="BTCUSDT / XAUUSD">
+<div class="form-group">
+  <label>Risk Per Trade (%)</label>
+  <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" />
 </div>
 
-<div class="input-group">
-<label>Direction</label>
-<select id="direction">
-<option value="buy">BUY</option>
-<option value="sell">SELL</option>
-</select>
-</div>
+<!-- ========================= -->
+<!-- WITH THIS -->
+<!-- ========================= -->
 
-<div class="input-group">
-<label>Account Balance (AED)</label>
-<input type="number" id="balance" placeholder="10000">
-</div>
-
-<div class="input-group">
-<label>Risk Per Trade (%)</label>
-<input type="number" id="risk" value="1">
-</div>
-
-<div class="input-group">
-<label>Entry Price</label>
-<input type="number" id="entry">
-</div>
-
-<div class="input-group">
-<label>Stop Loss Price</label>
-<input type="number" id="sl">
-</div>
-
-<div class="input-group">
-<label>Take Profit Price</label>
-<input type="number" id="tp">
-</div>
-
-<button onclick="calculateTrade()">Calculate Trade</button>
-
-</div>
-
-<div class="card">
-
-<h2>Risk Analysis</h2>
-
-<div class="result-box">
-
-<div class="result-row">
-<span>Risk Amount</span>
-<span class="red" id="riskAmount">0 AED</span>
-</div>
-
-<div class="result-row">
-<span>Lot Size</span>
-<span class="green" id="lotSize">0.00</span>
-</div>
-
-<div class="result-row">
-<span>SL Points</span>
-<span id="slPoints">0</span>
-</div>
-
-<div class="result-row">
-<span>TP Points</span>
-<span id="tpPoints">0</span>
-</div>
-
-<div class="result-row">
-<span>Potential Profit</span>
-<span class="green" id="profitAED">0 AED</span>
-</div>
-
-<div class="result-row">
-<span>Risk Reward Ratio</span>
-<span class="green" id="rr">1:1</span>
-</div>
-
-</div>
-
-<h2>Trade Notes</h2>
-
-<textarea id="notes" rows="5" placeholder="Trade analysis..."></textarea>
-
-<br><br>
-
-<div class="upload-box" onclick="document.getElementById('images').click()">
-
-📸 Upload Trade Screenshots
-
-<input type="file" id="images" multiple hidden onchange="previewImages(event)">
-
-</div>
-
-<div class="preview" id="preview"></div>
-
-<button onclick="saveTrade()">
-💾 Save Trade
-</button>
-
-</div>
-
-</div>
-
-<div class="card">
-
-<h2>📔 Journal Entries</h2>
-
-<div id="journal"></div>
-
-</div>
-
+<div class="form-group">
+  <label>Risk Amount (AED)</label>
+  <input 
+    type="number"
+    id="riskAEDInput"
+    placeholder="e.g., 500 AED"
+    step="1"
+    onchange="calculateLotSize()"
+  />
 </div>
 
 <script>
 
-let trades = [];
+// ======================================
+// REPLACE YOUR OLD calculateLotSize()
+// WITH THIS FULL VERSION
+// ======================================
 
-function calculateTrade(){
+function calculateLotSize() {
 
-const balance = parseFloat(document.getElementById('balance').value) || 0;
-const riskPercent = parseFloat(document.getElementById('risk').value) || 0;
-const entry = parseFloat(document.getElementById('entry').value) || 0;
-const sl = parseFloat(document.getElementById('sl').value) || 0;
-const tp = parseFloat(document.getElementById('tp').value) || 0;
+  const balance =
+    parseFloat(document.getElementById('accountBalance').value) || 0;
 
-if(!balance || !entry || !sl || !tp){
-alert("Fill all fields");
-return;
-}
+  // ===== NEW FIXED AED RISK =====
+  const riskAED =
+    parseFloat(document.getElementById('riskAEDInput').value) || 0;
 
-const riskAED = balance * (riskPercent / 100);
+  const entryPrice =
+    parseFloat(document.getElementById('entryPrice').value) || 0;
 
-const slDistance = Math.abs(entry - sl);
-const tpDistance = Math.abs(tp - entry);
+  let slPrice = 0;
 
-const lotSize = riskAED / (slDistance * 100);
+  // ===== GET SL PRICE =====
+  if (slMethod === 'manual') {
 
-const potentialProfit = tpDistance * lotSize * 100;
+    slPrice =
+      parseFloat(document.getElementById('slPriceManual').value) || 0;
 
-const rr = potentialProfit / riskAED;
+  } else if (slMethod === 'points') {
 
-document.getElementById('riskAmount').innerText =
-riskAED.toFixed(2) + " AED";
+    slPrice =
+      parseFloat(document.getElementById('slPriceAuto').value) || 0;
 
-document.getElementById('lotSize').innerText =
-lotSize.toFixed(2);
+  } else if (slMethod === 'lotsize') {
 
-document.getElementById('slPoints').innerText =
-slDistance.toFixed(2);
+    slPrice =
+      parseFloat(document.getElementById('slPriceLotAuto').value) || 0;
+  }
 
-document.getElementById('tpPoints').innerText =
-tpDistance.toFixed(2);
+  let tpPrice =
+    parseFloat(document.getElementById('tpPrice').value) ||
+    parseFloat(document.getElementById('tpPriceAuto').value) || 0;
 
-document.getElementById('profitAED').innerText =
-potentialProfit.toFixed(2) + " AED";
+  const manualLotSize =
+    parseFloat(document.getElementById('lotSize').value) || 0;
 
-document.getElementById('rr').innerText =
-"1:" + rr.toFixed(2);
+  // ===== DISPLAY BALANCE =====
+  document.getElementById('displayBalance').textContent =
+    balance.toFixed(2) + ' AED';
 
-}
+  // ===== VALIDATION =====
+  if (!balance || !riskAED || !entryPrice || !slPrice) {
+    return;
+  }
 
-function previewImages(event){
+  // ===== USD CONVERSION =====
+  const riskUSD = riskAED / exchangeRate;
 
-const preview = document.getElementById('preview');
+  document.getElementById('riskAmountAED').textContent =
+    riskAED.toFixed(2) + ' AED';
 
-preview.innerHTML = "";
+  document.getElementById('riskAmountUSD').textContent =
+    riskUSD.toFixed(2) + ' USD';
 
-Array.from(event.target.files).forEach(file=>{
+  document.getElementById('riskMetric').textContent =
+    riskAED.toFixed(0);
 
-const reader = new FileReader();
+  // ===== SL POINTS =====
+  const slPoints =
+    Math.abs((entryPrice - slPrice) / 0.0001);
 
-reader.onload = function(e){
+  document.getElementById('slPointsDisplay').textContent =
+    slPoints.toFixed(0) + ' pts';
 
-const img = document.createElement('img');
+  document.getElementById('slPriceDisplay').textContent =
+    slPrice.toFixed(4);
 
-img.src = e.target.result;
+  // ===== LOT SIZE =====
+  let lotSize;
 
-preview.appendChild(img);
+  if (manualLotSize > 0) {
 
-}
+    lotSize = manualLotSize;
 
-reader.readAsDataURL(file);
+  } else {
 
-});
+    lotSize =
+      riskAED / (slPoints * 0.0001 * 100000);
+  }
 
-}
+  document.getElementById('calculatedLotSize').textContent =
+    lotSize.toFixed(2);
 
-function saveTrade(){
+  // ===== POTENTIAL LOSS =====
+  const potentialLossAED = riskAED;
+  const potentialLossUSD = riskUSD;
 
-const symbol = document.getElementById('symbol').value;
-const direction = document.getElementById('direction').value;
-const entry = document.getElementById('entry').value;
-const sl = document.getElementById('sl').value;
-const tp = document.getElementById('tp').value;
-const rr = document.getElementById('rr').innerText;
-const risk = document.getElementById('riskAmount').innerText;
-const profit = document.getElementById('profitAED').innerText;
-const notes = document.getElementById('notes').value;
+  document.getElementById('potentialLossAED').textContent =
+    potentialLossAED.toFixed(2) + ' AED';
 
-const trade = {
-symbol,
-direction,
-entry,
-sl,
-tp,
-rr,
-risk,
-profit,
-notes
-};
+  document.getElementById('potentialLossUSD').textContent =
+    potentialLossUSD.toFixed(2) + ' USD';
 
-trades.push(trade);
+  // ===== TP =====
+  let tpPoints = 0;
+  let potentialProfitAED = 0;
+  let potentialProfitUSD = 0;
 
-renderTrades();
+  if (tpPrice > 0) {
 
-alert("Trade Saved");
+    tpPoints =
+      Math.abs((tpPrice - entryPrice) / 0.0001);
 
-}
+    potentialProfitAED =
+      (tpPoints * 0.0001 * lotSize * 100000);
 
-function renderTrades(){
+    potentialProfitUSD =
+      potentialProfitAED / exchangeRate;
 
-const journal = document.getElementById('journal');
+    document.getElementById('tpPointsDisplay').textContent =
+      tpPoints.toFixed(0) + ' pts';
 
-journal.innerHTML = "";
+    document.getElementById('tpPriceDisplay').textContent =
+      tpPrice.toFixed(4);
 
-trades.reverse().forEach(t=>{
+    document.getElementById('potentialProfitAED').textContent =
+      potentialProfitAED.toFixed(2) + ' AED';
 
-journal.innerHTML += `
+    document.getElementById('potentialProfitUSD').textContent =
+      potentialProfitUSD.toFixed(2) + ' USD';
 
-<div class="trade-card">
+    document.getElementById('rewardMetric').textContent =
+      potentialProfitAED.toFixed(0);
 
-<div class="trade-header">
+    // ===== RR =====
+    const rrRatio =
+      potentialProfitAED / potentialLossAED;
 
-<h3>${t.symbol}</h3>
+    document.getElementById('rrRatio').textContent =
+      `1:${rrRatio.toFixed(2)}`;
 
-<h3 class="${t.direction}">
-${t.direction.toUpperCase()}
-</h3>
+    const ratioFillWidth =
+      (100 / (1 + rrRatio));
 
-</div>
+    document.getElementById('ratioFill').style.width =
+      ratioFillWidth + '%';
 
-<div class="result-row">
-<span>Entry</span>
-<span>${t.entry}</span>
-</div>
+    const breakevenRate =
+      (100 / (1 + rrRatio));
 
-<div class="result-row">
-<span>SL</span>
-<span>${t.sl}</span>
-</div>
+    document.getElementById('breakevenRate').textContent =
+      breakevenRate.toFixed(1) + '%';
 
-<div class="result-row">
-<span>TP</span>
-<span>${t.tp}</span>
-</div>
+  } else {
 
-<div class="result-row">
-<span>Risk</span>
-<span>${t.risk}</span>
-</div>
+    document.getElementById('rrRatio').textContent =
+      '1:1';
 
-<div class="result-row">
-<span>Potential Profit</span>
-<span>${t.profit}</span>
-</div>
+    document.getElementById('breakevenRate').textContent =
+      '50%';
 
-<div class="result-row">
-<span>R:R Ratio</span>
-<span>${t.rr}</span>
-</div>
-
-<br>
-
-<div style="color:#94a3b8;">
-${t.notes}
-</div>
-
-</div>
-
-`;
-
-});
-
+    document.getElementById('ratioFill').style.width =
+      '50%';
+  }
 }
 
 </script>
-
-</body>
-</html>
