@@ -1,40 +1,8 @@
-<!-- ========================= -->
-<!-- REPLACE THIS ENTIRE BLOCK -->
-<!-- ========================= -->
-
-<div class="form-group">
-  <label>Risk Per Trade (%)</label>
-  <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" />
-</div>
-
-<!-- ========================= -->
-<!-- WITH THIS -->
-<!-- ========================= -->
-
-<div class="form-group">
-  <label>Risk Amount (AED)</label>
-  <input 
-    type="number"
-    id="riskAEDInput"
-    placeholder="e.g., 500 AED"
-    step="1"
-    onchange="calculateLotSize()"
-  />
-</div>
-
-<script>
-
-// ======================================
-// REPLACE YOUR OLD calculateLotSize()
-// WITH THIS FULL VERSION
-// ======================================
-
 function calculateLotSize() {
 
   const balance =
     parseFloat(document.getElementById('accountBalance').value) || 0;
 
-  // ===== NEW FIXED AED RISK =====
   const riskAED =
     parseFloat(document.getElementById('riskAEDInput').value) || 0;
 
@@ -43,7 +11,6 @@ function calculateLotSize() {
 
   let slPrice = 0;
 
-  // ===== GET SL PRICE =====
   if (slMethod === 'manual') {
 
     slPrice =
@@ -67,11 +34,9 @@ function calculateLotSize() {
   const manualLotSize =
     parseFloat(document.getElementById('lotSize').value) || 0;
 
-  // ===== DISPLAY BALANCE =====
   document.getElementById('displayBalance').textContent =
     balance.toFixed(2) + ' AED';
 
-  // ===== VALIDATION =====
   if (!balance || !riskAED || !entryPrice || !slPrice) {
     return;
   }
@@ -79,6 +44,7 @@ function calculateLotSize() {
   // ===== USD CONVERSION =====
   const riskUSD = riskAED / exchangeRate;
 
+  // ===== DISPLAY RISK =====
   document.getElementById('riskAmountAED').textContent =
     riskAED.toFixed(2) + ' AED';
 
@@ -88,7 +54,7 @@ function calculateLotSize() {
   document.getElementById('riskMetric').textContent =
     riskAED.toFixed(0);
 
-  // ===== SL POINTS =====
+  // ===== STOP LOSS POINTS =====
   const slPoints =
     Math.abs((entryPrice - slPrice) / 0.0001);
 
@@ -114,30 +80,23 @@ function calculateLotSize() {
   document.getElementById('calculatedLotSize').textContent =
     lotSize.toFixed(2);
 
-  // ===== POTENTIAL LOSS =====
-  const potentialLossAED = riskAED;
-  const potentialLossUSD = riskUSD;
-
+  // ===== LOSS =====
   document.getElementById('potentialLossAED').textContent =
-    potentialLossAED.toFixed(2) + ' AED';
+    riskAED.toFixed(2) + ' AED';
 
   document.getElementById('potentialLossUSD').textContent =
-    potentialLossUSD.toFixed(2) + ' USD';
+    riskUSD.toFixed(2) + ' USD';
 
   // ===== TP =====
-  let tpPoints = 0;
-  let potentialProfitAED = 0;
-  let potentialProfitUSD = 0;
-
   if (tpPrice > 0) {
 
-    tpPoints =
+    const tpPoints =
       Math.abs((tpPrice - entryPrice) / 0.0001);
 
-    potentialProfitAED =
+    const potentialProfitAED =
       (tpPoints * 0.0001 * lotSize * 100000);
 
-    potentialProfitUSD =
+    const potentialProfitUSD =
       potentialProfitAED / exchangeRate;
 
     document.getElementById('tpPointsDisplay').textContent =
@@ -157,16 +116,10 @@ function calculateLotSize() {
 
     // ===== RR =====
     const rrRatio =
-      potentialProfitAED / potentialLossAED;
+      potentialProfitAED / riskAED;
 
     document.getElementById('rrRatio').textContent =
-      `1:${rrRatio.toFixed(2)}`;
-
-    const ratioFillWidth =
-      (100 / (1 + rrRatio));
-
-    document.getElementById('ratioFill').style.width =
-      ratioFillWidth + '%';
+      '1:' + rrRatio.toFixed(2);
 
     const breakevenRate =
       (100 / (1 + rrRatio));
@@ -174,17 +127,10 @@ function calculateLotSize() {
     document.getElementById('breakevenRate').textContent =
       breakevenRate.toFixed(1) + '%';
 
-  } else {
-
-    document.getElementById('rrRatio').textContent =
-      '1:1';
-
-    document.getElementById('breakevenRate').textContent =
-      '50%';
+    const ratioFillWidth =
+      (100 / (1 + rrRatio));
 
     document.getElementById('ratioFill').style.width =
-      '50%';
+      ratioFillWidth + '%';
   }
 }
-
-</script>
