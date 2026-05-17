@@ -1,8 +1,43 @@
+<!-- ================================================= -->
+<!-- REPLACE THIS OLD RISK INPUT BLOCK -->
+<!-- ================================================= -->
+
+<div class="form-group">
+  <label>Risk Per Trade (%)</label>
+  <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" />
+</div>
+
+<!-- ================================================= -->
+<!-- WITH THIS NEW AED RISK INPUT BLOCK -->
+<!-- ================================================= -->
+
+<div class="form-group">
+  <label>Risk Amount (AED)</label>
+  <input 
+    type="number"
+    id="riskAEDInput"
+    placeholder="e.g., 500 AED"
+    step="1"
+    onchange="calculateLotSize()"
+  />
+</div>
+
+<script>
+
+// =====================================================
+// FULL FIXED calculateLotSize() FUNCTION
+// =====================================================
+
 function calculateLotSize() {
+
+  // =====================================
+  // INPUTS
+  // =====================================
 
   const balance =
     parseFloat(document.getElementById('accountBalance').value) || 0;
 
+  // FIXED AED RISK INPUT
   const riskAED =
     parseFloat(document.getElementById('riskAEDInput').value) || 0;
 
@@ -10,6 +45,10 @@ function calculateLotSize() {
     parseFloat(document.getElementById('entryPrice').value) || 0;
 
   let slPrice = 0;
+
+  // =====================================
+  // SL METHOD
+  // =====================================
 
   if (slMethod === 'manual') {
 
@@ -27,24 +66,38 @@ function calculateLotSize() {
       parseFloat(document.getElementById('slPriceLotAuto').value) || 0;
   }
 
-  let tpPrice =
+  const tpPrice =
     parseFloat(document.getElementById('tpPrice').value) ||
     parseFloat(document.getElementById('tpPriceAuto').value) || 0;
 
   const manualLotSize =
     parseFloat(document.getElementById('lotSize').value) || 0;
 
+  // =====================================
+  // DISPLAY BALANCE
+  // =====================================
+
   document.getElementById('displayBalance').textContent =
     balance.toFixed(2) + ' AED';
+
+  // =====================================
+  // VALIDATION
+  // =====================================
 
   if (!balance || !riskAED || !entryPrice || !slPrice) {
     return;
   }
 
-  // ===== USD CONVERSION =====
+  // =====================================
+  // USD CONVERSION
+  // =====================================
+
   const riskUSD = riskAED / exchangeRate;
 
-  // ===== DISPLAY RISK =====
+  // =====================================
+  // RISK DISPLAY
+  // =====================================
+
   document.getElementById('riskAmountAED').textContent =
     riskAED.toFixed(2) + ' AED';
 
@@ -54,7 +107,10 @@ function calculateLotSize() {
   document.getElementById('riskMetric').textContent =
     riskAED.toFixed(0);
 
-  // ===== STOP LOSS POINTS =====
+  // =====================================
+  // STOP LOSS POINTS
+  // =====================================
+
   const slPoints =
     Math.abs((entryPrice - slPrice) / 0.0001);
 
@@ -64,7 +120,10 @@ function calculateLotSize() {
   document.getElementById('slPriceDisplay').textContent =
     slPrice.toFixed(4);
 
-  // ===== LOT SIZE =====
+  // =====================================
+  // LOT SIZE CALCULATION
+  // =====================================
+
   let lotSize;
 
   if (manualLotSize > 0) {
@@ -80,14 +139,20 @@ function calculateLotSize() {
   document.getElementById('calculatedLotSize').textContent =
     lotSize.toFixed(2);
 
-  // ===== LOSS =====
+  // =====================================
+  // POTENTIAL LOSS
+  // =====================================
+
   document.getElementById('potentialLossAED').textContent =
     riskAED.toFixed(2) + ' AED';
 
   document.getElementById('potentialLossUSD').textContent =
     riskUSD.toFixed(2) + ' USD';
 
-  // ===== TP =====
+  // =====================================
+  // TP + PROFIT
+  // =====================================
+
   if (tpPrice > 0) {
 
     const tpPoints =
@@ -114,18 +179,29 @@ function calculateLotSize() {
     document.getElementById('rewardMetric').textContent =
       potentialProfitAED.toFixed(0);
 
-    // ===== RR =====
+    // =====================================
+    // RR RATIO
+    // =====================================
+
     const rrRatio =
       potentialProfitAED / riskAED;
 
     document.getElementById('rrRatio').textContent =
       '1:' + rrRatio.toFixed(2);
 
+    // =====================================
+    // BREAKEVEN RATE
+    // =====================================
+
     const breakevenRate =
       (100 / (1 + rrRatio));
 
     document.getElementById('breakevenRate').textContent =
       breakevenRate.toFixed(1) + '%';
+
+    // =====================================
+    // RR BAR
+    // =====================================
 
     const ratioFillWidth =
       (100 / (1 + rrRatio));
@@ -134,3 +210,5 @@ function calculateLotSize() {
       ratioFillWidth + '%';
   }
 }
+
+</script>
