@@ -1,214 +1,1425 @@
-<!-- ================================================= -->
-<!-- REPLACE THIS OLD RISK INPUT BLOCK -->
-<!-- ================================================= -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Advanced Trade Journal - AED/USD Risk Calculator</title>
+<style>
+  * { box-sizing: border-box; }
+  
+  body {
+    margin: 0;
+    background: #0a0e27;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+  }
 
-<div class="form-group">
-  <label>Risk Per Trade (%)</label>
-  <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" />
-</div>
+  .container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+  }
 
-<!-- ================================================= -->
-<!-- WITH THIS NEW AED RISK INPUT BLOCK -->
-<!-- ================================================= -->
+  header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 2px solid #3b82f6;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+  }
 
-<div class="form-group">
-  <label>Risk Amount (AED)</label>
-  <input 
-    type="number"
-    id="riskAEDInput"
-    placeholder="e.g., 500 AED"
-    step="1"
-    onchange="calculateLotSize()"
-  />
+  header h1 {
+    margin: 0;
+    font-size: 28px;
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+  }
+
+  header p {
+    margin: 5px 0 0 0;
+    color: #60a5fa;
+    font-size: 12px;
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  @media (max-width: 1400px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .card {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
+  }
+
+  .card h2 {
+    margin: 0 0 20px 0;
+    color: #00ff88;
+    font-size: 18px;
+    border-bottom: 2px solid #3b82f6;
+    padding-bottom: 10px;
+  }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    color: #60a5fa;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s ease;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: #1e293b;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .currency-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .currency-btn {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #334155;
+    background: transparent;
+    color: #60a5fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+  }
+
+  .currency-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+  }
+
+  button {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 12px;
+  }
+
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  .calculation-panel {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 4px solid #3b82f6;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 15px 0;
+  }
+
+  .calc-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .calc-label {
+    color: #60a5fa;
+  }
+
+  .calc-value {
+    color: #00ff88;
+    font-weight: 600;
+  }
+
+  .calc-value.negative {
+    color: #ef4444;
+  }
+
+  .risk-reward-panel {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 2px solid #22c55e;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+
+  .risk-reward-metric {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .metric-box {
+    background: #0f172a;
+    border: 1px solid #334155;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .metric-label {
+    color: #60a5fa;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    color: #00ff88;
+    font-size: 24px;
+    font-weight: bold;
+  }
+
+  .metric-value.ratio {
+    font-size: 28px;
+  }
+
+  .ratio-bar {
+    width: 100%;
+    height: 8px;
+    background: #1e293b;
+    border-radius: 4px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .ratio-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e 0%, #00ff88 100%);
+    transition: width 0.3s ease;
+  }
+
+  .image-upload {
+    border: 2px dashed #3b82f6;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .image-upload:hover {
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  .image-upload input[type="file"] {
+    display: none;
+  }
+
+  .image-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .image-item {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #0f172a;
+  }
+
+  .image-item img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+  }
+
+  .remove-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .account-connector {
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid #a855f7;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+  }
+
+  .account-connector h3 {
+    margin: 0 0 10px 0;
+    color: #a855f7;
+    font-size: 14px;
+  }
+
+  .account-list {
+    margin: 10px 0;
+  }
+
+  .account-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f172a;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+
+  .account-status {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+
+  .account-status.connected {
+    background: #22c55e;
+  }
+
+  .account-status.disconnected {
+    background: #ef4444;
+  }
+
+  .journal-entries {
+    margin-top: 30px;
+  }
+
+  .entry-card {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 1px solid #334155;
+  }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 10px;
+  }
+
+  .entry-symbol {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ff88;
+  }
+
+  .entry-type {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .entry-type.buy {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+  }
+
+  .entry-type.sell {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .entry-date {
+    color: #60a5fa;
+    font-size: 12px;
+  }
+
+  .entry-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .entry-stat {
+    background: #0f172a;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #334155;
+  }
+
+  .stat-label {
+    color: #60a5fa;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .stat-value {
+    color: #e2e8f0;
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .entry-pnl {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    margin-top: 15px;
+  }
+
+  .pnl-item {
+    text-align: center;
+  }
+
+  .pnl-label {
+    color: #60a5fa;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .pnl-value {
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .pnl-value.positive {
+    color: #22c55e;
+  }
+
+  .pnl-value.negative {
+    color: #ef4444;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #334155;
+  }
+
+  .tab-btn {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    color: #60a5fa;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    width: auto;
+  }
+
+  .tab-btn.active {
+    color: #00ff88;
+    border-bottom-color: #3b82f6;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-card-label {
+    color: #60a5fa;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .stat-card-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #00ff88;
+  }
+
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted #60a5fa;
+    cursor: help;
+  }
+
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #0f172a;
+    color: #e2e8f0;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border: 1px solid #334155;
+    font-size: 11px;
+  }
+
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .tab-section {
+    margin-bottom: 30px;
+  }
+
+  .tab-section h3 {
+    color: #a855f7;
+    margin: 20px 0 15px 0;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 10px;
+  }
+
+  .method-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .method-btn {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #334155;
+    background: transparent;
+    color: #60a5fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .method-btn.active {
+    background: #a855f7;
+    border-color: #a855f7;
+    color: white;
+  }
+
+  .auto-calculated-field {
+    background: rgba(34, 197, 94, 0.1) !important;
+    border: 2px solid #22c55e !important;
+  }
+
+  .auto-label {
+    color: #22c55e;
+    font-weight: bold;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>📊 ADVANCED TRADE JOURNAL</h1>
+  <p>Real-time Risk Calculator | Multi-Account Integration | AED/USD Dual Currency | Auto SL/TP Calculation</p>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('calculator')">💹 Trade Calculator</button>
+    <button class="tab-btn" onclick="switchTab('journal')">📔 Trade Journal</button>
+    <button class="tab-btn" onclick="switchTab('accounts')">🔗 Connected Accounts</button>
+    <button class="tab-btn" onclick="switchTab('stats')">📈 Statistics</button>
+  </div>
+
+  <!-- CALCULATOR TAB -->
+  <div id="calculator" class="tab-content active">
+    <div class="main-grid">
+      <!-- Left Panel: Trade Setup -->
+      <div class="card">
+        <h2>⚙️ Trade Setup & Configuration</h2>
+
+        <!-- Currency Selection -->
+        <div class="form-group">
+          <label>Currency Preference</label>
+          <div class="currency-selector">
+            <button class="currency-btn active" onclick="setCurrency('AED')">AED</button>
+            <button class="currency-btn" onclick="setCurrency('USD')">USD</button>
+          </div>
+        </div>
+
+        <!-- Account Connection -->
+        <div class="form-group">
+          <label>Trading Account</label>
+          <select id="accountSelect" onchange="updateExchangeRate()">
+            <option value="">Select Trading Account</option>
+            <option value="binance">🔶 Binance (Crypto)</option>
+            <option value="mt4">📊 MT4 (Forex/Metals)</option>
+            <option value="mt5">📊 MT5 (Forex/CFD)</option>
+            <option value="custom">✏️ Manual Entry</option>
+          </select>
+        </div>
+
+        <!-- Instrument Selection -->
+        <div class="form-group">
+          <label>Trading Instrument</label>
+          <input type="text" id="instrument" placeholder="e.g., EURUSD, BTCUSDT, XAUUSD" />
+        </div>
+
+        <!-- Trade Direction -->
+        <div class="form-group">
+          <label>Trade Direction</label>
+          <div class="currency-selector">
+            <button class="currency-btn" style="background: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #22c55e;" onclick="setDirection('buy')">🟢 BUY</button>
+            <button class="currency-btn" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #ef4444;" onclick="setDirection('sell')">🔴 SELL</button>
+          </div>
+        </div>
+
+        <!-- Risk Configuration -->
+        <div class="form-group">
+          <label>Account Balance (AED)</label>
+          <input type="number" id="accountBalance" placeholder="Enter your account balance" step="0.01" onchange="calculateLotSize()" />
+        </div>
+
+        <div class="form-group">
+          <label>Risk Per Trade (%)</label>
+          <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" />
+        </div>
+
+        <!-- Price Entry -->
+        <div class="input-row">
+          <div class="form-group">
+            <label>Entry Price</label>
+            <input type="number" id="entryPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+          </div>
+          <div class="form-group">
+            <label>Stop Loss Price</label>
+            <input type="number" id="slPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+          </div>
+        </div>
+
+        <!-- ===== METHOD SELECTOR: SL Points vs Manual ===== -->
+        <div class="tab-section">
+          <label style="display: block; margin-bottom: 10px;">🎯 STOP LOSS CALCULATION METHOD</label>
+          <div class="method-selector">
+            <button class="method-btn active" onclick="setSLMethod('manual')">📍 Manual SL Price</button>
+            <button class="method-btn" onclick="setSLMethod('points')">📊 SL Points</button>
+            <button class="method-btn" onclick="setSLMethod('lotsize')">💰 By Lot Size</button>
+          </div>
+        </div>
+
+        <!-- Manual SL Price Method -->
+        <div id="slManualMethod" class="form-group" style="display: block;">
+          <label>Stop Loss Price</label>
+          <input type="number" id="slPriceManual" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+        </div>
+
+        <!-- SL by Points Method -->
+        <div id="slPointsMethod" style="display: none;">
+          <div class="input-row">
+            <div class="form-group">
+              <label>SL Points</label>
+              <input type="number" id="slPoints" placeholder="50" step="1" onchange="calculateFromPoints('sl')" />
+            </div>
+            <div class="form-group">
+              <label class="auto-label">🔄 Auto SL Price</label>
+              <input type="number" id="slPriceAuto" placeholder="Auto" readonly class="auto-calculated-field" />
+            </div>
+          </div>
+        </div>
+
+        <!-- SL by Lot Size Method -->
+        <div id="slLotSizeMethod" style="display: none;">
+          <div class="input-row">
+            <div class="form-group">
+              <label>Desired Lot Size</label>
+              <input type="number" id="slLotSize" placeholder="0.00" step="0.01" onchange="calculateFromLotSize()" />
+            </div>
+            <div class="form-group">
+              <label class="auto-label">🔄 Auto SL Price</label>
+              <input type="number" id="slPriceLotAuto" placeholder="Auto" readonly class="auto-calculated-field" />
+            </div>
+          </div>
+          <small style="color: #60a5fa; display: block; margin-top: -10px; margin-bottom: 10px;">
+            Automatically calculates SL price based on lot size & risk %
+          </small>
+        </div>
+
+        <!-- ===== TAKE PROFIT CONFIGURATION ===== -->
+        <div class="tab-section">
+          <label style="display: block; margin-bottom: 10px;">🎯 TAKE PROFIT CONFIGURATION</label>
+          <div class="input-row">
+            <div class="form-group">
+              <label>Take Profit Price</label>
+              <input type="number" id="tpPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+            </div>
+            <div class="form-group">
+              <label>TP Points (Optional)</label>
+              <input type="number" id="tpPoints" placeholder="100" step="1" onchange="calculateFromPoints('tp')" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="auto-label">🔄 Auto TP Price</label>
+            <input type="number" id="tpPriceAuto" placeholder="Auto" readonly class="auto-calculated-field" />
+          </div>
+        </div>
+
+        <!-- Lot Size Input -->
+        <div class="form-group">
+          <label>Manual Lot Size (Optional)</label>
+          <input type="number" id="lotSize" placeholder="Auto-calculated" step="0.01" onchange="calculateLotSize()" />
+        </div>
+
+        <button onclick="calculateLotSize()" style="margin-top: 10px;">🧮 Calculate Lot Size & Risk</button>
+      </div>
+
+      <!-- Right Panel: Calculations & Risk Display -->
+      <div class="card">
+        <h2>📊 Risk & Position Analysis</h2>
+
+        <!-- Risk Calculation Panel -->
+        <div class="calculation-panel">
+          <div class="calc-row">
+            <span class="calc-label">Account Balance:</span>
+            <span class="calc-value" id="displayBalance">0 AED</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Risk Amount AED:</span>
+            <span class="calc-value" id="riskAmountAED">0 AED</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Risk Amount USD:</span>
+            <span class="calc-value" id="riskAmountUSD">0 USD</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Stop Loss Points:</span>
+            <span class="calc-value" id="slPointsDisplay">0 pts</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Stop Loss Price:</span>
+            <span class="calc-value" id="slPriceDisplay">0.0000</span>
+          </div>
+        </div>
+
+        <!-- Lot Size Panel -->
+        <div class="calculation-panel">
+          <div class="calc-row">
+            <span class="calc-label">Calculated Lot Size:</span>
+            <span class="calc-value" id="calculatedLotSize">0.00</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Potential Loss AED:</span>
+            <span class="calc-value" id="potentialLossAED">0 AED</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Potential Loss USD:</span>
+            <span class="calc-value" id="potentialLossUSD">0 USD</span>
+          </div>
+        </div>
+
+        <!-- Risk/Reward Ratio Panel -->
+        <div class="risk-reward-panel">
+          <h2 style="margin-top: 0;">📈 Risk/Reward Analysis</h2>
+          <div class="risk-reward-metric">
+            <div class="metric-box">
+              <div class="metric-label">Risk Amount</div>
+              <div class="metric-value" id="riskMetric">0</div>
+              <div style="color: #60a5fa; font-size: 11px;">AED</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Reward Amount</div>
+              <div class="metric-value" id="rewardMetric">0</div>
+              <div style="color: #60a5fa; font-size: 11px;">AED</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">R:R Ratio</div>
+              <div class="metric-value ratio" id="rrRatio">1:1</div>
+            </div>
+          </div>
+
+          <div class="metric-box">
+            <div class="metric-label">Ratio Visualization</div>
+            <div class="ratio-bar">
+              <div class="ratio-fill" id="ratioFill" style="width: 50%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px;">
+              <span style="color: #ef4444;">Risk</span>
+              <span style="color: #22c55e;">Reward</span>
+            </div>
+          </div>
+
+          <div class="metric-box" style="margin-top: 10px;">
+            <div class="metric-label">Win Rate for Breakeven</div>
+            <div class="metric-value" id="breakevenRate">50%</div>
+            <div style="color: #60a5fa; font-size: 11px;">Required win % at 1:1 ratio</div>
+          </div>
+        </div>
+
+        <!-- Take Profit Display -->
+        <div class="calculation-panel">
+          <div class="calc-row">
+            <span class="calc-label">Take Profit Points:</span>
+            <span class="calc-value" id="tpPointsDisplay">0 pts</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Take Profit Price:</span>
+            <span class="calc-value" id="tpPriceDisplay">0.0000</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Potential Profit AED:</span>
+            <span class="calc-value" id="potentialProfitAED">0 AED</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Potential Profit USD:</span>
+            <span class="calc-value" id="potentialProfitUSD">0 USD</span>
+          </div>
+        </div>
+
+        <button onclick="saveToJournal()" style="margin-top: 20px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">💾 Save to Journal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNAL TAB -->
+  <div id="journal" class="tab-content">
+    <div class="card">
+      <h2>📝 Add Trade with Analysis</h2>
+
+      <div class="input-row">
+        <div class="form-group">
+          <label>Trade Entry Date</label>
+          <input type="datetime-local" id="tradeDate" />
+        </div>
+        <div class="form-group">
+          <label>Trade Exit Date</label>
+          <input type="datetime-local" id="exitDate" />
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="form-group">
+          <label>Final P&L (AED)</label>
+          <input type="number" id="finalPnlAED" placeholder="Enter actual result" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Final P&L (USD)</label>
+          <input type="number" id="finalPnlUSD" placeholder="Auto-calculated" readonly style="background: #0a0e27;" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Trade Notes/Analysis</label>
+        <textarea id="tradeNotes" placeholder="Write your trade analysis, market conditions, entry reason..." rows="5"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Upload Trade Analysis Screenshots</label>
+        <div class="image-upload" onclick="document.getElementById('imageInput').click()">
+          <div>📸 Click to upload or drag images here</div>
+          <small>Charts, setups, entries, exits - max 5 images</small>
+        </div>
+        <input type="file" id="imageInput" multiple accept="image/*" onchange="handleImageUpload(event)" />
+        <div class="image-preview" id="imagePreview"></div>
+      </div>
+
+      <button onclick="submitTradeJournal()" style="background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);">✅ Add to Journal</button>
+    </div>
+
+    <!-- Journal Entries Display -->
+    <div class="journal-entries">
+      <h2 style="color: #00ff88; margin-bottom: 20px;">📚 Trade Journal Entries</h2>
+      <div id="journalEntriesContainer"></div>
+    </div>
+  </div>
+
+  <!-- ACCOUNTS TAB -->
+  <div id="accounts" class="tab-content">
+    <div class="card">
+      <h2>🔗 Connected Trading Accounts</h2>
+
+      <div class="account-connector">
+        <h3>🔶 Binance Connection</h3>
+        <div class="form-group">
+          <label>API Key</label>
+          <input type="password" id="binanceKey" placeholder="Your Binance API Key" />
+        </div>
+        <div class="form-group">
+          <label>Secret Key</label>
+          <input type="password" id="binanceSecret" placeholder="Your Binance Secret Key" />
+        </div>
+        <button onclick="connectBinance()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">Connect Binance</button>
+      </div>
+
+      <div class="account-connector">
+        <h3>📊 MT4/MT5 Connection</h3>
+        <div class="form-group">
+          <label>MT4/MT5 Server</label>
+          <select id="mtServer">
+            <option value="">Select Broker Server</option>
+            <option value="fxcm">FXCM</option>
+            <option value="oanda">OANDA</option>
+            <option value="ig">IG</option>
+            <option value="custom">Custom Broker</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="mtUsername" placeholder="Your MT4/MT5 Username" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="mtPassword" placeholder="Your MT4/MT5 Password" />
+          </div>
+        </div>
+        <button onclick="connectMT()" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">Connect MT4/MT5</button>
+      </div>
+
+      <h3 style="color: #a855f7; margin-top: 30px;">Connected Accounts</h3>
+      <div class="account-list" id="connectedAccounts"></div>
+    </div>
+  </div>
+
+  <!-- STATS TAB -->
+  <div id="stats" class="tab-content">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-label">Total Trades</div>
+        <div class="stat-card-value" id="totalTrades">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Winning Trades</div>
+        <div class="stat-card-value" id="winningTrades">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Losing Trades</div>
+        <div class="stat-card-value" id="losingTrades">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Win Rate</div>
+        <div class="stat-card-value" id="winRate">0%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Total P&L (AED)</div>
+        <div class="stat-card-value" id="totalPnlAED">0 AED</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Total P&L (USD)</div>
+        <div class="stat-card-value" id="totalPnlUSD">0 USD</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Average Win (AED)</div>
+        <div class="stat-card-value" id="avgWinAED">0 AED</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Average Loss (AED)</div>
+        <div class="stat-card-value" id="avgLossAED">0 AED</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Profit Factor</div>
+        <div class="stat-card-value" id="profitFactor">0.00</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+// Global Variables
+let currentCurrency = 'AED';
+let currentDirection = 'buy';
+let exchangeRate = 3.67;
+let tradeJournal = [];
+let uploadedImages = [];
+let slMethod = 'manual';
 
-// =====================================================
-// FULL FIXED calculateLotSize() FUNCTION
-// =====================================================
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  loadJournalFromStorage();
+  updateJournalDisplay();
+  updateStats();
+});
 
-function calculateLotSize() {
+// Currency Management
+function setCurrency(currency) {
+  currentCurrency = currency;
+  document.querySelectorAll('.currency-selector:first-of-type .currency-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  calculateLotSize();
+}
 
-  // =====================================
-  // INPUTS
-  // =====================================
+// Direction Management
+function setDirection(direction) {
+  currentDirection = direction;
+  calculateLotSize();
+}
 
-  const balance =
-    parseFloat(document.getElementById('accountBalance').value) || 0;
+// Tab Switching
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(tabName).classList.add('active');
+  event.target.classList.add('active');
+}
 
-  // FIXED AED RISK INPUT
-  const riskAED =
-    parseFloat(document.getElementById('riskAEDInput').value) || 0;
+// ===== NEW: SL METHOD SELECTOR =====
+function setSLMethod(method) {
+  slMethod = method;
+  document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
 
-  const entryPrice =
-    parseFloat(document.getElementById('entryPrice').value) || 0;
+  document.getElementById('slManualMethod').style.display = 'none';
+  document.getElementById('slPointsMethod').style.display = 'none';
+  document.getElementById('slLotSizeMethod').style.display = 'none';
 
-  let slPrice = 0;
-
-  // =====================================
-  // SL METHOD
-  // =====================================
-
-  if (slMethod === 'manual') {
-
-    slPrice =
-      parseFloat(document.getElementById('slPriceManual').value) || 0;
-
-  } else if (slMethod === 'points') {
-
-    slPrice =
-      parseFloat(document.getElementById('slPriceAuto').value) || 0;
-
-  } else if (slMethod === 'lotsize') {
-
-    slPrice =
-      parseFloat(document.getElementById('slPriceLotAuto').value) || 0;
+  if (method === 'manual') {
+    document.getElementById('slManualMethod').style.display = 'block';
+  } else if (method === 'points') {
+    document.getElementById('slPointsMethod').style.display = 'block';
+  } else if (method === 'lotsize') {
+    document.getElementById('slLotSizeMethod').style.display = 'block';
   }
 
-  const tpPrice =
-    parseFloat(document.getElementById('tpPrice').value) ||
-    parseFloat(document.getElementById('tpPriceAuto').value) || 0;
+  calculateLotSize();
+}
 
-  const manualLotSize =
-    parseFloat(document.getElementById('lotSize').value) || 0;
+// Exchange Rate Update
+function updateExchangeRate() {
+  const accounts = document.getElementById('accountSelect').value;
+  if (accounts === 'binance') {
+    exchangeRate = 3.67;
+  }
+  calculateLotSize();
+}
 
-  // =====================================
-  // DISPLAY BALANCE
-  // =====================================
+// Calculate Points
+function calculateFromPoints(type) {
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+  const points = parseFloat(document.getElementById(type + 'Points').value) || 0;
+  
+  if (entryPrice && points) {
+    let priceValue;
+    if (currentDirection === 'buy') {
+      priceValue = type === 'sl' ? entryPrice - (points * 0.0001) : entryPrice + (points * 0.0001);
+    } else {
+      priceValue = type === 'sl' ? entryPrice + (points * 0.0001) : entryPrice - (points * 0.0001);
+    }
+    document.getElementById(type + 'PriceAuto').value = priceValue.toFixed(4);
+  }
+  calculateLotSize();
+}
 
-  document.getElementById('displayBalance').textContent =
-    balance.toFixed(2) + ' AED';
+// ===== NEW: CALCULATE SL FROM LOT SIZE =====
+function calculateFromLotSize() {
+  const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
+  const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+  const lotSize = parseFloat(document.getElementById('slLotSize').value) || 0;
 
-  // =====================================
-  // VALIDATION
-  // =====================================
-
-  if (!balance || !riskAED || !entryPrice || !slPrice) {
+  if (!balance || !riskPercentage || !entryPrice || !lotSize) {
     return;
   }
 
-  // =====================================
-  // USD CONVERSION
-  // =====================================
+  // Calculate risk amount in AED
+  const riskAED = (balance * riskPercentage / 100);
 
-  const riskUSD = riskAED / exchangeRate;
+  // Calculate SL price based on lot size
+  // Formula: Risk = Lot Size * (Entry - SL) * Point Value
+  // For most instruments: Point Value = 1 (standard lot)
+  const slPrice = entryPrice - (riskAED / lotSize);
 
-  // =====================================
-  // RISK DISPLAY
-  // =====================================
+  document.getElementById('slPriceLotAuto').value = slPrice.toFixed(4);
+  
+  // Now recalculate everything with this SL
+  calculateLotSize();
+}
 
-  document.getElementById('riskAmountAED').textContent =
-    riskAED.toFixed(2) + ' AED';
+// ===== MAIN CALCULATION FUNCTION =====
+function calculateLotSize() {
+  const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
+  const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+  
+  let slPrice = 0;
 
-  document.getElementById('riskAmountUSD').textContent =
-    riskUSD.toFixed(2) + ' USD';
-
-  document.getElementById('riskMetric').textContent =
-    riskAED.toFixed(0);
-
-  // =====================================
-  // STOP LOSS POINTS
-  // =====================================
-
-  const slPoints =
-    Math.abs((entryPrice - slPrice) / 0.0001);
-
-  document.getElementById('slPointsDisplay').textContent =
-    slPoints.toFixed(0) + ' pts';
-
-  document.getElementById('slPriceDisplay').textContent =
-    slPrice.toFixed(4);
-
-  // =====================================
-  // LOT SIZE CALCULATION
-  // =====================================
-
-  let lotSize;
-
-  if (manualLotSize > 0) {
-
-    lotSize = manualLotSize;
-
-  } else {
-
-    lotSize =
-      riskAED / (slPoints * 0.0001 * 100000);
+  // Get SL Price based on selected method
+  if (slMethod === 'manual') {
+    slPrice = parseFloat(document.getElementById('slPriceManual').value) || 0;
+  } else if (slMethod === 'points') {
+    slPrice = parseFloat(document.getElementById('slPriceAuto').value) || 0;
+  } else if (slMethod === 'lotsize') {
+    slPrice = parseFloat(document.getElementById('slPriceLotAuto').value) || 0;
   }
 
-  document.getElementById('calculatedLotSize').textContent =
-    lotSize.toFixed(2);
+  let tpPrice = parseFloat(document.getElementById('tpPrice').value) || parseFloat(document.getElementById('tpPriceAuto').value) || 0;
+  const manualLotSize = parseFloat(document.getElementById('lotSize').value) || 0;
 
-  // =====================================
-  // POTENTIAL LOSS
-  // =====================================
+  // Display Balance
+  document.getElementById('displayBalance').textContent = balance.toFixed(2) + ' AED';
 
-  document.getElementById('potentialLossAED').textContent =
-    riskAED.toFixed(2) + ' AED';
+  if (!balance || !riskPercentage || !entryPrice || !slPrice) {
+    return;
+  }
 
-  document.getElementById('potentialLossUSD').textContent =
-    riskUSD.toFixed(2) + ' USD';
+  // Calculate Risk Amount
+  const riskAED = (balance * riskPercentage / 100);
+  const riskUSD = riskAED / exchangeRate;
 
-  // =====================================
-  // TP + PROFIT
-  // =====================================
+  document.getElementById('riskAmountAED').textContent = riskAED.toFixed(2) + ' AED';
+  document.getElementById('riskAmountUSD').textContent = riskUSD.toFixed(2) + ' USD';
+  document.getElementById('riskMetric').textContent = riskAED.toFixed(0);
+
+  // Calculate SL Points
+  const slPoints = Math.abs((entryPrice - slPrice) / 0.0001);
+  document.getElementById('slPointsDisplay').textContent = slPoints.toFixed(0) + ' pts';
+  document.getElementById('slPriceDisplay').textContent = slPrice.toFixed(4);
+
+  // Calculate Lot Size
+  let lotSize;
+  if (manualLotSize > 0) {
+    lotSize = manualLotSize;
+  } else {
+    lotSize = riskAED / (slPoints * 0.0001 * 100000); // Standard calculation
+  }
+
+  document.getElementById('calculatedLotSize').textContent = lotSize.toFixed(2);
+
+  // Calculate Potential Loss
+  const potentialLossAED = riskAED;
+  const potentialLossUSD = riskUSD;
+
+  document.getElementById('potentialLossAED').textContent = potentialLossAED.toFixed(2) + ' AED';
+  document.getElementById('potentialLossUSD').textContent = potentialLossUSD.toFixed(2) + ' USD';
+
+  // Calculate TP Points and Profit
+  let tpPoints = 0;
+  let potentialProfitAED = 0;
+  let potentialProfitUSD = 0;
 
   if (tpPrice > 0) {
+    tpPoints = Math.abs((tpPrice - entryPrice) / 0.0001);
+    potentialProfitAED = (tpPoints * 0.0001 * lotSize * 100000);
+    potentialProfitUSD = potentialProfitAED / exchangeRate;
 
-    const tpPoints =
-      Math.abs((tpPrice - entryPrice) / 0.0001);
+    document.getElementById('tpPointsDisplay').textContent = tpPoints.toFixed(0) + ' pts';
+    document.getElementById('tpPriceDisplay').textContent = tpPrice.toFixed(4);
+    document.getElementById('potentialProfitAED').textContent = potentialProfitAED.toFixed(2) + ' AED';
+    document.getElementById('potentialProfitUSD').textContent = potentialProfitUSD.toFixed(2) + ' USD';
+    document.getElementById('rewardMetric').textContent = potentialProfitAED.toFixed(0);
 
-    const potentialProfitAED =
-      (tpPoints * 0.0001 * lotSize * 100000);
+    // Calculate Risk/Reward Ratio
+    const rrRatio = potentialProfitAED / potentialLossAED;
+    const ratioText = `1:${rrRatio.toFixed(2)}`;
+    document.getElementById('rrRatio').textContent = ratioText;
 
-    const potentialProfitUSD =
-      potentialProfitAED / exchangeRate;
+    // Calculate ratio fill width
+    const ratioFillWidth = (100 / (1 + rrRatio));
+    document.getElementById('ratioFill').style.width = ratioFillWidth + '%';
 
-    document.getElementById('tpPointsDisplay').textContent =
-      tpPoints.toFixed(0) + ' pts';
-
-    document.getElementById('tpPriceDisplay').textContent =
-      tpPrice.toFixed(4);
-
-    document.getElementById('potentialProfitAED').textContent =
-      potentialProfitAED.toFixed(2) + ' AED';
-
-    document.getElementById('potentialProfitUSD').textContent =
-      potentialProfitUSD.toFixed(2) + ' USD';
-
-    document.getElementById('rewardMetric').textContent =
-      potentialProfitAED.toFixed(0);
-
-    // =====================================
-    // RR RATIO
-    // =====================================
-
-    const rrRatio =
-      potentialProfitAED / riskAED;
-
-    document.getElementById('rrRatio').textContent =
-      '1:' + rrRatio.toFixed(2);
-
-    // =====================================
-    // BREAKEVEN RATE
-    // =====================================
-
-    const breakevenRate =
-      (100 / (1 + rrRatio));
-
-    document.getElementById('breakevenRate').textContent =
-      breakevenRate.toFixed(1) + '%';
-
-    // =====================================
-    // RR BAR
-    // =====================================
-
-    const ratioFillWidth =
-      (100 / (1 + rrRatio));
-
-    document.getElementById('ratioFill').style.width =
-      ratioFillWidth + '%';
+    // Calculate breakeven win rate
+    const breakevenRate = (100 / (1 + rrRatio));
+    document.getElementById('breakevenRate').textContent = breakevenRate.toFixed(1) + '%';
+  } else {
+    document.getElementById('rrRatio').textContent = '1:1';
+    document.getElementById('breakevenRate').textContent = '50%';
+    document.getElementById('ratioFill').style.width = '50%';
   }
 }
 
+// Save to Journal
+function saveToJournal() {
+  const entry = {
+    id: Date.now(),
+    instrument: document.getElementById('instrument').value || 'N/A',
+    direction: currentDirection,
+    entryPrice: parseFloat(document.getElementById('entryPrice').value) || 0,
+    slPrice: document.getElementById('slPriceDisplay').textContent.split(' ')[0],
+    tpPrice: document.getElementById('tpPriceDisplay').textContent.split(' ')[0],
+    lotSize: parseFloat(document.getElementById('calculatedLotSize').textContent) || 0,
+    riskAED: parseFloat(document.getElementById('riskAmountAED').textContent) || 0,
+    riskUSD: parseFloat(document.getElementById('riskAmountUSD').textContent) || 0,
+    potentialProfitAED: parseFloat(document.getElementById('potentialProfitAED').textContent) || 0,
+    potentialProfitUSD: parseFloat(document.getElementById('potentialProfitUSD').textContent) || 0,
+    dateCreated: new Date().toLocaleString(),
+    status: 'pending',
+    finalPnlAED: 0,
+    finalPnlUSD: 0,
+    notes: '',
+    images: []
+  };
+
+  tradeJournal.push(entry);
+  saveJournalToStorage();
+  updateJournalDisplay();
+  alert('✅ Trade saved to journal! Add P&L result in the Journal tab.');
+}
+
+// Journal Management
+function loadJournalFromStorage() {
+  const stored = localStorage.getItem('tradeJournal');
+  tradeJournal = stored ? JSON.parse(stored) : [];
+}
+
+function saveJournalToStorage() {
+  localStorage.setItem('tradeJournal', JSON.stringify(tradeJournal));
+  updateStats();
+}
+
+function updateJournalDisplay() {
+  const container = document.getElementById('journalEntriesContainer');
+  container.innerHTML = '';
+
+  if (tradeJournal.length === 0) {
+    container.innerHTML = '<p style="color: #60a5fa; text-align: center;">No trades yet. Start by creating your first trade in the Calculator tab!</p>';
+    return;
+  }
+
+  tradeJournal.forEach(entry => {
+    const card = document.createElement('div');
+    card.className = 'entry-card';
+    card.innerHTML = `
+      <div class="entry-header">
+        <div>
+          <span class="entry-symbol">${entry.instrument}</span>
+          <span class="entry-type ${entry.direction}">${entry.direction.toUpperCase()}</span>
+        </div>
+        <span class="entry-date">${entry.dateCreated}</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-stat">
+          <div class="stat-label">Entry Price</div>
+          <div class="stat-value">${entry.entryPrice.toFixed(4)}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">SL Price</div>
+          <div class="stat-value">${entry.slPrice}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">TP Price</div>
+          <div class="stat-value">${entry.tpPrice}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">Lot Size</div>
+          <div class="stat-value">${entry.lotSize.toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="entry-stat">
+          <div class="stat-label">Risk AED/USD</div>
+          <div class="stat-value">${entry.riskAED.toFixed(2)} / ${entry.riskUSD.toFixed(2)}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">Potential Profit</div>
+          <div class="stat-value">${entry.potentialProfitAED.toFixed(2)} / ${entry.potentialProfitUSD.toFixed(2)}</div>
+        </div>
+      </div>
+      ${entry.status === 'completed' ? `
+        <div class="entry-pnl">
+          <div class="pnl-item">
+            <div class="pnl-label">Final P&L AED</div>
+            <div class="pnl-value ${entry.finalPnlAED >= 0 ? 'positive' : 'negative'}">${entry.finalPnlAED >= 0 ? '+' : ''}${entry.finalPnlAED.toFixed(2)}</div>
+          </div>
+          <div class="pnl-item">
+            <div class="pnl-label">Final P&L USD</div>
+            <div class="pnl-value ${entry.finalPnlUSD >= 0 ? 'positive' : 'negative'}">${entry.finalPnlUSD >= 0 ? '+' : ''}${entry.finalPnlUSD.toFixed(2)}</div>
+          </div>
+        </div>
+      ` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Image Upload
+function handleImageUpload(event) {
+  const files = event.target.files;
+  uploadedImages = [];
+  const preview = document.getElementById('imagePreview');
+  preview.innerHTML = '';
+
+  Array.from(files).slice(0, 5).forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedImages.push(e.target.result);
+      
+      const imgItem = document.createElement('div');
+      imgItem.className = 'image-item';
+      imgItem.innerHTML = `
+        <img src="${e.target.result}" alt="Trade screenshot" />
+        <button class="remove-image" onclick="removeImage(${index})">×</button>
+      `;
+      preview.appendChild(imgItem);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeImage(index) {
+  uploadedImages.splice(index, 1);
+  document.getElementById('imagePreview').innerHTML = '';
+  uploadedImages.forEach((img, i) => {
+    const imgItem = document.createElement('div');
+    imgItem.className = 'image-item';
+    imgItem.innerHTML = `
+      <img src="${img}" alt="Trade screenshot" />
+      <button class="remove-image" onclick="removeImage(${i})">×</button>
+    `;
+    document.getElementById('imagePreview').appendChild(imgItem);
+  });
+}
+
+// Submit Trade Journal Entry
+function submitTradeJournal() {
+  const tradeDate = document.getElementById('tradeDate').value;
+  const exitDate = document.getElementById('exitDate').value;
+  const finalPnlAED = parseFloat(document.getElementById('finalPnlAED').value) || 0;
+  const finalPnlUSD = finalPnlAED / exchangeRate;
+
+  if (!tradeDate) {
+    alert('Please select entry date');
+    return;
+  }
+
+  // Find most recent pending trade and update it
+  const lastTrade = tradeJournal.find(t => t.status === 'pending');
+  if (lastTrade) {
+    lastTrade.dateEntered = tradeDate;
+    lastTrade.dateExited = exitDate;
+    lastTrade.finalPnlAED = finalPnlAED;
+    lastTrade.finalPnlUSD = finalPnlUSD;
+    lastTrade.notes = document.getElementById('tradeNotes').value;
+    lastTrade.images = uploadedImages;
+    lastTrade.status = 'completed';
+  }
+
+  saveJournalToStorage();
+  updateJournalDisplay();
+  document.getElementById('tradeDate').value = '';
+  document.getElementById('exitDate').value = '';
+  document.getElementById('finalPnlAED').value = '';
+  document.getElementById('tradeNotes').value = '';
+  uploadedImages = [];
+  document.getElementById('imagePreview').innerHTML = '';
+  alert('✅ Trade journal entry completed!');
+}
+
+// Update Statistics
+function updateStats() {
+  const completed = tradeJournal.filter(t => t.status === 'completed');
+  const wins = completed.filter(t => t.finalPnlAED > 0);
+  const losses = completed.filter(t => t.finalPnlAED < 0);
+  
+  const totalPnlAED = completed.reduce((sum, t) => sum + t.finalPnlAED, 0);
+  const totalPnlUSD = totalPnlAED / exchangeRate;
+  
+  const avgWinAED = wins.length > 0 ? wins.reduce((sum, t) => sum + t.finalPnlAED, 0) / wins.length : 0;
+  const avgLossAED = losses.length > 0 ? losses.reduce((sum, t) => sum + t.finalPnlAED, 0) / losses.length : 0;
+  
+  const totalWins = wins.reduce((sum, t) => sum + t.finalPnlAED, 0);
+  const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.finalPnlAED, 0));
+  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0;
+
+  document.getElementById('totalTrades').textContent = completed.length;
+  document.getElementById('winningTrades').textContent = wins.length;
+  document.getElementById('losingTrades').textContent = losses.length;
+  document.getElementById('winRate').textContent = completed.length > 0 ? ((wins.length / completed.length) * 100).toFixed(1) + '%' : '0%';
+  document.getElementById('totalPnlAED').textContent = totalPnlAED.toFixed(2) + ' AED';
+  document.getElementById('totalPnlUSD').textContent = totalPnlUSD.toFixed(2) + ' USD';
+  document.getElementById('avgWinAED').textContent = avgWinAED.toFixed(2) + ' AED';
+  document.getElementById('avgLossAED').textContent = avgLossAED.toFixed(2) + ' AED';
+  document.getElementById('profitFactor').textContent = profitFactor.toFixed(2);
+}
+
+// Account Connections (Mock)
+function connectBinance() {
+  alert('✅ Binance connected successfully!');
+}
+
+function connectMT() {
+  alert('✅ MT4/MT5 connected successfully!');
+}
 </script>
+</body>
+</html>
