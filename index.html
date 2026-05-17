@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Liquidity Flow Order Flow Terminal</title>
+<title>TOTAL/USDT Composite Market Structure Terminal</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -24,9 +24,9 @@
     border: 1px solid #1a2232;
   }
   .top-bar {
-    height: 40px;
-    background: #0d131f;
-    border-bottom: 1px solid #1a2232;
+    height: 50px;
+    background: linear-gradient(90deg, #0d131f 0%, #1a2540 100%);
+    border-bottom: 2px solid #2563eb;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -36,12 +36,36 @@
     letter-spacing: 1px;
     flex-shrink: 0;
   }
+  .title-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .pair-info {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .pair-label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .pair-label .symbol {
+    color: #00ff88;
+    font-weight: bold;
+  }
+  .pair-label .ratio {
+    color: #60a5fa;
+    font-size: 10px;
+  }
   .status-tag {
     color: #00ff88;
     background: rgba(0, 255, 136, 0.1);
-    padding: 2px 8px;
-    border-radius: 3px;
-    border: 1px solid rgba(0, 255, 136, 0.2);
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    font-size: 11px;
   }
   .canvas-container {
     flex: 1;
@@ -54,234 +78,596 @@
     width: 100%;
     height: 100%;
   }
+  .legend {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(13, 19, 31, 0.9);
+    border: 1px solid #2563eb;
+    border-radius: 4px;
+    padding: 10px 15px;
+    font-size: 10px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+  }
+  .legend-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
 </style>
 </head>
 <body>
 
 <div class="terminal-wrapper">
   <div class="top-bar">
-    <div>📊 TOTAL + USDT.D SYNTHETIC ORDER FLOW TERMINAL</div>
-    <div class="status-tag">ENGINE STATUS: REALTIME ACTIVE</div>
+    <div class="title-section">
+      <div>📊 COMPOSITE MARKET STRUCTURE ENGINE</div>
+      <div class="pair-info">
+        <div class="pair-label">
+          <div class="symbol">TOTAL</div>
+          <div class="ratio">Global Altcoin Index</div>
+        </div>
+        <div style="color: #64748b;">+</div>
+        <div class="pair-label">
+          <div class="symbol">USDT.D</div>
+          <div class="ratio">Dominance Composite</div>
+        </div>
+      </div>
+    </div>
+    <div class="status-tag">⚡ REALTIME STRUCTURE ANALYSIS ACTIVE</div>
   </div>
   <div class="canvas-container">
-    <canvas id="footprintCanvas"></canvas>
+    <canvas id="structureCanvas"></canvas>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-box" style="background: rgba(34, 197, 94, 0.6); border: 1px solid #22c55e;"></div>
+        <span>Support/Order Block</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: rgba(239, 68, 68, 0.6); border: 1px solid #ef4444;"></div>
+        <span>Resistance/Rejection</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: rgba(96, 165, 250, 0.5); border: 1px solid #60a5fa;"></div>
+        <span>Liquidity Node/VWAP</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: rgba(168, 85, 247, 0.4); border: 1px solid #a855f7;"></div>
+        <span>Confluence Zone</span>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-const canvas = document.getElementById('footprintCanvas');
+const canvas = document.getElementById('structureCanvas');
 const ctx = canvas.getContext('2d');
 
-// --- Layout Configurations ---
+// --- CONFIGURATION ---
 let dpr = window.devicePixelRatio || 1;
 let width = 0;
 let height = 0;
 
-const barWidth = 70;      // Width of each structural footprint cluster block
-const barSpacing = 45;    // Spacing between columns
-const rowHeight = 16;     // Height of each stacked price cluster row inside a candle
-const paddingRight = 80;  // Room for the right side price axis scale readout
+const barWidth = 85;
+const barSpacing = 50;
+const rowHeight = 18;
+const paddingRight = 120;
+const paddingLeft = 15;
 
-// Mocked structural prices centered around current index calculation bounds
+// Market data anchors
 let basePrice = 70385.00;
+let usdtDom = 42.50;
+let totalIndex = 1850.25;
 
 // ======================================================
-// 1. ENGINE ORDER FLOW MOCK DATA GENERATOR
+// 1. MARKET STRUCTURE ANALYSIS ENGINE
 // ======================================================
-function generateMockBars(count) {
-    let bars = [];
-    let time = Date.now() - (count * 60000);
-    
-    for (let i = 0; i < count; i++) {
-        let isBullish = Math.random() > 0.45;
-        let clusterRows = Math.floor(Math.random() * 8) + 8; // Stacked segment count
-        let nodePriceStart = basePrice + (Math.floor(Math.random() * 20) - 10) * 10;
-        
-        let segments = [];
-        for (let r = 0; r < clusterRows; r++) {
-            let buyVol = Math.floor(Math.random() * 400) + 10;
-            let sellVol = Math.floor(Math.random() * 400) + 10;
-            // Introduce imbalance triggers matching image patterns
-            if (isBullish && r > clusterRows * 0.6) buyVol *= 4;
-            if (!isBullish && r < clusterRows * 0.4) sellVol *= 4;
-            
-            segments.push({
-                price: nodePriceStart - (r * 10),
-                buyVolume: buyVol,
-                sellVolume: sellVol
-            });
-        }
-        
-        bars.push({
-            time: time + (i * 60000),
-            isBull: isBullish,
-            high: segments[0].price,
-            low: segments[segments.length - 1].price,
-            open: isBullish ? segments[segments.length-3].price : segments[2].price,
-            close: isBullish ? segments[2].price : segments[segments.length-3].price,
-            dataNodes: segments,
-            delta: Math.floor((Math.random() - 0.5) * 1500),
-            openInterest: Math.floor(Math.random() * 5000) + 12000
+
+class MarketStructureAnalyzer {
+  constructor() {
+    this.supportLevels = [];
+    this.resistanceLevels = [];
+    this.orderBlocks = [];
+    this.liquidityNodes = [];
+    this.confluenceZones = [];
+  }
+
+  analyzeStructure(bars) {
+    this.supportLevels = [];
+    this.resistanceLevels = [];
+    this.orderBlocks = [];
+    this.liquidityNodes = [];
+    this.confluenceZones = [];
+
+    // Identify swing highs and lows
+    for (let i = 1; i < bars.length - 1; i++) {
+      const prev = bars[i - 1];
+      const curr = bars[i];
+      const next = bars[i + 1];
+
+      // Swing High = Resistance
+      if (curr.high > prev.high && curr.high > next.high) {
+        this.resistanceLevels.push({
+          price: curr.high,
+          strength: Math.random() * 0.8 + 0.2,
+          barIndex: i,
+          volume: curr.volume || 1000
         });
+      }
+
+      // Swing Low = Support
+      if (curr.low < prev.low && curr.low < next.low) {
+        this.supportLevels.push({
+          price: curr.low,
+          strength: Math.random() * 0.8 + 0.2,
+          barIndex: i,
+          volume: curr.volume || 1000
+        });
+      }
     }
-    return bars;
+
+    // Identify Order Blocks (strong rejection candles)
+    bars.forEach((bar, idx) => {
+      const imbalanceRatio = bar.buyVolume / (bar.sellVolume || 1);
+      if (imbalanceRatio > 3 || imbalanceRatio < 0.33) {
+        this.orderBlocks.push({
+          price: bar.isBull ? bar.low : bar.high,
+          type: bar.isBull ? 'buy' : 'sell',
+          barIndex: idx,
+          strength: Math.min(Math.abs(Math.log(imbalanceRatio)), 0.9)
+        });
+      }
+    });
+
+    // Identify Liquidity Nodes (price clusters with high volume)
+    const volumeProfile = {};
+    bars.forEach(bar => {
+      bar.dataNodes.forEach(node => {
+        const priceLevel = Math.round(node.price / 10) * 10;
+        volumeProfile[priceLevel] = (volumeProfile[priceLevel] || 0) + node.buyVolume + node.sellVolume;
+      });
+    });
+
+    Object.entries(volumeProfile).forEach(([price, vol]) => {
+      if (vol > 3000) {
+        this.liquidityNodes.push({
+          price: parseFloat(price),
+          volume: vol,
+          strength: Math.min(vol / 5000, 0.8)
+        });
+      }
+    });
+
+    // Find Confluence Zones (multiple structures overlap)
+    this.findConfluenceZones();
+  }
+
+  findConfluenceZones() {
+    const allLevels = [
+      ...this.supportLevels,
+      ...this.resistanceLevels,
+      ...this.orderBlocks
+    ];
+
+    for (let i = 0; i < allLevels.length; i++) {
+      let confluenceCount = 1;
+      let totalPrice = allLevels[i].price;
+
+      for (let j = i + 1; j < allLevels.length; j++) {
+        if (Math.abs(allLevels[i].price - allLevels[j].price) < 50) {
+          confluenceCount++;
+          totalPrice += allLevels[j].price;
+        }
+      }
+
+      if (confluenceCount >= 2) {
+        const existingZone = this.confluenceZones.find(z => Math.abs(z.price - (totalPrice / confluenceCount)) < 50);
+        if (!existingZone) {
+          this.confluenceZones.push({
+            price: totalPrice / confluenceCount,
+            strength: Math.min(confluenceCount / 4, 0.9),
+            componentCount: confluenceCount
+          });
+        }
+      }
+    }
+  }
+
+  getStructureAt(price) {
+    const tolerance = 100;
+    let structures = [];
+
+    this.supportLevels.forEach(s => {
+      if (Math.abs(s.price - price) < tolerance) {
+        structures.push({ type: 'support', strength: s.strength });
+      }
+    });
+
+    this.resistanceLevels.forEach(r => {
+      if (Math.abs(r.price - price) < tolerance) {
+        structures.push({ type: 'resistance', strength: r.strength });
+      }
+    });
+
+    this.orderBlocks.forEach(ob => {
+      if (Math.abs(ob.price - price) < tolerance) {
+        structures.push({ type: 'orderblock', subtype: ob.type, strength: ob.strength });
+      }
+    });
+
+    this.liquidityNodes.forEach(ln => {
+      if (Math.abs(ln.price - price) < tolerance) {
+        structures.push({ type: 'liquidity', strength: ln.strength });
+      }
+    });
+
+    this.confluenceZones.forEach(cz => {
+      if (Math.abs(cz.price - price) < tolerance) {
+        structures.push({ type: 'confluence', strength: cz.strength });
+      }
+    });
+
+    return structures;
+  }
 }
 
-let historyBars = generateMockBars(12);
+const analyzer = new MarketStructureAnalyzer();
 
 // ======================================================
-// 2. CANVAS RENDERING ENGINE
+// 2. MOCK DATA GENERATOR
 // ======================================================
+
+function generateMockBars(count) {
+  let bars = [];
+  let time = Date.now() - (count * 60000);
+
+  for (let i = 0; i < count; i++) {
+    let isBullish = Math.random() > 0.45;
+    let clusterRows = Math.floor(Math.random() * 10) + 10;
+    let nodePriceStart = basePrice + (Math.floor(Math.random() * 30) - 15) * 10;
+
+    let segments = [];
+    for (let r = 0; r < clusterRows; r++) {
+      let buyVol = Math.floor(Math.random() * 500) + 20;
+      let sellVol = Math.floor(Math.random() * 500) + 20;
+
+      if (isBullish && r > clusterRows * 0.6) buyVol *= 4.5;
+      if (!isBullish && r < clusterRows * 0.4) sellVol *= 4.5;
+
+      segments.push({
+        price: nodePriceStart - (r * 12),
+        buyVolume: buyVol,
+        sellVolume: sellVol
+      });
+    }
+
+    const totalVol = segments.reduce((acc, s) => acc + s.buyVolume + s.sellVolume, 0);
+
+    bars.push({
+      time: time + (i * 60000),
+      isBull: isBullish,
+      high: segments[0].price,
+      low: segments[segments.length - 1].price,
+      open: isBullish ? segments[segments.length - 3].price : segments[2].price,
+      close: isBullish ? segments[2].price : segments[segments.length - 3].price,
+      buyVolume: segments.reduce((acc, s) => acc + s.buyVolume, 0),
+      sellVolume: segments.reduce((acc, s) => acc + s.sellVolume, 0),
+      volume: totalVol,
+      dataNodes: segments,
+      delta: isBullish ? Math.floor(Math.random() * 2000) + 500 : -Math.floor(Math.random() * 2000) - 500,
+      openInterest: Math.floor(Math.random() * 8000) + 15000,
+      vwap: nodePriceStart - (clusterRows * 6)
+    });
+  }
+  return bars;
+}
+
+let historyBars = generateMockBars(15);
+analyzer.analyzeStructure(historyBars);
+
+// ======================================================
+// 3. CANVAS RENDERING ENGINE
+// ======================================================
+
 function resize() {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    width = rect.width;
-    height = rect.height;
-    
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-    console.log(`Canvas resized to: ${width}x${height}`);
+  const rect = canvas.parentElement.getBoundingClientRect();
+  width = rect.width;
+  height = rect.height;
+
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.scale(dpr, dpr);
 }
 
 window.addEventListener('resize', resize);
 resize();
 
+function drawStructureLines(startX, bar, barIndex) {
+  const centerX = startX + barWidth / 2;
+  const chartHeight = height * 0.65;
+
+  // Get structures at this bar's price levels
+  const structures = analyzer.getStructureAt(bar.close);
+
+  structures.forEach(struct => {
+    let lineColor = '#64748b';
+    let lineWidth = 1;
+    let lineStyle = 'solid';
+
+    switch (struct.type) {
+      case 'support':
+        lineColor = `rgba(34, 197, 94, ${0.3 + struct.strength * 0.5})`;
+        lineWidth = 2 + struct.strength * 2;
+        break;
+      case 'resistance':
+        lineColor = `rgba(239, 68, 68, ${0.3 + struct.strength * 0.5})`;
+        lineWidth = 2 + struct.strength * 2;
+        break;
+      case 'liquidity':
+        lineColor = `rgba(96, 165, 250, ${0.4 + struct.strength * 0.4})`;
+        lineWidth = 1.5;
+        lineStyle = 'dashed';
+        break;
+      case 'confluence':
+        lineColor = `rgba(168, 85, 247, ${0.5 + struct.strength * 0.3})`;
+        lineWidth = 2.5;
+        break;
+    }
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = lineWidth;
+
+    if (lineStyle === 'dashed') {
+      ctx.setLineDash([4, 4]);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(startX, 100);
+    ctx.lineTo(startX + barWidth, chartHeight - 50);
+    ctx.stroke();
+
+    if (lineStyle === 'dashed') {
+      ctx.setLineDash([]);
+    }
+  });
+}
+
+function drawFootprint(startX, bar, barIndex) {
+  const chartHeight = height * 0.65;
+  const priceRange = bar.high - bar.low || 1;
+  let currentY = 80;
+
+  bar.dataNodes.forEach((node, nodeIndex) => {
+    const boxY = currentY;
+    currentY += rowHeight;
+
+    if (boxY + rowHeight > chartHeight - 20) return;
+
+    const totalNodeVol = node.buyVolume + node.sellVolume;
+    const imbalance = node.buyVolume / (node.sellVolume || 1);
+    const buyRatio = node.buyVolume / totalNodeVol;
+
+    // Base coloring
+    let bgAlpha = Math.min(totalNodeVol / 1500, 0.5);
+    let boxColor = bar.isBull 
+      ? `rgba(34, 197, 94, ${bgAlpha})` 
+      : `rgba(239, 68, 68, ${bgAlpha})`;
+
+    // Extreme imbalance highlighting
+    if (imbalance > 4.5 || imbalance < 0.22) {
+      boxColor = imbalance > 4.5 
+        ? 'rgba(34, 197, 94, 0.85)' 
+        : 'rgba(239, 68, 68, 0.85)';
+    }
+
+    ctx.fillStyle = boxColor;
+    ctx.fillRect(startX, boxY, barWidth, rowHeight - 1);
+
+    // Volume text
+    ctx.fillStyle = (imbalance > 4.5 || imbalance < 0.22) ? '#000000' : '#d1d5db';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const buyPart = Math.round(node.buyVolume / 15);
+    const sellPart = Math.round(node.sellVolume / 15);
+    const label = `${buyPart}|${sellPart}`;
+    
+    ctx.fillText(label, startX + barWidth / 2, boxY + rowHeight / 2);
+
+    // Imbalance indicator
+    if (imbalance > 3 || imbalance < 0.33) {
+      const indicator = imbalance > 3 ? '▲' : '▼';
+      ctx.fillStyle = imbalance > 3 ? '#22c55e' : '#ef4444';
+      ctx.font = 'bold 7px monospace';
+      ctx.fillText(indicator, startX + 8, boxY + rowHeight / 2 - 6);
+    }
+  });
+}
+
+function drawSubPanes(startX, bar, barIndex) {
+  const mainChartHeight = height * 0.65;
+  const subPaneHeight = (height - mainChartHeight) / 4;
+
+  // Sub-Pane 1: Delta Histogram
+  const sp1Y = mainChartHeight + 10;
+  const deltaColor = bar.delta >= 0 ? '#22c55e' : '#ef4444';
+  ctx.fillStyle = deltaColor;
+  const deltaHeight = Math.abs(bar.delta) / 3000 * (subPaneHeight - 20);
+  ctx.fillRect(startX + 2, sp1Y + (subPaneHeight - 20) / 2 - (bar.delta >= 0 ? deltaHeight : 0), barWidth - 4, deltaHeight);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(bar.delta.toFixed(0), startX + barWidth / 2, sp1Y + (subPaneHeight - 20) / 2);
+
+  // Sub-Pane 2: Buy vs Sell Volume Ratio
+  const sp2Y = mainChartHeight + subPaneHeight + 10;
+  const buyRatio = bar.buyVolume / (bar.buyVolume + bar.sellVolume);
+  ctx.fillStyle = 'rgba(34, 197, 94, 0.4)';
+  ctx.fillRect(startX + 2, sp2Y + 5, (barWidth - 4) * buyRatio, subPaneHeight - 20);
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+  ctx.fillRect(startX + 2 + (barWidth - 4) * buyRatio, sp2Y + 5, (barWidth - 4) * (1 - buyRatio), subPaneHeight - 20);
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '7px monospace';
+  ctx.fillText((buyRatio * 100).toFixed(0) + '%', startX + barWidth / 2, sp2Y + subPaneHeight / 2);
+
+  // Sub-Pane 3: Open Interest and VWAP Anchor
+  const sp3Y = mainChartHeight + subPaneHeight * 2 + 10;
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(startX + 2, sp3Y + 5, barWidth - 4, 4);
+  ctx.fillStyle = '#2563eb';
+  const oiHeight = Math.min(bar.openInterest / 25000 * (subPaneHeight - 20), subPaneHeight - 20);
+  ctx.fillRect(startX + 2, sp3Y + (subPaneHeight - 20) - oiHeight, barWidth - 4, oiHeight);
+  ctx.fillStyle = '#60a5fa';
+  ctx.font = 'bold 8px monospace';
+  ctx.fillText((bar.openInterest / 1000).toFixed(1) + 'K', startX + barWidth / 2, sp3Y + subPaneHeight / 2);
+
+  // Sub-Pane 4: Composite Metric (TOTAL + USDT.D weighted)
+  const sp4Y = mainChartHeight + subPaneHeight * 3 + 10;
+  const compositeStrength = (bar.buyVolume / (bar.buyVolume + bar.sellVolume) * 0.6 + bar.openInterest / 25000 * 0.4);
+  ctx.fillStyle = compositeStrength > 0.5 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+  ctx.fillRect(startX + 2, sp4Y + 5, (barWidth - 4) * compositeStrength, subPaneHeight - 20);
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 8px monospace';
+  ctx.fillText('STR', startX + barWidth / 2, sp4Y + subPaneHeight / 2);
+}
+
+function drawRightAxisPanel() {
+  const panelX = width - paddingRight;
+  
+  ctx.fillStyle = '#0d131f';
+  ctx.fillRect(panelX, 0, paddingRight, height);
+  ctx.strokeStyle = '#2563eb';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(panelX, 0);
+  ctx.lineTo(panelX, height);
+  ctx.stroke();
+
+  // Title
+  ctx.fillStyle = '#00ff88';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('STRUCTURE PANEL', panelX + 8, 25);
+
+  // Price levels
+  let yPos = 50;
+  const chartHeight = height * 0.65;
+
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillText(`Price: ${basePrice.toFixed(2)}`, panelX + 8, yPos);
+  yPos += 18;
+
+  ctx.fillStyle = '#00ff88';
+  ctx.fillText(`TOTAL: ${totalIndex.toFixed(2)}`, panelX + 8, yPos);
+  yPos += 18;
+
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillText(`USDT.D: ${usdtDom.toFixed(2)}%`, panelX + 8, yPos);
+  yPos += 18;
+
+  // Structure summary
+  yPos += 10;
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 9px monospace';
+  ctx.fillText('ACTIVE STRUCTURES', panelX + 8, yPos);
+  yPos += 15;
+
+  ctx.font = '8px monospace';
+  ctx.fillStyle = '#9ca3af';
+  ctx.fillText(`Supports: ${analyzer.supportLevels.length}`, panelX + 8, yPos);
+  yPos += 12;
+  ctx.fillText(`Resistances: ${analyzer.resistanceLevels.length}`, panelX + 8, yPos);
+  yPos += 12;
+  ctx.fillText(`Order Blocks: ${analyzer.orderBlocks.length}`, panelX + 8, yPos);
+  yPos += 12;
+  ctx.fillText(`Liquidity Nodes: ${analyzer.liquidityNodes.length}`, panelX + 8, yPos);
+  yPos += 12;
+  ctx.fillText(`Confluence: ${analyzer.confluenceZones.length}`, panelX + 8, yPos);
+}
+
 function draw() {
-    // Clear canvas frame stack
-    ctx.fillStyle = '#06090e';
-    ctx.fillRect(0, 0, width, height);
-    
-    // Sub-pane division levels calculations
-    let mainChartHeight = height * 0.70;
-    let subPaneHeight = (height - mainChartHeight) / 3;
-    
-    // Draw horizontal panel dividing grid-lines
-    ctx.strokeStyle = '#141b25';
-    ctx.lineWidth = 1;
+  ctx.fillStyle = '#06090e';
+  ctx.fillRect(0, 0, width, height);
+
+  const mainChartHeight = height * 0.65;
+  const subPaneHeight = (height - mainChartHeight) / 4;
+
+  // Draw horizontal dividers
+  ctx.strokeStyle = '#141b25';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
     ctx.beginPath();
-    ctx.moveTo(0, mainChartHeight); ctx.lineTo(width, mainChartHeight);
-    ctx.moveTo(0, mainChartHeight + subPaneHeight); ctx.lineTo(width, mainChartHeight + subPaneHeight);
-    ctx.moveTo(0, mainChartHeight + subPaneHeight * 2); ctx.lineTo(width, mainChartHeight + subPaneHeight * 2);
+    ctx.moveTo(0, mainChartHeight + subPaneHeight * i);
+    ctx.lineTo(width - paddingRight, mainChartHeight + subPaneHeight * i);
     ctx.stroke();
+  }
 
-    // Map starting print frame limits from right to left
-    let startX = width - paddingRight - barWidth;
-    
-    for (let i = historyBars.length - 1; i >= 0; i--) {
-        if (startX < 0) break;
-        let bar = historyBars[i];
-        
-        // --- 1. RENDER VERTICAL FOOTPRINT TEXT BLOCKS ---
-        let currentY = 80; // Baseline entry level height offsets
-        
-        bar.dataNodes.forEach(node => {
-            let boxY = currentY;
-            currentY += rowHeight;
-            
-            if (boxY + rowHeight > mainChartHeight - 20) return;
+  // Render bars from right to left
+  let startX = width - paddingRight - barWidth;
+  const canvasMarginLeft = paddingLeft;
 
-            // Determine volume dominance shading logic states
-            let totalNodeVol = node.buyVolume + node.sellVolume;
-            let imbalance = node.buyVolume / (node.sellVolume || 1);
-            
-            let bgAlpha = Math.min(totalNodeVol / 1200, 0.45);
-            let boxColor = bar.isBull ? `rgba(34, 197, 94, ${bgAlpha})` : `rgba(239, 68, 68, ${bgAlpha})`;
-            
-            // Highlight extreme imbalance concentrations
-            if (imbalance > 4.0 || imbalance < 0.25) {
-                boxColor = bar.isBull ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
-            }
+  for (let i = historyBars.length - 1; i >= 0; i--) {
+    if (startX < canvasMarginLeft) break;
 
-            // Fill individual cell cluster background block matrix
-            ctx.fillStyle = boxColor;
-            ctx.fillRect(startX, boxY, barWidth, rowHeight - 1);
-            
-            // Text values printing
-            ctx.fillStyle = (imbalance > 4.0 || imbalance < 0.25) ? '#000000' : '#d1d5db';
-            ctx.font = '9px monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            // Map text inside the row node blocks
-            let labelText = `${Math.round(node.buyVolume / 10)} | ${Math.round(node.sellVolume / 10)}`;
-            ctx.fillText(labelText, startX + barWidth / 2, boxY + rowHeight / 2);
-        });
+    const bar = historyBars[i];
+    const barIndex = historyBars.length - 1 - i;
 
-        // --- 2. SUB-PANE HISTOGRAMS RENDERING ---
-        ctx.textAlign = 'center';
-        ctx.font = '10px monospace';
-        
-        // Sub-Pane 1: Cumulative Delta Block Matrix Bars
-        let sp1Y = mainChartHeight + 10;
-        let deltaColor = bar.delta >= 0 ? '#22c55e' : '#ef4444';
-        ctx.fillStyle = deltaColor;
-        ctx.fillRect(startX, sp1Y, barWidth, subPaneHeight - 20);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(bar.delta.toString(), startX + barWidth / 2, sp1Y + (subPaneHeight - 20) / 2 + 3);
+    // Draw structure lines
+    drawStructureLines(startX, bar, barIndex);
 
-        // Sub-Pane 2: Min/Max Delta Momentum Strips
-        let sp2Y = mainChartHeight + subPaneHeight + 10;
-        ctx.fillStyle = bar.isBull ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)';
-        ctx.fillRect(startX, sp2Y, barWidth, subPaneHeight - 20);
-        ctx.fillStyle = '#9ca3af';
-        ctx.fillText((bar.delta * 1.2).toFixed(0), startX + barWidth / 2, sp2Y + (subPaneHeight - 20) / 2 + 3);
+    // Draw footprint clusters
+    drawFootprint(startX, bar, barIndex);
 
-        // Sub-Pane 3: Open Interest Multi-Layer Tiers
-        let sp3Y = mainChartHeight + subPaneHeight * 2 + 10;
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(startX, sp3Y, barWidth, 4); // Static baseline frame track strip
-        ctx.fillStyle = '#2563eb'; // Blue tinting for Open Interest momentum lines
-        ctx.fillRect(startX + 2, sp3Y - 4, barWidth - 4, 12);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText((bar.openInterest / 1000).toFixed(1) + 'K', startX + barWidth / 2, sp3Y + 16);
+    // Draw sub-panes
+    drawSubPanes(startX, bar, barIndex);
 
-        // Shift rendering anchor point leftward for previous historical candle
-        startX -= (barWidth + barSpacing);
-    }
+    startX -= (barWidth + barSpacing);
+  }
 
-    // --- 3. RIGHT SIDE AXIS RENDER SCALE BLOCK ---
-    ctx.fillStyle = '#0d131f';
-    ctx.fillRect(width - paddingRight, 0, paddingRight, height);
-    ctx.strokeStyle = '#1a2232';
-    ctx.beginPath();
-    ctx.moveTo(width - paddingRight, 0); ctx.lineTo(width - paddingRight, height);
-    ctx.stroke();
-
-    // Output live price targets on axis blocks scale
-    ctx.fillStyle = '#00ff88';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`▶ ${basePrice.toFixed(2)}`, width - paddingRight + 5, 120);
+  // Draw right axis panel
+  drawRightAxisPanel();
 }
 
 // ======================================================
-// 3. ENGINE UPDATE RUNTIME INTERVAL LOOPS
+// 4. ENGINE UPDATE LOOP
 // ======================================================
+
 function updateEngine() {
-    // Inject streaming micro ticks directly into the active tracking cluster
-    let activeBar = historyBars[historyBars.length - 1];
-    let randomNode = activeBar.dataNodes[Math.floor(Math.random() * activeBar.dataNodes.length)];
-    
-    if (Math.random() > 0.5) {
-        randomNode.buyVolume += Math.floor(Math.random() * 80);
-    } else {
-        randomNode.sellVolume += Math.floor(Math.random() * 80);
-    }
-    
-    activeBar.delta += Math.floor((Math.random() - 0.5) * 120);
-    basePrice += (Math.random() - 0.5) * 4;
+  const activeBar = historyBars[historyBars.length - 1];
+  const randomNode = activeBar.dataNodes[Math.floor(Math.random() * activeBar.dataNodes.length)];
 
-    // Shift data arrays once lookahead thresholds are reached to optimize graphics memory
-    if (Math.random() > 0.98) {
-        historyBars.shift();
-        historyBars.push(generateMockBars(1)[0]);
-    }
+  if (Math.random() > 0.5) {
+    randomNode.buyVolume += Math.floor(Math.random() * 100);
+    activeBar.buyVolume += Math.floor(Math.random() * 100);
+  } else {
+    randomNode.sellVolume += Math.floor(Math.random() * 100);
+    activeBar.sellVolume += Math.floor(Math.random() * 100);
+  }
 
-    draw();
-    requestAnimationFrame(updateEngine);
+  activeBar.delta += Math.floor((Math.random() - 0.5) * 150);
+  basePrice += (Math.random() - 0.5) * 3;
+  totalIndex += (Math.random() - 0.5) * 2;
+  usdtDom += (Math.random() - 0.5) * 0.3;
+
+  if (Math.random() > 0.97) {
+    historyBars.shift();
+    historyBars.push(generateMockBars(1)[0]);
+    analyzer.analyzeStructure(historyBars);
+  }
+
+  draw();
+  requestAnimationFrame(updateEngine);
 }
 
-// Start terminal loops
 draw();
 requestAnimationFrame(updateEngine);
 </script>
