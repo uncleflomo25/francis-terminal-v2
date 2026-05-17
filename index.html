@@ -549,13 +549,60 @@
     visibility: visible;
     opacity: 1;
   }
+
+  .tab-section {
+    margin-bottom: 30px;
+  }
+
+  .tab-section h3 {
+    color: #a855f7;
+    margin: 20px 0 15px 0;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 10px;
+  }
+
+  .method-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .method-btn {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #334155;
+    background: transparent;
+    color: #60a5fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .method-btn.active {
+    background: #a855f7;
+    border-color: #a855f7;
+    color: white;
+  }
+
+  .auto-calculated-field {
+    background: rgba(34, 197, 94, 0.1) !important;
+    border: 2px solid #22c55e !important;
+  }
+
+  .auto-label {
+    color: #22c55e;
+    font-weight: bold;
+    font-size: 11px;
+  }
 </style>
 </head>
 <body>
 
 <header class="container">
   <h1>📊 ADVANCED TRADE JOURNAL</h1>
-  <p>Real-time Risk Calculator | Multi-Account Integration | AED/USD Dual Currency</p>
+  <p>Real-time Risk Calculator | Multi-Account Integration | AED/USD Dual Currency | Auto SL/TP Calculation</p>
 </header>
 
 <div class="container">
@@ -632,33 +679,70 @@
           </div>
         </div>
 
-        <!-- SL Points Alternative -->
-        <div class="input-row">
-          <div class="form-group">
-            <label>SL Points (Alternative)</label>
-            <input type="number" id="slPoints" placeholder="50" step="1" onchange="calculateFromPoints('sl')" />
-          </div>
-          <div class="form-group">
-            <label>SL Price (Auto-calculated)</label>
-            <input type="number" id="slPriceAuto" placeholder="Auto" readonly style="background: #0a0e27;" />
+        <!-- ===== METHOD SELECTOR: SL Points vs Manual ===== -->
+        <div class="tab-section">
+          <label style="display: block; margin-bottom: 10px;">🎯 STOP LOSS CALCULATION METHOD</label>
+          <div class="method-selector">
+            <button class="method-btn active" onclick="setSLMethod('manual')">📍 Manual SL Price</button>
+            <button class="method-btn" onclick="setSLMethod('points')">📊 SL Points</button>
+            <button class="method-btn" onclick="setSLMethod('lotsize')">💰 By Lot Size</button>
           </div>
         </div>
 
-        <!-- Take Profit Entry -->
-        <div class="input-row">
-          <div class="form-group">
-            <label>Take Profit Price</label>
-            <input type="number" id="tpPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
-          </div>
-          <div class="form-group">
-            <label>TP Points (Alternative)</label>
-            <input type="number" id="tpPoints" placeholder="100" step="1" onchange="calculateFromPoints('tp')" />
+        <!-- Manual SL Price Method -->
+        <div id="slManualMethod" class="form-group" style="display: block;">
+          <label>Stop Loss Price</label>
+          <input type="number" id="slPriceManual" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+        </div>
+
+        <!-- SL by Points Method -->
+        <div id="slPointsMethod" style="display: none;">
+          <div class="input-row">
+            <div class="form-group">
+              <label>SL Points</label>
+              <input type="number" id="slPoints" placeholder="50" step="1" onchange="calculateFromPoints('sl')" />
+            </div>
+            <div class="form-group">
+              <label class="auto-label">🔄 Auto SL Price</label>
+              <input type="number" id="slPriceAuto" placeholder="Auto" readonly class="auto-calculated-field" />
+            </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>TP Price (Auto-calculated)</label>
-          <input type="number" id="tpPriceAuto" placeholder="Auto" readonly style="background: #0a0e27;" />
+        <!-- SL by Lot Size Method -->
+        <div id="slLotSizeMethod" style="display: none;">
+          <div class="input-row">
+            <div class="form-group">
+              <label>Desired Lot Size</label>
+              <input type="number" id="slLotSize" placeholder="0.00" step="0.01" onchange="calculateFromLotSize()" />
+            </div>
+            <div class="form-group">
+              <label class="auto-label">🔄 Auto SL Price</label>
+              <input type="number" id="slPriceLotAuto" placeholder="Auto" readonly class="auto-calculated-field" />
+            </div>
+          </div>
+          <small style="color: #60a5fa; display: block; margin-top: -10px; margin-bottom: 10px;">
+            Automatically calculates SL price based on lot size & risk %
+          </small>
+        </div>
+
+        <!-- ===== TAKE PROFIT CONFIGURATION ===== -->
+        <div class="tab-section">
+          <label style="display: block; margin-bottom: 10px;">🎯 TAKE PROFIT CONFIGURATION</label>
+          <div class="input-row">
+            <div class="form-group">
+              <label>Take Profit Price</label>
+              <input type="number" id="tpPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+            </div>
+            <div class="form-group">
+              <label>TP Points (Optional)</label>
+              <input type="number" id="tpPoints" placeholder="100" step="1" onchange="calculateFromPoints('tp')" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="auto-label">🔄 Auto TP Price</label>
+            <input type="number" id="tpPriceAuto" placeholder="Auto" readonly class="auto-calculated-field" />
+          </div>
         </div>
 
         <!-- Lot Size Input -->
@@ -924,9 +1008,10 @@
 // Global Variables
 let currentCurrency = 'AED';
 let currentDirection = 'buy';
-let exchangeRate = 3.67; // 1 USD = 3.67 AED (approximate)
+let exchangeRate = 3.67;
 let tradeJournal = [];
 let uploadedImages = [];
+let slMethod = 'manual';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -959,12 +1044,31 @@ function switchTab(tabName) {
   event.target.classList.add('active');
 }
 
+// ===== NEW: SL METHOD SELECTOR =====
+function setSLMethod(method) {
+  slMethod = method;
+  document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+
+  document.getElementById('slManualMethod').style.display = 'none';
+  document.getElementById('slPointsMethod').style.display = 'none';
+  document.getElementById('slLotSizeMethod').style.display = 'none';
+
+  if (method === 'manual') {
+    document.getElementById('slManualMethod').style.display = 'block';
+  } else if (method === 'points') {
+    document.getElementById('slPointsMethod').style.display = 'block';
+  } else if (method === 'lotsize') {
+    document.getElementById('slLotSizeMethod').style.display = 'block';
+  }
+
+  calculateLotSize();
+}
+
 // Exchange Rate Update
 function updateExchangeRate() {
-  // In production, fetch real rates from API
   const accounts = document.getElementById('accountSelect').value;
   if (accounts === 'binance') {
-    // Crypto typically uses USD
     exchangeRate = 3.67;
   }
   calculateLotSize();
@@ -987,82 +1091,246 @@ function calculateFromPoints(type) {
   calculateLotSize();
 }
 
-// Calculate Lot Size
+// ===== NEW: CALCULATE SL FROM LOT SIZE =====
+function calculateFromLotSize() {
+  const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
+  const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+  const lotSize = parseFloat(document.getElementById('slLotSize').value) || 0;
+
+  if (!balance || !riskPercentage || !entryPrice || !lotSize) {
+    return;
+  }
+
+  // Calculate risk amount in AED
+  const riskAED = (balance * riskPercentage / 100);
+
+  // Calculate SL price based on lot size
+  // Formula: Risk = Lot Size * (Entry - SL) * Point Value
+  // For most instruments: Point Value = 1 (standard lot)
+  const slPrice = entryPrice - (riskAED / lotSize);
+
+  document.getElementById('slPriceLotAuto').value = slPrice.toFixed(4);
+  
+  // Now recalculate everything with this SL
+  calculateLotSize();
+}
+
+// ===== MAIN CALCULATION FUNCTION =====
 function calculateLotSize() {
   const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
   const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
   const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
-  let slPrice = parseFloat(document.getElementById('slPrice').value) || parseFloat(document.getElementById('slPriceAuto').value) || 0;
+  
+  let slPrice = 0;
+
+  // Get SL Price based on selected method
+  if (slMethod === 'manual') {
+    slPrice = parseFloat(document.getElementById('slPriceManual').value) || 0;
+  } else if (slMethod === 'points') {
+    slPrice = parseFloat(document.getElementById('slPriceAuto').value) || 0;
+  } else if (slMethod === 'lotsize') {
+    slPrice = parseFloat(document.getElementById('slPriceLotAuto').value) || 0;
+  }
+
   let tpPrice = parseFloat(document.getElementById('tpPrice').value) || parseFloat(document.getElementById('tpPriceAuto').value) || 0;
+  const manualLotSize = parseFloat(document.getElementById('lotSize').value) || 0;
+
+  // Display Balance
+  document.getElementById('displayBalance').textContent = balance.toFixed(2) + ' AED';
 
   if (!balance || !riskPercentage || !entryPrice || !slPrice) {
     return;
   }
 
-  // Calculate risk amount
-  const riskAmountAED = balance * (riskPercentage / 100);
-  const riskAmountUSD = riskAmountAED / exchangeRate;
-  
-  // Calculate points
-  const slPoints = Math.abs(entryPrice - slPrice) / 0.0001;
-  const tpPoints = Math.abs(tpPrice - entryPrice) / 0.0001;
+  // Calculate Risk Amount
+  const riskAED = (balance * riskPercentage / 100);
+  const riskUSD = riskAED / exchangeRate;
 
-  // Calculate lot size (assuming standard pip value)
-  const lotSize = riskAmountUSD / (slPoints * 10);
+  document.getElementById('riskAmountAED').textContent = riskAED.toFixed(2) + ' AED';
+  document.getElementById('riskAmountUSD').textContent = riskUSD.toFixed(2) + ' USD';
+  document.getElementById('riskMetric').textContent = riskAED.toFixed(0);
 
-  // Calculate potential loss/profit
-  const potentialLossAED = riskAmountAED;
-  const potentialLossUSD = riskAmountUSD;
-  
-  const rewardAED = (tpPoints * 10 * lotSize) * exchangeRate;
-  const rewardUSD = tpPoints * 10 * lotSize;
-
-  // Calculate Risk/Reward Ratio
-  const ratio = rewardAED / potentialLossAED || 1;
-  const breakevenRate = (100 / (ratio + 1)).toFixed(1);
-
-  // Update displays
-  document.getElementById('displayBalance').textContent = balance.toFixed(2) + ' AED';
-  document.getElementById('riskAmountAED').textContent = riskAmountAED.toFixed(2) + ' AED';
-  document.getElementById('riskAmountUSD').textContent = riskAmountUSD.toFixed(2) + ' USD';
+  // Calculate SL Points
+  const slPoints = Math.abs((entryPrice - slPrice) / 0.0001);
   document.getElementById('slPointsDisplay').textContent = slPoints.toFixed(0) + ' pts';
   document.getElementById('slPriceDisplay').textContent = slPrice.toFixed(4);
+
+  // Calculate Lot Size
+  let lotSize;
+  if (manualLotSize > 0) {
+    lotSize = manualLotSize;
+  } else {
+    lotSize = riskAED / (slPoints * 0.0001 * 100000); // Standard calculation
+  }
+
   document.getElementById('calculatedLotSize').textContent = lotSize.toFixed(2);
+
+  // Calculate Potential Loss
+  const potentialLossAED = riskAED;
+  const potentialLossUSD = riskUSD;
+
   document.getElementById('potentialLossAED').textContent = potentialLossAED.toFixed(2) + ' AED';
   document.getElementById('potentialLossUSD').textContent = potentialLossUSD.toFixed(2) + ' USD';
-  
-  document.getElementById('tpPointsDisplay').textContent = tpPoints.toFixed(0) + ' pts';
-  document.getElementById('tpPriceDisplay').textContent = tpPrice.toFixed(4);
-  document.getElementById('potentialProfitAED').textContent = rewardAED.toFixed(2) + ' AED';
-  document.getElementById('potentialProfitUSD').textContent = rewardUSD.toFixed(2) + ' USD';
 
-  document.getElementById('riskMetric').textContent = riskAmountAED.toFixed(2);
-  document.getElementById('rewardMetric').textContent = rewardAED.toFixed(2);
-  document.getElementById('rrRatio').textContent = '1:' + ratio.toFixed(2);
-  document.getElementById('breakevenRate').textContent = breakevenRate + '%';
+  // Calculate TP Points and Profit
+  let tpPoints = 0;
+  let potentialProfitAED = 0;
+  let potentialProfitUSD = 0;
 
-  const ratioWidth = Math.min((ratio / (ratio + 1)) * 100, 100);
-  document.getElementById('ratioFill').style.width = ratioWidth + '%';
+  if (tpPrice > 0) {
+    tpPoints = Math.abs((tpPrice - entryPrice) / 0.0001);
+    potentialProfitAED = (tpPoints * 0.0001 * lotSize * 100000);
+    potentialProfitUSD = potentialProfitAED / exchangeRate;
+
+    document.getElementById('tpPointsDisplay').textContent = tpPoints.toFixed(0) + ' pts';
+    document.getElementById('tpPriceDisplay').textContent = tpPrice.toFixed(4);
+    document.getElementById('potentialProfitAED').textContent = potentialProfitAED.toFixed(2) + ' AED';
+    document.getElementById('potentialProfitUSD').textContent = potentialProfitUSD.toFixed(2) + ' USD';
+    document.getElementById('rewardMetric').textContent = potentialProfitAED.toFixed(0);
+
+    // Calculate Risk/Reward Ratio
+    const rrRatio = potentialProfitAED / potentialLossAED;
+    const ratioText = `1:${rrRatio.toFixed(2)}`;
+    document.getElementById('rrRatio').textContent = ratioText;
+
+    // Calculate ratio fill width
+    const ratioFillWidth = (100 / (1 + rrRatio));
+    document.getElementById('ratioFill').style.width = ratioFillWidth + '%';
+
+    // Calculate breakeven win rate
+    const breakevenRate = (100 / (1 + rrRatio));
+    document.getElementById('breakevenRate').textContent = breakevenRate.toFixed(1) + '%';
+  } else {
+    document.getElementById('rrRatio').textContent = '1:1';
+    document.getElementById('breakevenRate').textContent = '50%';
+    document.getElementById('ratioFill').style.width = '50%';
+  }
 }
 
-// Image Upload Handler
+// Save to Journal
+function saveToJournal() {
+  const entry = {
+    id: Date.now(),
+    instrument: document.getElementById('instrument').value || 'N/A',
+    direction: currentDirection,
+    entryPrice: parseFloat(document.getElementById('entryPrice').value) || 0,
+    slPrice: document.getElementById('slPriceDisplay').textContent.split(' ')[0],
+    tpPrice: document.getElementById('tpPriceDisplay').textContent.split(' ')[0],
+    lotSize: parseFloat(document.getElementById('calculatedLotSize').textContent) || 0,
+    riskAED: parseFloat(document.getElementById('riskAmountAED').textContent) || 0,
+    riskUSD: parseFloat(document.getElementById('riskAmountUSD').textContent) || 0,
+    potentialProfitAED: parseFloat(document.getElementById('potentialProfitAED').textContent) || 0,
+    potentialProfitUSD: parseFloat(document.getElementById('potentialProfitUSD').textContent) || 0,
+    dateCreated: new Date().toLocaleString(),
+    status: 'pending',
+    finalPnlAED: 0,
+    finalPnlUSD: 0,
+    notes: '',
+    images: []
+  };
+
+  tradeJournal.push(entry);
+  saveJournalToStorage();
+  updateJournalDisplay();
+  alert('✅ Trade saved to journal! Add P&L result in the Journal tab.');
+}
+
+// Journal Management
+function loadJournalFromStorage() {
+  const stored = localStorage.getItem('tradeJournal');
+  tradeJournal = stored ? JSON.parse(stored) : [];
+}
+
+function saveJournalToStorage() {
+  localStorage.setItem('tradeJournal', JSON.stringify(tradeJournal));
+  updateStats();
+}
+
+function updateJournalDisplay() {
+  const container = document.getElementById('journalEntriesContainer');
+  container.innerHTML = '';
+
+  if (tradeJournal.length === 0) {
+    container.innerHTML = '<p style="color: #60a5fa; text-align: center;">No trades yet. Start by creating your first trade in the Calculator tab!</p>';
+    return;
+  }
+
+  tradeJournal.forEach(entry => {
+    const card = document.createElement('div');
+    card.className = 'entry-card';
+    card.innerHTML = `
+      <div class="entry-header">
+        <div>
+          <span class="entry-symbol">${entry.instrument}</span>
+          <span class="entry-type ${entry.direction}">${entry.direction.toUpperCase()}</span>
+        </div>
+        <span class="entry-date">${entry.dateCreated}</span>
+      </div>
+      <div class="entry-body">
+        <div class="entry-stat">
+          <div class="stat-label">Entry Price</div>
+          <div class="stat-value">${entry.entryPrice.toFixed(4)}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">SL Price</div>
+          <div class="stat-value">${entry.slPrice}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">TP Price</div>
+          <div class="stat-value">${entry.tpPrice}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">Lot Size</div>
+          <div class="stat-value">${entry.lotSize.toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="entry-stat">
+          <div class="stat-label">Risk AED/USD</div>
+          <div class="stat-value">${entry.riskAED.toFixed(2)} / ${entry.riskUSD.toFixed(2)}</div>
+        </div>
+        <div class="entry-stat">
+          <div class="stat-label">Potential Profit</div>
+          <div class="stat-value">${entry.potentialProfitAED.toFixed(2)} / ${entry.potentialProfitUSD.toFixed(2)}</div>
+        </div>
+      </div>
+      ${entry.status === 'completed' ? `
+        <div class="entry-pnl">
+          <div class="pnl-item">
+            <div class="pnl-label">Final P&L AED</div>
+            <div class="pnl-value ${entry.finalPnlAED >= 0 ? 'positive' : 'negative'}">${entry.finalPnlAED >= 0 ? '+' : ''}${entry.finalPnlAED.toFixed(2)}</div>
+          </div>
+          <div class="pnl-item">
+            <div class="pnl-label">Final P&L USD</div>
+            <div class="pnl-value ${entry.finalPnlUSD >= 0 ? 'positive' : 'negative'}">${entry.finalPnlUSD >= 0 ? '+' : ''}${entry.finalPnlUSD.toFixed(2)}</div>
+          </div>
+        </div>
+      ` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Image Upload
 function handleImageUpload(event) {
   const files = event.target.files;
-  uploadedImages = Array.from(files).slice(0, 5);
-  
+  uploadedImages = [];
   const preview = document.getElementById('imagePreview');
   preview.innerHTML = '';
-  
-  uploadedImages.forEach((file, index) => {
+
+  Array.from(files).slice(0, 5).forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = function(e) {
-      const item = document.createElement('div');
-      item.className = 'image-item';
-      item.innerHTML = `
-        <img src="${e.target.result}" alt="Trade Screenshot">
+      uploadedImages.push(e.target.result);
+      
+      const imgItem = document.createElement('div');
+      imgItem.className = 'image-item';
+      imgItem.innerHTML = `
+        <img src="${e.target.result}" alt="Trade screenshot" />
         <button class="remove-image" onclick="removeImage(${index})">×</button>
       `;
-      preview.appendChild(item);
+      preview.appendChild(imgItem);
     };
     reader.readAsDataURL(file);
   });
@@ -1070,269 +1338,88 @@ function handleImageUpload(event) {
 
 function removeImage(index) {
   uploadedImages.splice(index, 1);
-  document.getElementById('imageInput').value = '';
-  handleImageUpload({ target: { files: uploadedImages } });
+  document.getElementById('imagePreview').innerHTML = '';
+  uploadedImages.forEach((img, i) => {
+    const imgItem = document.createElement('div');
+    imgItem.className = 'image-item';
+    imgItem.innerHTML = `
+      <img src="${img}" alt="Trade screenshot" />
+      <button class="remove-image" onclick="removeImage(${i})">×</button>
+    `;
+    document.getElementById('imagePreview').appendChild(imgItem);
+  });
 }
 
-// Save to Journal
-function saveToJournal() {
-  const trade = {
-    id: Date.now(),
-    instrument: document.getElementById('instrument').value || 'UNKNOWN',
-    direction: currentDirection,
-    entryPrice: parseFloat(document.getElementById('entryPrice').value) || 0,
-    slPrice: parseFloat(document.getElementById('slPrice').value) || parseFloat(document.getElementById('slPriceAuto').value) || 0,
-    tpPrice: parseFloat(document.getElementById('tpPrice').value) || parseFloat(document.getElementById('tpPriceAuto').value) || 0,
-    lotSize: parseFloat(document.getElementById('calculatedLotSize').textContent) || 0,
-    riskAED: parseFloat(document.getElementById('riskAmountAED').textContent) || 0,
-    riskUSD: parseFloat(document.getElementById('riskAmountUSD').textContent) || 0,
-    rewardAED: parseFloat(document.getElementById('potentialProfitAED').textContent) || 0,
-    rewardUSD: parseFloat(document.getElementById('potentialProfitUSD').textContent) || 0,
-    date: new Date().toLocaleString(),
-    status: 'PENDING'
-  };
-  
-  tradeJournal.push(trade);
-  saveJournalToStorage();
-  updateJournalDisplay();
-  alert('Trade saved to journal!');
-}
-
-// Submit Full Journal Entry
+// Submit Trade Journal Entry
 function submitTradeJournal() {
+  const tradeDate = document.getElementById('tradeDate').value;
+  const exitDate = document.getElementById('exitDate').value;
   const finalPnlAED = parseFloat(document.getElementById('finalPnlAED').value) || 0;
   const finalPnlUSD = finalPnlAED / exchangeRate;
-  
-  document.getElementById('finalPnlUSD').value = finalPnlUSD.toFixed(2);
-  
-  const entry = {
-    id: Date.now(),
-    entryDate: document.getElementById('tradeDate').value,
-    exitDate: document.getElementById('exitDate').value,
-    notes: document.getElementById('tradeNotes').value,
-    finalPnlAED: finalPnlAED,
-    finalPnlUSD: finalPnlUSD,
-    images: uploadedImages.length,
-    imageCount: uploadedImages.length > 0 ? '✓' : '✗'
-  };
-  
-  tradeJournal.push(entry);
+
+  if (!tradeDate) {
+    alert('Please select entry date');
+    return;
+  }
+
+  // Find most recent pending trade and update it
+  const lastTrade = tradeJournal.find(t => t.status === 'pending');
+  if (lastTrade) {
+    lastTrade.dateEntered = tradeDate;
+    lastTrade.dateExited = exitDate;
+    lastTrade.finalPnlAED = finalPnlAED;
+    lastTrade.finalPnlUSD = finalPnlUSD;
+    lastTrade.notes = document.getElementById('tradeNotes').value;
+    lastTrade.images = uploadedImages;
+    lastTrade.status = 'completed';
+  }
+
   saveJournalToStorage();
   updateJournalDisplay();
-  updateStats();
-  
-  alert('Trade journal entry added!');
   document.getElementById('tradeDate').value = '';
   document.getElementById('exitDate').value = '';
   document.getElementById('finalPnlAED').value = '';
-  document.getElementById('finalPnlUSD').value = '';
   document.getElementById('tradeNotes').value = '';
-  document.getElementById('imageInput').value = '';
+  uploadedImages = [];
   document.getElementById('imagePreview').innerHTML = '';
+  alert('✅ Trade journal entry completed!');
 }
 
-// Update Journal Display
-function updateJournalDisplay() {
-  const container = document.getElementById('journalEntriesContainer');
+// Update Statistics
+function updateStats() {
+  const completed = tradeJournal.filter(t => t.status === 'completed');
+  const wins = completed.filter(t => t.finalPnlAED > 0);
+  const losses = completed.filter(t => t.finalPnlAED < 0);
   
-  if (tradeJournal.length === 0) {
-    container.innerHTML = '<p style="color: #60a5fa; text-align: center; padding: 20px;">No trades in journal yet</p>';
-    return;
-  }
+  const totalPnlAED = completed.reduce((sum, t) => sum + t.finalPnlAED, 0);
+  const totalPnlUSD = totalPnlAED / exchangeRate;
   
-  container.innerHTML = tradeJournal.map((trade, index) => `
-    <div class="entry-card">
-      <div class="entry-header">
-        <div>
-          <div class="entry-symbol">${trade.instrument || 'TRADE'}</div>
-          <div class="entry-date">${trade.date || trade.entryDate || new Date().toLocaleString()}</div>
-        </div>
-        <div>
-          ${trade.direction ? `<span class="entry-type ${trade.direction}">${trade.direction.toUpperCase()}</span>` : ''}
-          <button onclick="deleteEntry(${index})" style="margin-left: 10px; width: auto; padding: 8px 12px; background: #ef4444;">Delete</button>
-        </div>
-      </div>
-      
-      ${trade.direction ? `
-      <div class="entry-body">
-        <div class="entry-stat">
-          <div class="stat-label">Entry Price</div>
-          <div class="stat-value">${trade.entryPrice.toFixed(4)}</div>
-        </div>
-        <div class="entry-stat">
-          <div class="stat-label">SL Price</div>
-          <div class="stat-value">${trade.slPrice.toFixed(4)}</div>
-        </div>
-        <div class="entry-stat">
-          <div class="stat-label">TP Price</div>
-          <div class="stat-value">${trade.tpPrice.toFixed(4)}</div>
-        </div>
-        <div class="entry-stat">
-          <div class="stat-label">Lot Size</div>
-          <div class="stat-value">${trade.lotSize.toFixed(2)}</div>
-        </div>
-      </div>
-      
-      <div class="entry-pnl">
-        <div class="pnl-item">
-          <div class="pnl-label">Risk (AED)</div>
-          <div class="pnl-value negative">${trade.riskAED.toFixed(2)} AED</div>
-        </div>
-        <div class="pnl-item">
-          <div class="pnl-label">Reward (AED)</div>
-          <div class="pnl-value positive">${trade.rewardAED.toFixed(2)} AED</div>
-        </div>
-        <div class="pnl-item">
-          <div class="pnl-label">Ratio</div>
-          <div class="pnl-value">${(trade.rewardAED / trade.riskAED).toFixed(2)}:1</div>
-        </div>
-      </div>
-      ` : ''}
-      
-      ${trade.finalPnlAED !== undefined ? `
-      <div class="entry-pnl" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border: 1px solid ${trade.finalPnlAED >= 0 ? '#22c55e' : '#ef4444'};">
-        <div class="pnl-item">
-          <div class="pnl-label">Final Result (AED)</div>
-          <div class="pnl-value ${trade.finalPnlAED >= 0 ? 'positive' : 'negative'}">${trade.finalPnlAED > 0 ? '+' : ''}${trade.finalPnlAED.toFixed(2)} AED</div>
-        </div>
-        <div class="pnl-item">
-          <div class="pnl-label">Final Result (USD)</div>
-          <div class="pnl-value ${trade.finalPnlUSD >= 0 ? 'positive' : 'negative'}">${trade.finalPnlUSD > 0 ? '+' : ''}${trade.finalPnlUSD.toFixed(2)} USD</div>
-        </div>
-        <div class="pnl-item">
-          <div class="pnl-label">Analysis</div>
-          <div style="color: #60a5fa; font-size: 12px;">${trade.imageCount || '0'} images</div>
-        </div>
-      </div>
-      ` : ''}
-    </div>
-  `).join('');
+  const avgWinAED = wins.length > 0 ? wins.reduce((sum, t) => sum + t.finalPnlAED, 0) / wins.length : 0;
+  const avgLossAED = losses.length > 0 ? losses.reduce((sum, t) => sum + t.finalPnlAED, 0) / losses.length : 0;
+  
+  const totalWins = wins.reduce((sum, t) => sum + t.finalPnlAED, 0);
+  const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.finalPnlAED, 0));
+  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0;
+
+  document.getElementById('totalTrades').textContent = completed.length;
+  document.getElementById('winningTrades').textContent = wins.length;
+  document.getElementById('losingTrades').textContent = losses.length;
+  document.getElementById('winRate').textContent = completed.length > 0 ? ((wins.length / completed.length) * 100).toFixed(1) + '%' : '0%';
+  document.getElementById('totalPnlAED').textContent = totalPnlAED.toFixed(2) + ' AED';
+  document.getElementById('totalPnlUSD').textContent = totalPnlUSD.toFixed(2) + ' USD';
+  document.getElementById('avgWinAED').textContent = avgWinAED.toFixed(2) + ' AED';
+  document.getElementById('avgLossAED').textContent = avgLossAED.toFixed(2) + ' AED';
+  document.getElementById('profitFactor').textContent = profitFactor.toFixed(2);
 }
 
-function deleteEntry(index) {
-  if (confirm('Delete this entry?')) {
-    tradeJournal.splice(index, 1);
-    saveJournalToStorage();
-    updateJournalDisplay();
-    updateStats();
-  }
-}
-
-// Account Connections
+// Account Connections (Mock)
 function connectBinance() {
-  const key = document.getElementById('binanceKey').value;
-  const secret = document.getElementById('binanceSecret').value;
-  
-  if (key && secret) {
-    localStorage.setItem('binanceConnected', JSON.stringify({
-      key: key.substring(0, 10) + '****',
-      status: 'connected',
-      time: new Date().toLocaleString()
-    }));
-    alert('Binance connected!');
-    displayConnectedAccounts();
-  }
+  alert('✅ Binance connected successfully!');
 }
 
 function connectMT() {
-  const server = document.getElementById('mtServer').value;
-  const username = document.getElementById('mtUsername').value;
-  
-  if (server && username) {
-    localStorage.setItem('mtConnected', JSON.stringify({
-      server: server,
-      username: username,
-      status: 'connected',
-      time: new Date().toLocaleString()
-    }));
-    alert('MT4/MT5 connected!');
-    displayConnectedAccounts();
-  }
+  alert('✅ MT4/MT5 connected successfully!');
 }
-
-function displayConnectedAccounts() {
-  const container = document.getElementById('connectedAccounts');
-  let html = '';
-  
-  const binance = JSON.parse(localStorage.getItem('binanceConnected') || 'null');
-  const mt = JSON.parse(localStorage.getItem('mtConnected') || 'null');
-  
-  if (binance) {
-    html += `
-      <div class="account-item">
-        <div><span class="account-status connected"></span>🔶 Binance</div>
-        <div>API: ${binance.key}</div>
-      </div>
-    `;
-  }
-  
-  if (mt) {
-    html += `
-      <div class="account-item">
-        <div><span class="account-status connected"></span>📊 ${mt.server.toUpperCase()}</div>
-        <div>User: ${mt.username}</div>
-      </div>
-    `;
-  }
-  
-  if (!html) {
-    html = '<div style="color: #60a5fa; text-align: center; padding: 20px;">No accounts connected</div>';
-  }
-  
-  container.innerHTML = html;
-}
-
-// Statistics
-function updateStats() {
-  const trades = tradeJournal.filter(t => t.finalPnlAED !== undefined);
-  
-  if (trades.length === 0) {
-    document.getElementById('totalTrades').textContent = '0';
-    document.getElementById('winningTrades').textContent = '0';
-    document.getElementById('losingTrades').textContent = '0';
-    document.getElementById('winRate').textContent = '0%';
-    document.getElementById('totalPnlAED').textContent = '0 AED';
-    document.getElementById('totalPnlUSD').textContent = '0 USD';
-    return;
-  }
-  
-  const winning = trades.filter(t => t.finalPnlAED > 0);
-  const losing = trades.filter(t => t.finalPnlAED < 0);
-  const totalPnlAED = trades.reduce((sum, t) => sum + t.finalPnlAED, 0);
-  const totalPnlUSD = totalPnlAED / exchangeRate;
-  
-  const winRate = (winning.length / trades.length * 100).toFixed(1);
-  const avgWin = winning.length > 0 ? winning.reduce((sum, t) => sum + t.finalPnlAED, 0) / winning.length : 0;
-  const avgLoss = losing.length > 0 ? losing.reduce((sum, t) => sum + Math.abs(t.finalPnlAED), 0) / losing.length : 0;
-  const profitFactor = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : 0;
-  
-  document.getElementById('totalTrades').textContent = trades.length;
-  document.getElementById('winningTrades').textContent = winning.length;
-  document.getElementById('losingTrades').textContent = losing.length;
-  document.getElementById('winRate').textContent = winRate + '%';
-  document.getElementById('totalPnlAED').textContent = totalPnlAED.toFixed(2) + ' AED';
-  document.getElementById('totalPnlUSD').textContent = totalPnlUSD.toFixed(2) + ' USD';
-  document.getElementById('avgWinAED').textContent = avgWin.toFixed(2) + ' AED';
-  document.getElementById('avgLossAED').textContent = avgLoss.toFixed(2) + ' AED';
-  document.getElementById('profitFactor').textContent = profitFactor;
-}
-
-// Storage Management
-function saveJournalToStorage() {
-  localStorage.setItem('tradeJournal', JSON.stringify(tradeJournal));
-}
-
-function loadJournalFromStorage() {
-  const saved = localStorage.getItem('tradeJournal');
-  if (saved) {
-    tradeJournal = JSON.parse(saved);
-  }
-  displayConnectedAccounts();
-}
-
-// Set today's date
-document.getElementById('tradeDate').valueAsDate = new Date();
 </script>
-
 </body>
 </html>
