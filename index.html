@@ -3,37 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Advanced Trade Journal</title>
+<title>Myfxbook Style Risk Calculator</title>
 
 <style>
 body { margin:0; background:#0a0e27; color:#e2e8f0; font-family:Segoe UI; }
-.container { max-width:1600px; margin:auto; padding:20px; }
-
-header {
-  background:linear-gradient(135deg,#1e293b,#0f172a);
-  border-bottom:2px solid #3b82f6;
-  padding:20px;
-  margin-bottom:20px;
-}
-
-header h1 { color:#00ff88; margin:0; }
-header p { color:#60a5fa; font-size:12px; }
-
-.tab-btn { padding:10px; margin:5px; cursor:pointer; }
-.tab-content { display:none; }
-.tab-content.active { display:block; }
+.container { max-width:900px; margin:auto; padding:20px; }
 
 .card {
   background:#111827;
   padding:20px;
-  margin:10px 0;
   border-radius:10px;
+  margin-top:20px;
 }
 
-input, textarea {
+input {
   width:100%;
-  margin:5px 0;
   padding:10px;
+  margin:5px 0;
   background:#0f172a;
   color:white;
   border:1px solid #334155;
@@ -41,153 +27,69 @@ input, textarea {
 
 button {
   padding:10px;
+  width:100%;
   background:#3b82f6;
-  color:white;
   border:none;
+  color:white;
   cursor:pointer;
   margin-top:10px;
 }
 
-img {
-  width:80px;
-  height:80px;
-  object-fit:cover;
-  margin:5px;
-  border-radius:6px;
-}
+h1 { color:#00ff88; }
+p { color:#60a5fa; }
 </style>
+
 </head>
 
 <body>
 
-<header class="container">
-  <h1>📊 ADVANCED TRADE JOURNAL</h1>
-  <p>Risk Calculator + Journal System</p>
-</header>
-
 <div class="container">
 
-  <button class="tab-btn" onclick="switchTab('calculator')">Calculator</button>
-  <button class="tab-btn" onclick="switchTab('journal')">Journal</button>
+<h1>📊 FX Risk Calculator (Myfxbook Style)</h1>
 
-  <!-- CALCULATOR -->
-  <div id="calculator" class="tab-content active">
-    <div class="card">
-      <h2>Trade Calculator</h2>
+<div class="card">
 
-      <input id="accountBalance" placeholder="Account Balance" oninput="calculate()" />
-      <input id="riskAmount" placeholder="Risk Amount ($ / AED)" oninput="calculate()" />
-      <input id="entryPrice" placeholder="Entry Price" oninput="calculate()" />
-      <input id="slPrice" placeholder="Stop Loss Price" oninput="calculate()" />
-      <input id="tpPrice" placeholder="Take Profit Price" oninput="calculate()" />
+  <input id="accountBalance" placeholder="Account Balance (optional)" />
+  <input id="riskAmount" placeholder="Risk Amount ($ / AED)" />
+  <input id="entryPrice" placeholder="Entry Price" />
 
-      <div id="output"></div>
+  <button onclick="calculate()">Calculate</button>
 
-      <!-- NOTES -->
-      <h3>Trade Notes / Setup Condition</h3>
-      <textarea id="notes" placeholder="Explain your setup..."></textarea>
+  <div id="output"></div>
 
-      <!-- IMAGE UPLOAD -->
-      <h3>Upload Analysis Photos</h3>
-      <input type="file" id="images" multiple accept="image/*" onchange="previewImages(event)" />
-      <div id="preview"></div>
-
-      <button onclick="saveTrade()">💾 Save Trade Analysis</button>
-    </div>
-  </div>
-
-  <!-- JOURNAL -->
-  <div id="journal" class="tab-content">
-    <div class="card">
-      <h2>Journal</h2>
-      <div id="journalList"></div>
-    </div>
-  </div>
+</div>
 
 </div>
 
 <script>
 
-let trades = [];
-let uploadedImages = [];
-
-// TAB
-function switchTab(tab) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById(tab).classList.add('active');
-}
-
-// CALCULATION ENGINE
 function calculate() {
-  const balance = +accountBalance.value || 0;
-  const risk = +riskAmount.value || 0;
-  const entry = +entryPrice.value || 0;
-  const sl = +slPrice.value || 0;
 
-  if (!balance || !risk || !entry || !sl) return;
+  const balance = +document.getElementById("accountBalance").value || 0;
+  const risk = +document.getElementById("riskAmount").value || 0;
+  const entry = +document.getElementById("entryPrice").value || 0;
 
+  if (!risk || !entry) return;
+
+  // ===== MYFXBOOK STYLE CORE ENGINE =====
+  const pipValuePerLot = 10;   // standard FX rule
+  const defaultRiskPips = 20;  // fixed risk model (you can upgrade later)
   const pip = 0.0001;
-  const slPips = Math.abs(entry - sl) / pip;
 
-  // AUTO LOT SIZE (risk-based)
-  const lot = risk / (slPips * 10);
+  // LOT SIZE
+  const lotSize = risk / (defaultRiskPips * pipValuePerLot);
+
+  // AUTO STOP LOSS PRICE
+  const slBuy = entry - (defaultRiskPips * pip);
+  const slSell = entry + (defaultRiskPips * pip);
 
   document.getElementById("output").innerHTML = `
-    <p>📉 Stop Loss: ${slPips.toFixed(1)} pips</p>
-    <p>📦 Lot Size (Auto): ${lot.toFixed(2)}</p>
+    <p>📦 Lot Size: <b>${lotSize.toFixed(2)}</b></p>
+    <p>📉 Stop Loss (BUY): ${slBuy.toFixed(5)}</p>
+    <p>📈 Stop Loss (SELL): ${slSell.toFixed(5)}</p>
+    <p>📊 Risk Model: ${defaultRiskPips} pips</p>
   `;
-}
 
-// IMAGE PREVIEW
-function previewImages(event) {
-  const files = event.target.files;
-  const preview = document.getElementById("preview");
-  preview.innerHTML = "";
-  uploadedImages = [];
-
-  for (let i = 0; i < files.length; i++) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      uploadedImages.push(e.target.result);
-
-      const img = document.createElement("img");
-      img.src = e.target.result;
-      preview.appendChild(img);
-    };
-    reader.readAsDataURL(files[i]);
-  }
-}
-
-// SAVE TRADE
-function saveTrade() {
-  const trade = {
-    entry: entryPrice.value,
-    sl: slPrice.value,
-    tp: tpPrice.value,
-    balance: accountBalance.value,
-    risk: riskAmount.value,
-    notes: document.getElementById("notes").value,
-    images: uploadedImages,
-    time: new Date().toLocaleString()
-  };
-
-  trades.push(trade);
-  updateJournal();
-
-  alert("Trade Saved Successfully!");
-}
-
-// JOURNAL
-function updateJournal() {
-  document.getElementById("journalList").innerHTML =
-    trades.map(t => `
-      <div class="card">
-        <p>Entry: ${t.entry} | SL: ${t.sl} | TP: ${t.tp}</p>
-        <p>${t.notes}</p>
-        <div>${t.images.map(img => `<img src="${img}">`).join("")}</div>
-        <small>${t.time}</small>
-      </div>
-    `).join("");
 }
 
 </script>
