@@ -596,6 +596,16 @@
     font-weight: bold;
     font-size: 11px;
   }
+
+  .info-box {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 4px solid #3b82f6;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-size: 12px;
+    color: #60a5fa;
+  }
 </style>
 </head>
 <body>
@@ -656,102 +666,46 @@
           </div>
         </div>
 
+        <div class="info-box">
+          💡 <strong>Quick Start:</strong> Enter Account Balance, Risk %, Entry Price, and Stop Loss. Everything else calculates automatically!
+        </div>
+
         <!-- Risk Configuration -->
         <div class="form-group">
           <label>Account Balance (AED)</label>
-          <input type="number" id="accountBalance" placeholder="Enter your account balance" step="0.01" onchange="calculateLotSize()" />
+          <input type="number" id="accountBalance" placeholder="Enter your account balance" step="0.01" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
         </div>
 
         <div class="form-group">
           <label>Risk Per Trade (%)</label>
-          <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" />
+          <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
         </div>
 
         <!-- Price Entry -->
         <div class="input-row">
           <div class="form-group">
             <label>Entry Price</label>
-            <input type="number" id="entryPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+            <input type="number" id="entryPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
           </div>
           <div class="form-group">
             <label>Stop Loss Price</label>
-            <input type="number" id="slPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
+            <input type="number" id="slPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
           </div>
         </div>
 
-        <!-- ===== METHOD SELECTOR: SL Points vs Manual ===== -->
-        <div class="tab-section">
-          <label style="display: block; margin-bottom: 10px;">🎯 STOP LOSS CALCULATION METHOD</label>
-          <div class="method-selector">
-            <button class="method-btn active" onclick="setSLMethod('manual')">📍 Manual SL Price</button>
-            <button class="method-btn" onclick="setSLMethod('points')">📊 SL Points</button>
-            <button class="method-btn" onclick="setSLMethod('lotsize')">💰 By Lot Size</button>
-          </div>
-        </div>
-
-        <!-- Manual SL Price Method -->
-        <div id="slManualMethod" class="form-group" style="display: block;">
-          <label>Stop Loss Price</label>
-          <input type="number" id="slPriceManual" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
-        </div>
-
-        <!-- SL by Points Method -->
-        <div id="slPointsMethod" style="display: none;">
-          <div class="input-row">
-            <div class="form-group">
-              <label>SL Points</label>
-              <input type="number" id="slPoints" placeholder="50" step="1" onchange="calculateFromPoints('sl')" />
-            </div>
-            <div class="form-group">
-              <label class="auto-label">🔄 Auto SL Price</label>
-              <input type="number" id="slPriceAuto" placeholder="Auto" readonly class="auto-calculated-field" />
-            </div>
-          </div>
-        </div>
-
-        <!-- SL by Lot Size Method -->
-        <div id="slLotSizeMethod" style="display: none;">
-          <div class="input-row">
-            <div class="form-group">
-              <label>Desired Lot Size</label>
-              <input type="number" id="slLotSize" placeholder="0.00" step="0.01" onchange="calculateFromLotSize()" />
-            </div>
-            <div class="form-group">
-              <label class="auto-label">🔄 Auto SL Price</label>
-              <input type="number" id="slPriceLotAuto" placeholder="Auto" readonly class="auto-calculated-field" />
-            </div>
-          </div>
-          <small style="color: #60a5fa; display: block; margin-top: -10px; margin-bottom: 10px;">
-            Automatically calculates SL price based on lot size & risk %
-          </small>
-        </div>
-
-        <!-- ===== TAKE PROFIT CONFIGURATION ===== -->
-        <div class="tab-section">
-          <label style="display: block; margin-bottom: 10px;">🎯 TAKE PROFIT CONFIGURATION</label>
-          <div class="input-row">
-            <div class="form-group">
-              <label>Take Profit Price</label>
-              <input type="number" id="tpPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" />
-            </div>
-            <div class="form-group">
-              <label>TP Points (Optional)</label>
-              <input type="number" id="tpPoints" placeholder="100" step="1" onchange="calculateFromPoints('tp')" />
-            </div>
+        <!-- Take Profit Price -->
+        <div class="input-row">
+          <div class="form-group">
+            <label>Take Profit Price</label>
+            <input type="number" id="tpPrice" placeholder="0.0000" step="0.00001" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
           </div>
           <div class="form-group">
-            <label class="auto-label">🔄 Auto TP Price</label>
-            <input type="number" id="tpPriceAuto" placeholder="Auto" readonly class="auto-calculated-field" />
+            <label>Manual Lot Size (Optional)</label>
+            <input type="number" id="lotSize" placeholder="Auto-calculated" step="0.01" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
           </div>
         </div>
 
-        <!-- Lot Size Input -->
-        <div class="form-group">
-          <label>Manual Lot Size (Optional)</label>
-          <input type="number" id="lotSize" placeholder="Auto-calculated" step="0.01" onchange="calculateLotSize()" />
-        </div>
-
-        <button onclick="calculateLotSize()" style="margin-top: 10px;">🧮 Calculate Lot Size & Risk</button>
+        <button onclick="calculateLotSize()" style="margin-top: 10px;">🧮 Calculate All Values</button>
       </div>
 
       <!-- Right Panel: Calculations & Risk Display -->
@@ -765,32 +719,44 @@
             <span class="calc-value" id="displayBalance">0 AED</span>
           </div>
           <div class="calc-row">
-            <span class="calc-label">Risk Amount AED:</span>
+            <span class="calc-label">Risk Per Trade:</span>
+            <span class="calc-value" id="riskPercentageDisplay">0%</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">💰 Risk Amount AED:</span>
             <span class="calc-value" id="riskAmountAED">0 AED</span>
           </div>
           <div class="calc-row">
             <span class="calc-label">Risk Amount USD:</span>
             <span class="calc-value" id="riskAmountUSD">0 USD</span>
           </div>
+        </div>
+
+        <!-- Pips & SL Panel -->
+        <div class="calculation-panel">
           <div class="calc-row">
-            <span class="calc-label">Stop Loss Points:</span>
-            <span class="calc-value" id="slPointsDisplay">0 pts</span>
+            <span class="calc-label">📍 Stop Loss Pips:</span>
+            <span class="calc-value" id="slPointsDisplay">0 pips</span>
           </div>
           <div class="calc-row">
             <span class="calc-label">Stop Loss Price:</span>
             <span class="calc-value" id="slPriceDisplay">0.0000</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Entry Price:</span>
+            <span class="calc-value" id="entryPriceDisplay">0.0000</span>
           </div>
         </div>
 
         <!-- Lot Size Panel -->
         <div class="calculation-panel">
           <div class="calc-row">
-            <span class="calc-label">Calculated Lot Size:</span>
+            <span class="calc-label">🎯 Calculated Lot Size:</span>
             <span class="calc-value" id="calculatedLotSize">0.00</span>
           </div>
           <div class="calc-row">
             <span class="calc-label">Potential Loss AED:</span>
-            <span class="calc-value" id="potentialLossAED">0 AED</span>
+            <span class="calc-value id="potentialLossAED">0 AED</span>
           </div>
           <div class="calc-row">
             <span class="calc-label">Potential Loss USD:</span>
@@ -839,8 +805,8 @@
         <!-- Take Profit Display -->
         <div class="calculation-panel">
           <div class="calc-row">
-            <span class="calc-label">Take Profit Points:</span>
-            <span class="calc-value" id="tpPointsDisplay">0 pts</span>
+            <span class="calc-label">✅ Take Profit Pips:</span>
+            <span class="calc-value" id="tpPointsDisplay">0 pips</span>
           </div>
           <div class="calc-row">
             <span class="calc-label">Take Profit Price:</span>
@@ -1011,13 +977,14 @@ let currentDirection = 'buy';
 let exchangeRate = 3.67;
 let tradeJournal = [];
 let uploadedImages = [];
-let slMethod = 'manual';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
   loadJournalFromStorage();
   updateJournalDisplay();
   updateStats();
+  // Set today's date for trade entry
+  document.getElementById('tradeDate').valueAsDate = new Date();
 });
 
 // Currency Management
@@ -1044,27 +1011,6 @@ function switchTab(tabName) {
   event.target.classList.add('active');
 }
 
-// ===== NEW: SL METHOD SELECTOR =====
-function setSLMethod(method) {
-  slMethod = method;
-  document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
-
-  document.getElementById('slManualMethod').style.display = 'none';
-  document.getElementById('slPointsMethod').style.display = 'none';
-  document.getElementById('slLotSizeMethod').style.display = 'none';
-
-  if (method === 'manual') {
-    document.getElementById('slManualMethod').style.display = 'block';
-  } else if (method === 'points') {
-    document.getElementById('slPointsMethod').style.display = 'block';
-  } else if (method === 'lotsize') {
-    document.getElementById('slLotSizeMethod').style.display = 'block';
-  }
-
-  calculateLotSize();
-}
-
 // Exchange Rate Update
 function updateExchangeRate() {
   const accounts = document.getElementById('accountSelect').value;
@@ -1074,134 +1020,101 @@ function updateExchangeRate() {
   calculateLotSize();
 }
 
-// Calculate Points
-function calculateFromPoints(type) {
-  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
-  const points = parseFloat(document.getElementById(type + 'Points').value) || 0;
-  
-  if (entryPrice && points) {
-    let priceValue;
-    if (currentDirection === 'buy') {
-      priceValue = type === 'sl' ? entryPrice - (points * 0.0001) : entryPrice + (points * 0.0001);
-    } else {
-      priceValue = type === 'sl' ? entryPrice + (points * 0.0001) : entryPrice - (points * 0.0001);
-    }
-    document.getElementById(type + 'PriceAuto').value = priceValue.toFixed(4);
-  }
-  calculateLotSize();
-}
-
-// ===== NEW: CALCULATE SL FROM LOT SIZE =====
-function calculateFromLotSize() {
-  const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
-  const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
-  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
-  const lotSize = parseFloat(document.getElementById('slLotSize').value) || 0;
-
-  if (!balance || !riskPercentage || !entryPrice || !lotSize) {
-    return;
-  }
-
-  // Calculate risk amount in AED
-  const riskAED = (balance * riskPercentage / 100);
-
-  // Calculate SL price based on lot size
-  // Formula: Risk = Lot Size * (Entry - SL) * Point Value
-  // For most instruments: Point Value = 1 (standard lot)
-  const slPrice = entryPrice - (riskAED / lotSize);
-
-  document.getElementById('slPriceLotAuto').value = slPrice.toFixed(4);
-  
-  // Now recalculate everything with this SL
-  calculateLotSize();
-}
-
-// ===== MAIN CALCULATION FUNCTION =====
+// ===== MAIN CALCULATION FUNCTION - AUTO CALCULATES EVERYTHING =====
 function calculateLotSize() {
   const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
   const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
   const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
-  
-  let slPrice = 0;
-
-  // Get SL Price based on selected method
-  if (slMethod === 'manual') {
-    slPrice = parseFloat(document.getElementById('slPriceManual').value) || 0;
-  } else if (slMethod === 'points') {
-    slPrice = parseFloat(document.getElementById('slPriceAuto').value) || 0;
-  } else if (slMethod === 'lotsize') {
-    slPrice = parseFloat(document.getElementById('slPriceLotAuto').value) || 0;
-  }
-
-  let tpPrice = parseFloat(document.getElementById('tpPrice').value) || parseFloat(document.getElementById('tpPriceAuto').value) || 0;
+  const slPrice = parseFloat(document.getElementById('slPrice').value) || 0;
+  const tpPrice = parseFloat(document.getElementById('tpPrice').value) || 0;
   const manualLotSize = parseFloat(document.getElementById('lotSize').value) || 0;
 
   // Display Balance
-  document.getElementById('displayBalance').textContent = balance.toFixed(2) + ' AED';
+  if (balance > 0) {
+    document.getElementById('displayBalance').textContent = balance.toFixed(2) + ' AED';
+  }
 
+  // Display Risk Percentage
+  if (riskPercentage > 0) {
+    document.getElementById('riskPercentageDisplay').textContent = riskPercentage.toFixed(1) + '%';
+  }
+
+  // Basic Validation
   if (!balance || !riskPercentage || !entryPrice || !slPrice) {
     return;
   }
 
-  // Calculate Risk Amount
-  const riskAED = (balance * riskPercentage / 100);
+  // ===== CALCULATE RISK AMOUNT =====
+  const riskAED = (balance * riskPercentage) / 100;
   const riskUSD = riskAED / exchangeRate;
 
   document.getElementById('riskAmountAED').textContent = riskAED.toFixed(2) + ' AED';
   document.getElementById('riskAmountUSD').textContent = riskUSD.toFixed(2) + ' USD';
   document.getElementById('riskMetric').textContent = riskAED.toFixed(0);
 
-  // Calculate SL Points
-  const slPoints = Math.abs((entryPrice - slPrice) / 0.0001);
-  document.getElementById('slPointsDisplay').textContent = slPoints.toFixed(0) + ' pts';
+  // ===== CALCULATE STOP LOSS PIPS =====
+  const slPipsDifference = Math.abs((entryPrice - slPrice) / 0.0001);
+  document.getElementById('slPointsDisplay').textContent = slPipsDifference.toFixed(0) + ' pips';
   document.getElementById('slPriceDisplay').textContent = slPrice.toFixed(4);
+  document.getElementById('entryPriceDisplay').textContent = entryPrice.toFixed(4);
 
-  // Calculate Lot Size
+  // ===== AUTO CALCULATE LOT SIZE BASED ON RISK =====
+  // Formula: Lot Size = Risk Amount / (Pips * Pip Value)
+  // For standard lots: 1 pip = $0.0001 per lot = 100 per standard lot
   let lotSize;
   if (manualLotSize > 0) {
     lotSize = manualLotSize;
   } else {
-    lotSize = riskAED / (slPoints * 0.0001 * 100000); // Standard calculation
+    // Auto-calculate lot size: Risk / (Pips * Pip Value)
+    const pipValue = 0.0001 * 100000; // Standard pip value
+    lotSize = riskAED / (slPipsDifference * pipValue / 100000);
   }
 
   document.getElementById('calculatedLotSize').textContent = lotSize.toFixed(2);
 
-  // Calculate Potential Loss
+  // ===== CALCULATE POTENTIAL LOSS =====
   const potentialLossAED = riskAED;
   const potentialLossUSD = riskUSD;
 
   document.getElementById('potentialLossAED').textContent = potentialLossAED.toFixed(2) + ' AED';
   document.getElementById('potentialLossUSD').textContent = potentialLossUSD.toFixed(2) + ' USD';
 
-  // Calculate TP Points and Profit
-  let tpPoints = 0;
+  // ===== CALCULATE TAKE PROFIT PIPS & PROFIT =====
+  let tpPips = 0;
   let potentialProfitAED = 0;
   let potentialProfitUSD = 0;
 
   if (tpPrice > 0) {
-    tpPoints = Math.abs((tpPrice - entryPrice) / 0.0001);
-    potentialProfitAED = (tpPoints * 0.0001 * lotSize * 100000);
+    tpPips = Math.abs((tpPrice - entryPrice) / 0.0001);
+    // Profit = Lot Size * TP Pips * Pip Value
+    potentialProfitAED = lotSize * tpPips * 0.0001 * 100000 / 100000;
     potentialProfitUSD = potentialProfitAED / exchangeRate;
 
-    document.getElementById('tpPointsDisplay').textContent = tpPoints.toFixed(0) + ' pts';
+    document.getElementById('tpPointsDisplay').textContent = tpPips.toFixed(0) + ' pips';
     document.getElementById('tpPriceDisplay').textContent = tpPrice.toFixed(4);
     document.getElementById('potentialProfitAED').textContent = potentialProfitAED.toFixed(2) + ' AED';
     document.getElementById('potentialProfitUSD').textContent = potentialProfitUSD.toFixed(2) + ' USD';
     document.getElementById('rewardMetric').textContent = potentialProfitAED.toFixed(0);
 
-    // Calculate Risk/Reward Ratio
-    const rrRatio = potentialProfitAED / potentialLossAED;
-    const ratioText = `1:${rrRatio.toFixed(2)}`;
-    document.getElementById('rrRatio').textContent = ratioText;
+    // ===== CALCULATE RISK/REWARD RATIO =====
+    if (potentialLossAED > 0) {
+      const rrRatio = potentialProfitAED / potentialLossAED;
+      const ratioText = `1:${rrRatio.toFixed(2)}`;
+      document.getElementById('rrRatio').textContent = ratioText;
 
-    // Calculate ratio fill width
-    const ratioFillWidth = (100 / (1 + rrRatio));
-    document.getElementById('ratioFill').style.width = ratioFillWidth + '%';
+      // Calculate ratio fill width
+      const ratioFillWidth = (100 / (1 + rrRatio));
+      document.getElementById('ratioFill').style.width = ratioFillWidth + '%';
 
-    // Calculate breakeven win rate
-    const breakevenRate = (100 / (1 + rrRatio));
-    document.getElementById('breakevenRate').textContent = breakevenRate.toFixed(1) + '%';
+      // Calculate breakeven win rate
+      const breakevenRate = (100 / (1 + rrRatio));
+      document.getElementById('breakevenRate').textContent = breakevenRate.toFixed(1) + '%';
+    }
   } else {
+    document.getElementById('tpPointsDisplay').textContent = '0 pips';
+    document.getElementById('tpPriceDisplay').textContent = '0.0000';
+    document.getElementById('potentialProfitAED').textContent = '0 AED';
+    document.getElementById('potentialProfitUSD').textContent = '0 USD';
     document.getElementById('rrRatio').textContent = '1:1';
     document.getElementById('breakevenRate').textContent = '50%';
     document.getElementById('ratioFill').style.width = '50%';
@@ -1210,18 +1123,37 @@ function calculateLotSize() {
 
 // Save to Journal
 function saveToJournal() {
+  const instrument = document.getElementById('instrument').value || 'N/A';
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+  const slPrice = parseFloat(document.getElementById('slPrice').value) || 0;
+  const tpPrice = parseFloat(document.getElementById('tpPrice').value) || 0;
+  const lotSize = parseFloat(document.getElementById('calculatedLotSize').textContent) || 0;
+  const riskAED = parseFloat(document.getElementById('riskAmountAED').textContent) || 0;
+  const riskUSD = parseFloat(document.getElementById('riskAmountUSD').textContent) || 0;
+  const potentialProfitAED = parseFloat(document.getElementById('potentialProfitAED').textContent) || 0;
+  const potentialProfitUSD = parseFloat(document.getElementById('potentialProfitUSD').textContent) || 0;
+  const slPips = parseFloat(document.getElementById('slPointsDisplay').textContent) || 0;
+  const tpPips = parseFloat(document.getElementById('tpPointsDisplay').textContent) || 0;
+
+  if (!entryPrice || !slPrice) {
+    alert('⚠️ Please enter Entry Price and Stop Loss Price');
+    return;
+  }
+
   const entry = {
     id: Date.now(),
-    instrument: document.getElementById('instrument').value || 'N/A',
+    instrument: instrument,
     direction: currentDirection,
-    entryPrice: parseFloat(document.getElementById('entryPrice').value) || 0,
-    slPrice: document.getElementById('slPriceDisplay').textContent.split(' ')[0],
-    tpPrice: document.getElementById('tpPriceDisplay').textContent.split(' ')[0],
-    lotSize: parseFloat(document.getElementById('calculatedLotSize').textContent) || 0,
-    riskAED: parseFloat(document.getElementById('riskAmountAED').textContent) || 0,
-    riskUSD: parseFloat(document.getElementById('riskAmountUSD').textContent) || 0,
-    potentialProfitAED: parseFloat(document.getElementById('potentialProfitAED').textContent) || 0,
-    potentialProfitUSD: parseFloat(document.getElementById('potentialProfitUSD').textContent) || 0,
+    entryPrice: entryPrice,
+    slPrice: slPrice,
+    tpPrice: tpPrice,
+    slPips: slPips,
+    tpPips: tpPips,
+    lotSize: lotSize,
+    riskAED: riskAED,
+    riskUSD: riskUSD,
+    potentialProfitAED: potentialProfitAED,
+    potentialProfitUSD: potentialProfitUSD,
     dateCreated: new Date().toLocaleString(),
     status: 'pending',
     finalPnlAED: 0,
@@ -1234,6 +1166,12 @@ function saveToJournal() {
   saveJournalToStorage();
   updateJournalDisplay();
   alert('✅ Trade saved to journal! Add P&L result in the Journal tab.');
+  // Reset form
+  document.getElementById('instrument').value = '';
+  document.getElementById('entryPrice').value = '';
+  document.getElementById('slPrice').value = '';
+  document.getElementById('tpPrice').value = '';
+  document.getElementById('lotSize').value = '';
 }
 
 // Journal Management
@@ -1273,12 +1211,12 @@ function updateJournalDisplay() {
           <div class="stat-value">${entry.entryPrice.toFixed(4)}</div>
         </div>
         <div class="entry-stat">
-          <div class="stat-label">SL Price</div>
-          <div class="stat-value">${entry.slPrice}</div>
+          <div class="stat-label">SL Price / Pips</div>
+          <div class="stat-value">${entry.slPrice.toFixed(4)} / ${entry.slPips.toFixed(0)}</div>
         </div>
         <div class="entry-stat">
-          <div class="stat-label">TP Price</div>
-          <div class="stat-value">${entry.tpPrice}</div>
+          <div class="stat-label">TP Price / Pips</div>
+          <div class="stat-value">${entry.tpPrice.toFixed(4)} / ${entry.tpPips.toFixed(0)}</div>
         </div>
         <div class="entry-stat">
           <div class="stat-label">Lot Size</div>
@@ -1376,7 +1314,7 @@ function submitTradeJournal() {
 
   saveJournalToStorage();
   updateJournalDisplay();
-  document.getElementById('tradeDate').value = '';
+  document.getElementById('tradeDate').valueAsDate = new Date();
   document.getElementById('exitDate').value = '';
   document.getElementById('finalPnlAED').value = '';
   document.getElementById('tradeNotes').value = '';
