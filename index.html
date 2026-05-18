@@ -667,7 +667,7 @@
         </div>
 
         <div class="info-box">
-          💡 <strong>Quick Start:</strong> Enter Account Balance, Risk %, Entry Price, and Stop Loss. Everything else calculates automatically!
+          💡 <strong>Quick Start:</strong> Enter Account Balance, Risk Amount (AED), Entry Price, and Stop Loss. Everything else calculates automatically!
         </div>
 
         <!-- Risk Configuration -->
@@ -677,8 +677,8 @@
         </div>
 
         <div class="form-group">
-          <label>Risk Per Trade (%)</label>
-          <input type="number" id="riskPercentage" placeholder="e.g., 1, 2, 5" step="0.1" min="0.1" max="10" value="2" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
+          <label>💰 Risk Amount (AED)</label>
+          <input type="number" id="riskAmount" placeholder="e.g., 50, 100, 250" step="0.01" min="0.01" value="100" onchange="calculateLotSize()" onkeyup="calculateLotSize()" />
         </div>
 
         <!-- Price Entry -->
@@ -719,15 +719,15 @@
             <span class="calc-value" id="displayBalance">0 AED</span>
           </div>
           <div class="calc-row">
-            <span class="calc-label">Risk Per Trade:</span>
+            <span class="calc-label">Risk Amount:</span>
+            <span class="calc-value" id="riskAmountDisplay">0 AED</span>
+          </div>
+          <div class="calc-row">
+            <span class="calc-label">Risk % of Account:</span>
             <span class="calc-value" id="riskPercentageDisplay">0%</span>
           </div>
           <div class="calc-row">
-            <span class="calc-label">💰 Risk Amount AED:</span>
-            <span class="calc-value" id="riskAmountAED">0 AED</span>
-          </div>
-          <div class="calc-row">
-            <span class="calc-label">Risk Amount USD:</span>
+            <span class="calc-label">💰 Risk Amount USD:</span>
             <span class="calc-value" id="riskAmountUSD">0 USD</span>
           </div>
         </div>
@@ -756,7 +756,7 @@
           </div>
           <div class="calc-row">
             <span class="calc-label">Potential Loss AED:</span>
-            <span class="calc-value id="potentialLossAED">0 AED</span>
+            <span class="calc-value" id="potentialLossAED">0 AED</span>
           </div>
           <div class="calc-row">
             <span class="calc-label">Potential Loss USD:</span>
@@ -1023,7 +1023,7 @@ function updateExchangeRate() {
 // ===== MAIN CALCULATION FUNCTION - AUTO CALCULATES EVERYTHING =====
 function calculateLotSize() {
   const balance = parseFloat(document.getElementById('accountBalance').value) || 0;
-  const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
+  const riskAmount = parseFloat(document.getElementById('riskAmount').value) || 0;
   const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
   const slPrice = parseFloat(document.getElementById('slPrice').value) || 0;
   const tpPrice = parseFloat(document.getElementById('tpPrice').value) || 0;
@@ -1034,23 +1034,24 @@ function calculateLotSize() {
     document.getElementById('displayBalance').textContent = balance.toFixed(2) + ' AED';
   }
 
-  // Display Risk Percentage
-  if (riskPercentage > 0) {
-    document.getElementById('riskPercentageDisplay').textContent = riskPercentage.toFixed(1) + '%';
+  // Display Risk Amount
+  if (riskAmount > 0) {
+    document.getElementById('riskAmountDisplay').textContent = riskAmount.toFixed(2) + ' AED';
   }
 
   // Basic Validation
-  if (!balance || !riskPercentage || !entryPrice || !slPrice) {
+  if (!balance || !riskAmount || !entryPrice || !slPrice) {
     return;
   }
 
-  // ===== CALCULATE RISK AMOUNT =====
-  const riskAED = (balance * riskPercentage) / 100;
-  const riskUSD = riskAED / exchangeRate;
+  // ===== CALCULATE RISK PERCENTAGE OF ACCOUNT =====
+  const riskPercentage = (riskAmount / balance) * 100;
+  document.getElementById('riskPercentageDisplay').textContent = riskPercentage.toFixed(2) + '%';
 
-  document.getElementById('riskAmountAED').textContent = riskAED.toFixed(2) + ' AED';
+  // ===== CALCULATE RISK IN USD =====
+  const riskUSD = riskAmount / exchangeRate;
   document.getElementById('riskAmountUSD').textContent = riskUSD.toFixed(2) + ' USD';
-  document.getElementById('riskMetric').textContent = riskAED.toFixed(0);
+  document.getElementById('riskMetric').textContent = riskAmount.toFixed(0);
 
   // ===== CALCULATE STOP LOSS PIPS =====
   const slPipsDifference = Math.abs((entryPrice - slPrice) / 0.0001);
@@ -1067,13 +1068,13 @@ function calculateLotSize() {
   } else {
     // Auto-calculate lot size: Risk / (Pips * Pip Value)
     const pipValue = 0.0001 * 100000; // Standard pip value
-    lotSize = riskAED / (slPipsDifference * pipValue / 100000);
+    lotSize = riskAmount / (slPipsDifference * pipValue / 100000);
   }
 
   document.getElementById('calculatedLotSize').textContent = lotSize.toFixed(2);
 
   // ===== CALCULATE POTENTIAL LOSS =====
-  const potentialLossAED = riskAED;
+  const potentialLossAED = riskAmount;
   const potentialLossUSD = riskUSD;
 
   document.getElementById('potentialLossAED').textContent = potentialLossAED.toFixed(2) + ' AED';
@@ -1128,8 +1129,8 @@ function saveToJournal() {
   const slPrice = parseFloat(document.getElementById('slPrice').value) || 0;
   const tpPrice = parseFloat(document.getElementById('tpPrice').value) || 0;
   const lotSize = parseFloat(document.getElementById('calculatedLotSize').textContent) || 0;
-  const riskAED = parseFloat(document.getElementById('riskAmountAED').textContent) || 0;
-  const riskUSD = parseFloat(document.getElementById('riskAmountUSD').textContent) || 0;
+  const riskAmount = parseFloat(document.getElementById('riskAmount').value) || 0;
+  const riskUSD = riskAmount / exchangeRate;
   const potentialProfitAED = parseFloat(document.getElementById('potentialProfitAED').textContent) || 0;
   const potentialProfitUSD = parseFloat(document.getElementById('potentialProfitUSD').textContent) || 0;
   const slPips = parseFloat(document.getElementById('slPointsDisplay').textContent) || 0;
@@ -1150,7 +1151,7 @@ function saveToJournal() {
     slPips: slPips,
     tpPips: tpPips,
     lotSize: lotSize,
-    riskAED: riskAED,
+    riskAmount: riskAmount,
     riskUSD: riskUSD,
     potentialProfitAED: potentialProfitAED,
     potentialProfitUSD: potentialProfitUSD,
@@ -1226,7 +1227,7 @@ function updateJournalDisplay() {
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
         <div class="entry-stat">
           <div class="stat-label">Risk AED/USD</div>
-          <div class="stat-value">${entry.riskAED.toFixed(2)} / ${entry.riskUSD.toFixed(2)}</div>
+          <div class="stat-value">${entry.riskAmount.toFixed(2)} / ${entry.riskUSD.toFixed(2)}</div>
         </div>
         <div class="entry-stat">
           <div class="stat-label">Potential Profit</div>
