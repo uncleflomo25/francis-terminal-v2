@@ -6,7 +6,6 @@
 <title>Advanced Trade Journal</title>
 
 <style>
-/* ===== YOUR FULL CSS (UNCHANGED) ===== */
 body { margin:0; background:#0a0e27; color:#e2e8f0; font-family:Segoe UI; }
 .container { max-width:1600px; margin:auto; padding:20px; }
 
@@ -31,7 +30,31 @@ header p { color:#60a5fa; font-size:12px; }
   border-radius:10px;
 }
 
-/* (keep your full CSS here exactly as you had it) */
+input, textarea {
+  width:100%;
+  margin:5px 0;
+  padding:10px;
+  background:#0f172a;
+  color:white;
+  border:1px solid #334155;
+}
+
+button {
+  padding:10px;
+  background:#3b82f6;
+  color:white;
+  border:none;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+img {
+  width:80px;
+  height:80px;
+  object-fit:cover;
+  margin:5px;
+  border-radius:6px;
+}
 </style>
 </head>
 
@@ -44,10 +67,8 @@ header p { color:#60a5fa; font-size:12px; }
 
 <div class="container">
 
-  <!-- TABS -->
   <button class="tab-btn" onclick="switchTab('calculator')">Calculator</button>
   <button class="tab-btn" onclick="switchTab('journal')">Journal</button>
-  <button class="tab-btn" onclick="switchTab('stats')">Stats</button>
 
   <!-- CALCULATOR -->
   <div id="calculator" class="tab-content active">
@@ -55,14 +76,23 @@ header p { color:#60a5fa; font-size:12px; }
       <h2>Trade Calculator</h2>
 
       <input id="accountBalance" placeholder="Account Balance" oninput="calculate()" />
-      <input id="riskAmount" placeholder="Risk Amount" oninput="calculate()" />
+      <input id="riskAmount" placeholder="Risk Amount ($ / AED)" oninput="calculate()" />
       <input id="entryPrice" placeholder="Entry Price" oninput="calculate()" />
-      <input id="slPrice" placeholder="Stop Loss" oninput="calculate()" />
-      <input id="tpPrice" placeholder="Take Profit" oninput="calculate()" />
-
-      <button onclick="saveTrade()">Save Trade</button>
+      <input id="slPrice" placeholder="Stop Loss Price" oninput="calculate()" />
+      <input id="tpPrice" placeholder="Take Profit Price" oninput="calculate()" />
 
       <div id="output"></div>
+
+      <!-- NOTES -->
+      <h3>Trade Notes / Setup Condition</h3>
+      <textarea id="notes" placeholder="Explain your setup..."></textarea>
+
+      <!-- IMAGE UPLOAD -->
+      <h3>Upload Analysis Photos</h3>
+      <input type="file" id="images" multiple accept="image/*" onchange="previewImages(event)" />
+      <div id="preview"></div>
+
+      <button onclick="saveTrade()">💾 Save Trade Analysis</button>
     </div>
   </div>
 
@@ -74,60 +104,77 @@ header p { color:#60a5fa; font-size:12px; }
     </div>
   </div>
 
-  <!-- STATS -->
-  <div id="stats" class="tab-content">
-    <div class="card">
-      <h2>Stats</h2>
-      <div id="statsBox"></div>
-    </div>
-  </div>
-
 </div>
 
 <script>
-let trades = [];
 
-// TAB SWITCH
+let trades = [];
+let uploadedImages = [];
+
+// TAB
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
 }
 
-// CALCULATION
+// CALCULATION ENGINE
 function calculate() {
-  const balance = +document.getElementById("accountBalance").value || 0;
-  const risk = +document.getElementById("riskAmount").value || 0;
-  const entry = +document.getElementById("entryPrice").value || 0;
-  const sl = +document.getElementById("slPrice").value || 0;
-  const tp = +document.getElementById("tpPrice").value || 0;
+  const balance = +accountBalance.value || 0;
+  const risk = +riskAmount.value || 0;
+  const entry = +entryPrice.value || 0;
+  const sl = +slPrice.value || 0;
 
   if (!balance || !risk || !entry || !sl) return;
 
   const pip = 0.0001;
   const slPips = Math.abs(entry - sl) / pip;
 
+  // AUTO LOT SIZE (risk-based)
   const lot = risk / (slPips * 10);
 
   document.getElementById("output").innerHTML = `
-    <p>SL Pips: ${slPips.toFixed(1)}</p>
-    <p>Lot Size: ${lot.toFixed(2)}</p>
+    <p>📉 Stop Loss: ${slPips.toFixed(1)} pips</p>
+    <p>📦 Lot Size (Auto): ${lot.toFixed(2)}</p>
   `;
+}
+
+// IMAGE PREVIEW
+function previewImages(event) {
+  const files = event.target.files;
+  const preview = document.getElementById("preview");
+  preview.innerHTML = "";
+  uploadedImages = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedImages.push(e.target.result);
+
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(files[i]);
+  }
 }
 
 // SAVE TRADE
 function saveTrade() {
   const trade = {
-    balance: +document.getElementById("accountBalance").value,
-    risk: +document.getElementById("riskAmount").value,
-    entry: +document.getElementById("entryPrice").value,
-    sl: +document.getElementById("slPrice").value,
-    tp: +document.getElementById("tpPrice").value,
+    entry: entryPrice.value,
+    sl: slPrice.value,
+    tp: tpPrice.value,
+    balance: accountBalance.value,
+    risk: riskAmount.value,
+    notes: document.getElementById("notes").value,
+    images: uploadedImages,
     time: new Date().toLocaleString()
   };
 
   trades.push(trade);
   updateJournal();
-  updateStats();
+
+  alert("Trade Saved Successfully!");
 }
 
 // JOURNAL
@@ -136,17 +183,13 @@ function updateJournal() {
     trades.map(t => `
       <div class="card">
         <p>Entry: ${t.entry} | SL: ${t.sl} | TP: ${t.tp}</p>
+        <p>${t.notes}</p>
+        <div>${t.images.map(img => `<img src="${img}">`).join("")}</div>
         <small>${t.time}</small>
       </div>
     `).join("");
 }
 
-// STATS
-function updateStats() {
-  document.getElementById("statsBox").innerHTML = `
-    <p>Total Trades: ${trades.length}</p>
-  `;
-}
 </script>
 
 </body>
