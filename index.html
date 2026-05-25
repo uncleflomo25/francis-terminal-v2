@@ -168,6 +168,9 @@
   </table>  <div class="news">
     <h3>Macro News Feed</h3>
     <div id="news-container">Loading news...</div>
+  </div>  <div class="news">
+    <h3>Gold Synthetic Strength Index</h3>
+    <canvas id="syntheticChart" height="120"></canvas>
   </div>  <div class="footer">
     <div>SYSTEM OUTPUT</div>
     <div id="system-signal" class="signal">ANALYZING...</div>
@@ -457,5 +460,125 @@ async function initializeTerminal() {
 
 initializeTerminal();
 
-</script></body>
+// =========================
+// SYNTHETIC GOLD INDEX
+// =========================
+
+const syntheticData = [];
+const syntheticLabels = [];
+
+async function fetchSyntheticGoldIndex() {
+
+  try {
+
+    const pairs = [
+      'XAU/USD',
+      'XAG/USD',
+      'XAU/EUR',
+      'XAU/GBP',
+      'XAU/AUD',
+      'XAU/JPY'
+    ];
+
+    const prices = [];
+
+    for (const pair of pairs) {
+
+      const res = await fetch(
+        `https://api.twelvedata.com/price?symbol=${pair}&apikey=${GOLD_API_KEY}`
+      );
+
+      const data = await res.json();
+
+      prices.push(Number(data.price));
+    }
+
+    // Synthetic strength model
+    const synthetic = (
+      prices[0] * 0.35 +
+      prices[1] * 0.10 +
+      prices[2] * 0.15 +
+      prices[3] * 0.15 +
+      prices[4] * 0.15 +
+      prices[5] * 0.10
+    );
+
+    const now = new Date().toLocaleTimeString();
+
+    syntheticLabels.push(now);
+    syntheticData.push(synthetic.toFixed(2));
+
+    if (syntheticLabels.length > 20) {
+      syntheticLabels.shift();
+      syntheticData.shift();
+    }
+
+    updateSyntheticChart();
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// =========================
+// CHART.JS
+// =========================
+
+const ctx = document.getElementById('syntheticChart').getContext('2d');
+
+const syntheticChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: syntheticLabels,
+    datasets: [{
+      label: 'Gold Synthetic Index',
+      data: syntheticData,
+      borderColor: '#00ff88',
+      backgroundColor: 'rgba(0,255,136,0.1)',
+      borderWidth: 2,
+      tension: 0.3
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: {
+          color: '#00ff88'
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#00ff88'
+        },
+        grid: {
+          color: '#003d22'
+        }
+      },
+      y: {
+        ticks: {
+          color: '#00ff88'
+        },
+        grid: {
+          color: '#003d22'
+        }
+      }
+    }
+  }
+});
+
+function updateSyntheticChart() {
+  syntheticChart.update();
+}
+
+// =========================
+// REAL-TIME SYNTHETIC LOOP
+// =========================
+
+setInterval(fetchSyntheticGoldIndex, 5000);
+fetchSyntheticGoldIndex();
+
+</script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></body>
 </html>
