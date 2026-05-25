@@ -2,257 +2,460 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gold Fundamental Terminal</title>
-  <style>
+  <title>Live Gold Fundamental Terminal</title>  <style>
     body {
       margin: 0;
       background: #000;
       color: #00ff88;
       font-family: Consolas, monospace;
       padding: 20px;
-    }.terminal {
-  border: 1px solid #00ff88;
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 0 20px rgba(0,255,136,0.2);
-}
+    }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
+    .terminal {
+      border: 1px solid #00ff88;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(0,255,136,0.2);
+    }
 
-.title {
-  font-size: 32px;
-  font-weight: bold;
-}
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
 
-.subtitle {
-  color: #77ffbb;
-  margin-top: 5px;
-}
+    .title {
+      font-size: 32px;
+      font-weight: bold;
+    }
 
-.status {
-  text-align: right;
-}
+    .subtitle {
+      color: #77ffbb;
+      margin-top: 5px;
+    }
 
-.status h2 {
-  margin: 0;
-  font-size: 28px;
-}
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
-}
+    .card {
+      border: 1px solid #00aa66;
+      border-radius: 14px;
+      padding: 15px;
+    }
 
-.card {
-  border: 1px solid #00aa66;
-  border-radius: 14px;
-  padding: 15px;
-}
+    .card-label {
+      color: #77ffbb;
+      font-size: 14px;
+    }
 
-.card-label {
-  color: #77ffbb;
-  font-size: 14px;
-}
+    .card-value {
+      font-size: 30px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
 
-.card-value {
-  font-size: 30px;
-  font-weight: bold;
-  margin-top: 8px;
-}
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
+    th, td {
+      border: 1px solid #003d22;
+      padding: 12px;
+      text-align: left;
+    }
 
-th, td {
-  border: 1px solid #003d22;
-  padding: 12px;
-  text-align: left;
-}
+    th {
+      background: rgba(0,255,136,0.1);
+    }
 
-th {
-  background: rgba(0,255,136,0.1);
-}
+    tr:hover {
+      background: rgba(0,255,136,0.05);
+    }
 
-tr:hover {
-  background: rgba(0,255,136,0.05);
-}
+    .footer {
+      margin-top: 20px;
+      border: 1px solid #00aa66;
+      border-radius: 14px;
+      padding: 15px;
+    }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
+    .signal {
+      font-size: 28px;
+      font-weight: bold;
+      animation: pulse 1.5s infinite;
+    }
 
-.panel {
-  border: 1px solid #00aa66;
-  border-radius: 14px;
-  padding: 15px;
-}
+    .news {
+      margin-top: 20px;
+      border: 1px solid #00aa66;
+      border-radius: 14px;
+      padding: 15px;
+    }
 
-.panel h3 {
-  margin-top: 0;
-}
+    .news-item {
+      margin-bottom: 10px;
+      color: #bbffdd;
+    }
 
-pre {
-  white-space: pre-wrap;
-  line-height: 1.8;
-  color: #ccffdd;
-}
-
-ul {
-  padding-left: 20px;
-  line-height: 2;
-}
-
-.footer {
-  margin-top: 20px;
-  border: 1px solid #00aa66;
-  border-radius: 14px;
-  padding: 15px;
-}
-
-.signal {
-  font-size: 28px;
-  font-weight: bold;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
-  </style>
-</head>
-<body>
-  <div class="terminal"><div class="header">
-  <div>
-    <div class="title">XAU/USD FUNDAMENTAL TERMINAL</div>
-    <div class="subtitle">Institutional Gold Macro Dashboard</div>
-  </div>
-
-  <div class="status">
-    <div>LIVE STATUS</div>
-    <h2>BULLISH</h2>
-  </div>
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+  </style></head><body><div class="terminal">  <div class="header">
+    <div>
+      <div class="title">XAU/USD LIVE FUNDAMENTAL TERMINAL</div>
+      <div class="subtitle">Institutional Macro Dashboard</div>
+    </div><div>
+  <div>LIVE STATUS</div>
+  <div id="market-bias" class="signal">LOADING...</div>
 </div>
 
-<div class="cards">
-  <div class="card">
-    <div class="card-label">Gold Spot</div>
-    <div class="card-value">$2,350</div>
-  </div>
-
-  <div class="card">
-    <div class="card-label">DXY</div>
-    <div class="card-value">104.20</div>
-  </div>
-
-  <div class="card">
-    <div class="card-label">US10Y Yield</div>
-    <div class="card-value">4.18%</div>
-  </div>
+  </div>  <div class="cards"><div class="card">
+  <div class="card-label">Gold Spot</div>
+  <div class="card-value" id="gold-price">--</div>
 </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>FACTOR</th>
-      <th>STATUS</th>
-      <th>IMPACT</th>
-      <th>SIGNAL</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <tr>
-      <td>US Dollar (DXY)</td>
-      <td>Weakening</td>
-      <td>Bullish</td>
-      <td>▲</td>
-    </tr>
-
-    <tr>
-      <td>US 10Y Yields</td>
-      <td>Falling</td>
-      <td>Bullish</td>
-      <td>▲</td>
-    </tr>
-
-    <tr>
-      <td>Inflation (CPI)</td>
-      <td>Rising</td>
-      <td>Bullish</td>
-      <td>▲</td>
-    </tr>
-
-    <tr>
-      <td>Federal Reserve</td>
-      <td>Possible Rate Cuts</td>
-      <td>Bullish</td>
-      <td>▲</td>
-    </tr>
-
-    <tr>
-      <td>Central Bank Buying</td>
-      <td>Strong</td>
-      <td>Bullish</td>
-      <td>▲</td>
-    </tr>
-
-    <tr>
-      <td>ETF Flows</td>
-      <td>Positive Inflows</td>
-      <td>Bullish</td>
-      <td>▲</td>
-    </tr>
-
-    <tr>
-      <td>Geopolitical Risk</td>
-      <td>Elevated</td>
-      <td>Bullish</td>
-      <td>▲</td>
-    </tr>
-  </tbody>
-</table>
-
-<div class="grid">
-  <div class="panel">
-    <h3>Macro Logic</h3>
-    <pre>
-
-FED CUTS RATES ↓ BOND YIELDS FALL ↓ USD WEAKENS ↓ GOLD DEMAND RISES ↓ XAU/USD BULLISH </pre> </div>
-
-<div class="panel">
-    <h3>Trader Checklist</h3>
-    <ul>
-      <li>Monitor CPI Releases</li>
-      <li>Watch Fed Statements</li>
-      <li>Track DXY Weakness</li>
-      <li>Observe Bond Yields</li>
-      <li>ETF Inflow Momentum</li>
-      <li>Geopolitical Escalation</li>
-    </ul>
-  </div>
+<div class="card">
+  <div class="card-label">DXY</div>
+  <div class="card-value" id="dxy">--</div>
 </div>
 
-<div class="footer">
-  <div>SYSTEM OUTPUT</div>
-  <div class="signal">CURRENT GOLD FUNDAMENTAL BIAS: LONG / BULLISH</div>
+<div class="card">
+  <div class="card-label">US10Y Yield</div>
+  <div class="card-value" id="yield">--</div>
 </div>
 
-  </div>
-</body>
- </html>
+<div class="card">
+  <div class="card-label">Inflation CPI</div>
+  <div class="card-value" id="cpi">--</div>
+</div>
+
+  </div>  <table>
+    <thead>
+      <tr>
+        <th>FACTOR</th>
+        <th>VALUE</th>
+        <th>IMPACT</th>
+      </tr>
+    </thead><tbody>
+  <tr>
+    <td>US Dollar Index</td>
+    <td id="table-dxy">--</td>
+    <td id="dxy-impact">--</td>
+  </tr>
+
+  <tr>
+    <td>US10Y Yield</td>
+    <td id="table-yield">--</td>
+    <td id="yield-impact">--</td>
+  </tr>
+
+  <tr>
+    <td>Inflation CPI</td>
+    <td id="table-cpi">--</td>
+    <td id="cpi-impact">--</td>
+  </tr>
+</tbody>
+
+  </table>  <div class="news">
+    <h3>Macro News Feed</h3>
+    <div id="news-container">Loading news...</div>
+  </div>  <div class="footer">
+    <div>SYSTEM OUTPUT</div>
+    <div id="system-signal" class="signal">ANALYZING...</div>
+  </div></div><script>
+
+// =========================
+// API KEYS
+// =========================
+
+const GOLD_API_KEY = 'YOUR_TWELVEDATA_API_KEY';
+const ALPHA_API_KEY = 'YOUR_ALPHAVANTAGE_API_KEY';
+const NEWS_API_KEY = 'YOUR_NEWSAPI_KEY';
+const FRED_API_KEY = 'YOUR_FRED_API_KEY';
+
+// =========================
+// FETCH GOLD PRICE
+// =========================
+
+async function fetchGoldPrice() {
+  try {
+    const res = await fetch(
+      `https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${GOLD_API_KEY}`
+    );
+
+    const data = await res.json();
+
+    document.getElementById('gold-price').innerHTML = '$' + Number(data.price).toFixed(2);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// =========================
+// FETCH DXY
+// =========================
+
+async function fetchDXY() {
+  try {
+    const res = await fetch(
+      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=DX-Y.NYB&apikey=${ALPHA_API_KEY}`
+    );
+
+    const data = await res.json();
+
+    const dxy = data['Global Quote']['05. price'];
+
+    document.getElementById('dxy').innerHTML = Number(dxy).toFixed(2);
+    document.getElementById('table-dxy').innerHTML = Number(dxy).toFixed(2);
+
+    if (dxy > 105) {
+      document.getElementById('dxy-impact').innerHTML = 'Bearish Gold';
+    } else {
+      document.getElementById('dxy-impact').innerHTML = 'Bullish Gold';
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// =========================
+// FETCH US10Y YIELD
+// =========================
+
+async function fetchYield() {
+  try {
+
+    const res = await fetch(
+      `https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=${FRED_API_KEY}&file_type=json`
+    );
+
+    const data = await res.json();
+
+    const latest = data.observations[data.observations.length - 1].value;
+
+    document.getElementById('yield').innerHTML = latest + '%';
+    document.getElementById('table-yield').innerHTML = latest + '%';
+
+    if (latest > 4.5) {
+      document.getElementById('yield-impact').innerHTML = 'Bearish Gold';
+    } else {
+      document.getElementById('yield-impact').innerHTML = 'Bullish Gold';
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// =========================
+// FETCH CPI
+// =========================
+
+async function fetchCPI() {
+  try {
+
+    const res = await fetch(
+      `https://api.stlouisfed.org/fred/series/observations?series_id=CPIAUCSL&api_key=${FRED_API_KEY}&file_type=json`
+    );
+
+    const data = await res.json();
+
+    const latest = data.observations[data.observations.length - 1].value;
+
+    document.getElementById('cpi').innerHTML = latest;
+    document.getElementById('table-cpi').innerHTML = latest;
+
+    document.getElementById('cpi-impact').innerHTML = 'Inflationary';
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// =========================
+// FETCH NEWS
+// =========================
+
+async function fetchNews() {
+  try {
+
+    const res = await fetch(
+      `https://newsapi.org/v2/everything?q=gold OR federal reserve OR inflation&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`
+    );
+
+    const data = await res.json();
+
+    const container = document.getElementById('news-container');
+
+    container.innerHTML = '';
+
+    data.articles.slice(0,5).forEach(article => {
+      const div = document.createElement('div');
+      div.className = 'news-item';
+      div.innerHTML = '• ' + article.title;
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// =========================
+// AI MACRO SCORING
+// =========================
+
+function calculateBias() {
+
+  const dxyImpact = document.getElementById('dxy-impact').innerHTML;
+  const yieldImpact = document.getElementById('yield-impact').innerHTML;
+
+  let bullishScore = 0;
+
+  if (dxyImpact.includes('Bullish')) bullishScore++;
+  if (yieldImpact.includes('Bullish')) bullishScore++;
+
+  const bias = bullishScore >= 2
+    ? 'LONG / BULLISH'
+    : 'SHORT / BEARISH';
+
+  document.getElementById('market-bias').innerHTML = bias;
+  document.getElementById('system-signal').innerHTML =
+    'CURRENT GOLD FUNDAMENTAL BIAS: ' + bias;
+}
+
+// =========================
+// MAIN ENGINE
+// =========================
+
+async function updateTerminal() {
+
+  await fetchGoldPrice();
+  await fetchDXY();
+  await fetchYield();
+  await fetchCPI();
+  await fetchNews();
+
+  calculateBias();
+
+  console.log('Terminal Updated');
+}
+
+// Initial Load
+updateTerminal();
+
+// =========================
+// REAL-TIME WEBSOCKET STREAMS
+// =========================
+
+function startGoldStream() {
+
+  const socket = new WebSocket(
+    `wss://ws.twelvedata.com/v1/quotes/price?apikey=${GOLD_API_KEY}`
+  );
+
+  socket.onopen = () => {
+    socket.send(JSON.stringify({
+      action: 'subscribe',
+      params: {
+        symbols: 'XAU/USD'
+      }
+    }));
+  };
+
+  socket.onmessage = (event) => {
+
+    const data = JSON.parse(event.data);
+
+    if (data.price) {
+      document.getElementById('gold-price').innerHTML =
+        '$' + Number(data.price).toFixed(2);
+    }
+
+    calculateBias();
+  };
+
+  socket.onerror = (err) => {
+    console.error('Gold WebSocket Error:', err);
+  };
+
+  socket.onclose = () => {
+    console.log('Gold stream disconnected. Reconnecting...');
+    setTimeout(startGoldStream, 5000);
+  };
+}
+
+// =========================
+// LIVE DXY STREAM
+// =========================
+
+function startDXYStream() {
+
+  const socket = new WebSocket(
+    `wss://ws.finnhub.io?token=YOUR_FINNHUB_API_KEY`
+  );
+
+  socket.addEventListener('open', function () {
+    socket.send(JSON.stringify({
+      type: 'subscribe',
+      symbol: 'ICEUS:DXY'
+    }));
+  });
+
+  socket.addEventListener('message', function (event) {
+
+    const data = JSON.parse(event.data);
+
+    if (data.data && data.data.length > 0) {
+
+      const price = data.data[0].p;
+
+      document.getElementById('dxy').innerHTML =
+        Number(price).toFixed(2);
+
+      document.getElementById('table-dxy').innerHTML =
+        Number(price).toFixed(2);
+
+      if (price > 105) {
+        document.getElementById('dxy-impact').innerHTML =
+          'Bearish Gold';
+      } else {
+        document.getElementById('dxy-impact').innerHTML =
+          'Bullish Gold';
+      }
+
+      calculateBias();
+    }
+  });
+}
+
+// =========================
+// LIVE TERMINAL ENGINE
+// =========================
+
+async function initializeTerminal() {
+
+  await fetchYield();
+  await fetchCPI();
+  await fetchNews();
+
+  startGoldStream();
+  startDXYStream();
+
+  console.log('REAL-TIME TERMINAL ACTIVE');
+}
+
+initializeTerminal();
+
+</script></body>
+</html>
