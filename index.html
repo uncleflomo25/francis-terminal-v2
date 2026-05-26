@@ -7,37 +7,21 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: 'Segoe UI', Arial, sans-serif; 
-      background: #0a0c14; 
-      color: #e0e0e0; 
-      overflow: hidden;
-    }
-    .header { 
-      background: #1a1f2e; 
-      padding: 15px 20px; 
-      text-align: center; 
-      border-bottom: 3px solid #ffd700;
-    }
-    .header h1 { color: #ffd700; font-size: 28px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0c14; color: #e0e0e0; }
+    .header { background: #1a1f2e; padding: 15px; text-align: center; border-bottom: 3px solid #ffd700; }
+    .header h1 { color: #ffd700; font-size: 26px; }
     .container { display: flex; height: calc(100vh - 70px); }
-    .chart-area { flex: 3; padding: 10px; background: #11151f; position: relative; }
-    .sidebar { 
-      flex: 1; 
-      background: #1a1f2e; 
-      padding: 20px; 
-      border-left: 2px solid #ffd700;
-      overflow-y: auto;
-    }
-    canvas { max-height: 100%; }
-    .status { margin: 15px 0; padding: 12px; background: #16213e; border-radius: 6px; }
-    .signal { padding: 10px; margin: 8px 0; border-radius: 6px; font-weight: bold; }
+    .chart-area { flex: 3; padding: 15px; background: #11151f; position: relative; }
+    .sidebar { flex: 1; background: #1a1f2e; padding: 20px; border-left: 3px solid #ffd700; overflow-y: auto; }
+    canvas { max-height: 85vh; }
+    .panel { background: #16213e; padding: 12px; margin: 12px 0; border-radius: 6px; }
+    .label { font-size: 13px; color: #aaa; }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>SGOLD PRO</h1>
-    <p>Multi-Asset Gold Composite System • Fast Loading</p>
+    <p>Multi-Asset Gold Composite • Market Structure View</p>
   </div>
 
   <div class="container">
@@ -46,79 +30,99 @@
     </div>
 
     <div class="sidebar">
-      <h2 style="color:#ffd700;">SGOLD PRO Status</h2>
-      <div id="status" class="status">✅ Connected • Live</div>
+      <h2 style="color:#ffd700;">SGOLD PRO Analysis</h2>
       
-      <h3>Current Signals</h3>
-      <div id="signals"></div>
+      <div class="panel">
+        <div class="label">Composite Trend</div>
+        <div id="trend" style="font-size:18px; font-weight:bold;">Loading...</div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Current Market Structure</div>
+        <div id="structure"></div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Key Signals</div>
+        <div id="signals"></div>
+      </div>
     </div>
   </div>
 
   <script>
-    // Fast initialization with dummy data
     const ctx = document.getElementById('mainChart').getContext('2d');
     
-    const labels = Array.from({length: 50}, (_, i) => `T${i}`);
-    
-    let chartData = {
-      labels: labels,
-      datasets: [{
-        label: 'SGOLD Composite',
-        data: Array.from({length: 50}, () => Math.random() * 80 + 100),
-        borderColor: '#ffd700',
-        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-        borderWidth: 3,
-        tension: 0.1
-      }]
-    };
+    // Stable simulated price data (more realistic movement)
+    let prices = [142, 148, 145, 152, 138, 130, 125, 140, 155, 148, 160, 152, 165, 158, 170, 162, 155, 148, 135, 142];
+    let labels = prices.map((_, i) => `Bar ${i+1}`);
 
     const chart = new Chart(ctx, {
       type: 'line',
-      data: chartData,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'SGOLD Composite',
+          data: prices,
+          borderColor: '#ffd700',
+          borderWidth: 3,
+          tension: 0.15,
+          pointRadius: 2
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 300 },
+        animation: false,
         scales: {
-          y: { grid: { color: '#222' }, ticks: { color: '#aaa' }},
-          x: { grid: { color: '#222' }, ticks: { color: '#aaa' }}
+          y: { grid: { color: '#222' }, ticks: { color: '#ccc' } },
+          x: { grid: { color: '#222' }, ticks: { color: '#ccc' } }
         },
-        plugins: { legend: { display: true, color: '#fff' }}
+        plugins: { legend: { display: true } }
       }
     });
 
-    // Fast updating function
-    function updateDashboard() {
-      const isBullish = Math.random() > 0.5;
+    function updateAnalysis() {
+      // Simulate realistic structure
+      const isBullish = prices[prices.length-1] > prices[prices.length-2];
       
-      document.getElementById('status').innerHTML = `
-        Composite Trend: <strong style="color:${isBullish ? '#00ff88' : '#ff4488'}">
+      document.getElementById('trend').innerHTML = `
+        <span style="color:${isBullish ? '#00ff88' : '#ff4488'}">
           ${isBullish ? 'BULLISH' : 'BEARISH'}
-        </strong><br>
-        Last Update: Just now
+        </span>
+      `;
+
+      document.getElementById('structure').innerHTML = `
+        Higher Highs: <strong style="color:#00ff88">Confirmed</strong><br>
+        Higher Lows: <strong style="color:#00ff88">Confirmed</strong><br>
+        Last BOS: <strong>Bullish Break of Structure</strong><br>
+        Order Block: <strong style="color:#ffd700">Support @ 138</strong>
       `;
 
       document.getElementById('signals').innerHTML = `
-        <div class="signal" style="background:#002200; color:#00ff88;">
-          🟢 Strong Bullish Divergence Detected
+        <div style="background:#002200; color:#00ff88; padding:8px; margin:5px 0; border-radius:4px;">
+          🟢 Strong Bullish Divergence (Composite vs Price)
         </div>
-        <div class="signal" style="background:#220000; color:#ff4488;">
-          🔴 Liquidity Sweep on High
+        <div style="background:#220000; color:#ff4488; padding:8px; margin:5px 0; border-radius:4px;">
+          🔴 Liquidity Sweep Detected at High
         </div>
-        <div class="signal" style="background:#001122; color:#44ccff;">
-          BOS Confirmed - Upward Structure
+        <div style="background:#001122; color:#44ccff; padding:8px; margin:5px 0; border-radius:4px;">
+          CHOCH Bullish - Trend Reversal Likely
         </div>
       `;
 
-      // Simulate live price movement
-      chartData.datasets[0].data.shift();
-      chartData.datasets[0].data.push(Math.random() * 60 + 110);
-      chart.update('none'); // Fast update without animation
+      // Gentle live update (not too chaotic)
+      if (Math.random() > 0.6) {
+        prices.shift();
+        prices.push(prices[prices.length-1] + (Math.random() * 8 - 4));
+        chart.data.labels.shift();
+        chart.data.labels.push(`Bar ${chart.data.labels.length + 1}`);
+        chart.update('none');
+      }
     }
 
-    // Super fast refresh
-    setInterval(updateDashboard, 1800); // Update every 1.8 seconds
-    updateDashboard(); // Initial load
+    // Slower, more stable updates
+    setInterval(updateAnalysis, 3500);
+    updateAnalysis();
   </script>
 </body>
 </html>
