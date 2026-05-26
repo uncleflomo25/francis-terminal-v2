@@ -6,64 +6,119 @@
   <title>SGOLD PRO - Personal Trading Platform</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    body { font-family: Arial; background: #0f1117; color: #fff; margin: 0; padding: 10px; }
-    .header { text-align: center; padding: 15px; background: #1e222d; border-bottom: 2px solid #ffd700; }
-    .container { display: flex; gap: 15px; margin-top: 15px; }
-    .chart-container { flex: 3; background: #1e222d; padding: 10px; border-radius: 8px; }
-    .sidebar { flex: 1; background: #1e222d; padding: 15px; border-radius: 8px; }
-    h1 { color: #ffd700; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      background: #0a0c14; 
+      color: #e0e0e0; 
+      overflow: hidden;
+    }
+    .header { 
+      background: #1a1f2e; 
+      padding: 15px 20px; 
+      text-align: center; 
+      border-bottom: 3px solid #ffd700;
+    }
+    .header h1 { color: #ffd700; font-size: 28px; }
+    .container { display: flex; height: calc(100vh - 70px); }
+    .chart-area { flex: 3; padding: 10px; background: #11151f; position: relative; }
+    .sidebar { 
+      flex: 1; 
+      background: #1a1f2e; 
+      padding: 20px; 
+      border-left: 2px solid #ffd700;
+      overflow-y: auto;
+    }
+    canvas { max-height: 100%; }
+    .status { margin: 15px 0; padding: 12px; background: #16213e; border-radius: 6px; }
+    .signal { padding: 10px; margin: 8px 0; border-radius: 6px; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>SGOLD PRO - Personal Trading Software</h1>
-    <p>Multi-Asset Gold Composite System</p>
+    <h1>SGOLD PRO</h1>
+    <p>Multi-Asset Gold Composite System • Fast Loading</p>
   </div>
 
   <div class="container">
-    <div class="chart-container">
-      <canvas id="mainChart" height="500"></canvas>
+    <div class="chart-area">
+      <canvas id="mainChart"></canvas>
     </div>
 
     <div class="sidebar">
-      <h3>SGOLD PRO Status</h3>
-      <div id="status">Loading...</div>
-      <hr>
-      <h4>Signals</h4>
-      <div id="signals">Waiting for data...</div>
+      <h2 style="color:#ffd700;">SGOLD PRO Status</h2>
+      <div id="status" class="status">✅ Connected • Live</div>
+      
+      <h3>Current Signals</h3>
+      <div id="signals"></div>
     </div>
   </div>
 
   <script>
+    // Fast initialization with dummy data
     const ctx = document.getElementById('mainChart').getContext('2d');
     
-    let chart = new Chart(ctx, {
-      type: 'candlestick',
-      data: { datasets: [{ label: 'SGOLD Composite', data: [] }] },
+    const labels = Array.from({length: 50}, (_, i) => `T${i}`);
+    
+    let chartData = {
+      labels: labels,
+      datasets: [{
+        label: 'SGOLD Composite',
+        data: Array.from({length: 50}, () => Math.random() * 80 + 100),
+        borderColor: '#ffd700',
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        borderWidth: 3,
+        tension: 0.1
+      }]
+    };
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
       options: {
         responsive: true,
-        scales: { x: { type: 'time' }, y: { reverse: false } }
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        scales: {
+          y: { grid: { color: '#222' }, ticks: { color: '#aaa' }},
+          x: { grid: { color: '#222' }, ticks: { color: '#aaa' }}
+        },
+        plugins: { legend: { display: true, color: '#fff' }}
       }
     });
 
-    // Simulated Live Data + SGOLD Logic (You can replace with real API later)
-    function updateChart() {
-      // This is where we would fetch real prices and calculate your composite
-      document.getElementById('status').innerHTML = `
-        <strong>Composite Trend:</strong> <span style="color:lime">BULLISH</span><br>
-        <strong>Divergence:</strong> <span style="color:lime">Bullish Regular</span><br>
-        <strong>Structure:</strong> Higher High + Higher Low
-      `;
+    // Fast updating function
+    function updateDashboard() {
+      const isBullish = Math.random() > 0.5;
       
-      document.getElementById('signals').innerHTML = `
-        🟢 <strong>Strong BUY</strong> Signal on XAUUSD<br>
-        🔴 Liquidity Sweep Detected
+      document.getElementById('status').innerHTML = `
+        Composite Trend: <strong style="color:${isBullish ? '#00ff88' : '#ff4488'}">
+          ${isBullish ? 'BULLISH' : 'BEARISH'}
+        </strong><br>
+        Last Update: Just now
       `;
+
+      document.getElementById('signals').innerHTML = `
+        <div class="signal" style="background:#002200; color:#00ff88;">
+          🟢 Strong Bullish Divergence Detected
+        </div>
+        <div class="signal" style="background:#220000; color:#ff4488;">
+          🔴 Liquidity Sweep on High
+        </div>
+        <div class="signal" style="background:#001122; color:#44ccff;">
+          BOS Confirmed - Upward Structure
+        </div>
+      `;
+
+      // Simulate live price movement
+      chartData.datasets[0].data.shift();
+      chartData.datasets[0].data.push(Math.random() * 60 + 110);
+      chart.update('none'); // Fast update without animation
     }
 
-    // Update every 5 seconds
-    setInterval(updateChart, 5000);
-    updateChart();
+    // Super fast refresh
+    setInterval(updateDashboard, 1800); // Update every 1.8 seconds
+    updateDashboard(); // Initial load
   </script>
 </body>
 </html>
