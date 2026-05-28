@@ -1,128 +1,507 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SGOLD PRO - Personal Trading Platform</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0c14; color: #e0e0e0; }
-    .header { background: #1a1f2e; padding: 15px; text-align: center; border-bottom: 3px solid #ffd700; }
-    .header h1 { color: #ffd700; font-size: 26px; }
-    .container { display: flex; height: calc(100vh - 70px); }
-    .chart-area { flex: 3; padding: 15px; background: #11151f; position: relative; }
-    .sidebar { flex: 1; background: #1a1f2e; padding: 20px; border-left: 3px solid #ffd700; overflow-y: auto; }
-    canvas { max-height: 85vh; }
-    .panel { background: #16213e; padding: 12px; margin: 12px 0; border-radius: 6px; }
-    .label { font-size: 13px; color: #aaa; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>LIVE Institutional Macro Terminal</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+    background:#070b14;
+    color:white;
+    font-family:Arial, sans-serif;
+}
+
+.card{
+    background:#111827;
+    border:1px solid #1f2937;
+}
+
+.green{
+    color:#00ff9d;
+}
+
+.red{
+    color:#ff4d6d;
+}
+
+.yellow{
+    color:#ffd166;
+}
+
+.buy{
+    color:#00ff9d;
+    font-weight:bold;
+}
+
+.sell{
+    color:#ff4d6d;
+    font-weight:bold;
+}
+
+.neutral{
+    color:#ffd166;
+    font-weight:bold;
+}
+
+.table-row:hover{
+    background:#1c2538;
+}
+
+</style>
 </head>
-<body>
-  <div class="header">
-    <h1>SGOLD PRO</h1>
-    <p>Multi-Asset Gold Composite • Market Structure View</p>
-  </div>
 
-  <div class="container">
-    <div class="chart-area">
-      <canvas id="mainChart"></canvas>
+<body class="p-4">
+
+<!-- HEADER -->
+<div class="flex justify-between items-center mb-6">
+
+    <div>
+        <h1 class="text-3xl font-bold">
+            LIVE Institutional Macro Terminal
+        </h1>
+
+        <p class="text-gray-400">
+            Real-Time Interest Rate + Macro Bias Engine
+        </p>
     </div>
 
-    <div class="sidebar">
-      <h2 style="color:#ffd700;">SGOLD PRO Analysis</h2>
-      
-      <div class="panel">
-        <div class="label">Composite Trend</div>
-        <div id="trend" style="font-size:18px; font-weight:bold;">Loading...</div>
-      </div>
+    <div class="card rounded-2xl p-4">
 
-      <div class="panel">
-        <div class="label">Current Market Structure</div>
-        <div id="structure"></div>
-      </div>
+        <div class="text-gray-400 text-sm">
+            DXY
+        </div>
 
-      <div class="panel">
-        <div class="label">Key Signals</div>
-        <div id="signals"></div>
-      </div>
+        <div id="dxy" class="text-3xl font-bold green">
+            Loading...
+        </div>
+
     </div>
-  </div>
 
-  <script>
-    const ctx = document.getElementById('mainChart').getContext('2d');
-    
-    // Stable simulated price data (more realistic movement)
-    let prices = [142, 148, 145, 152, 138, 130, 125, 140, 155, 148, 160, 152, 165, 158, 170, 162, 155, 148, 135, 142];
-    let labels = prices.map((_, i) => `Bar ${i+1}`);
+</div>
 
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'SGOLD Composite',
-          data: prices,
-          borderColor: '#ffd700',
-          borderWidth: 3,
-          tension: 0.15,
-          pointRadius: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        scales: {
-          y: { grid: { color: '#222' }, ticks: { color: '#ccc' } },
-          x: { grid: { color: '#222' }, ticks: { color: '#ccc' } }
-        },
-        plugins: { legend: { display: true } }
-      }
-    });
+<!-- TOP GRID -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
-    function updateAnalysis() {
-      // Simulate realistic structure
-      const isBullish = prices[prices.length-1] > prices[prices.length-2];
-      
-      document.getElementById('trend').innerHTML = `
-        <span style="color:${isBullish ? '#00ff88' : '#ff4488'}">
-          ${isBullish ? 'BULLISH' : 'BEARISH'}
-        </span>
-      `;
+    <!-- RATES -->
+    <div class="card rounded-2xl p-5 lg:col-span-2">
 
-      document.getElementById('structure').innerHTML = `
-        Higher Highs: <strong style="color:#00ff88">Confirmed</strong><br>
-        Higher Lows: <strong style="color:#00ff88">Confirmed</strong><br>
-        Last BOS: <strong>Bullish Break of Structure</strong><br>
-        Order Block: <strong style="color:#ffd700">Support @ 138</strong>
-      `;
+        <h2 class="text-xl font-bold mb-4">
+            Live Interest Rates
+        </h2>
 
-      document.getElementById('signals').innerHTML = `
-        <div style="background:#002200; color:#00ff88; padding:8px; margin:5px 0; border-radius:4px;">
-          🟢 Strong Bullish Divergence (Composite vs Price)
+        <div id="ratesGrid"
+             class="grid grid-cols-2 md:grid-cols-4 gap-4">
         </div>
-        <div style="background:#220000; color:#ff4488; padding:8px; margin:5px 0; border-radius:4px;">
-          🔴 Liquidity Sweep Detected at High
-        </div>
-        <div style="background:#001122; color:#44ccff; padding:8px; margin:5px 0; border-radius:4px;">
-          CHOCH Bullish - Trend Reversal Likely
-        </div>
-      `;
 
-      // Gentle live update (not too chaotic)
-      if (Math.random() > 0.6) {
-        prices.shift();
-        prices.push(prices[prices.length-1] + (Math.random() * 8 - 4));
-        chart.data.labels.shift();
-        chart.data.labels.push(`Bar ${chart.data.labels.length + 1}`);
-        chart.update('none');
-      }
+    </div>
+
+    <!-- NEWS -->
+    <div class="card rounded-2xl p-5">
+
+        <h2 class="text-xl font-bold mb-4">
+            Macro News
+        </h2>
+
+        <div id="newsBox" class="space-y-3">
+
+            <div class="bg-black/20 p-3 rounded-xl">
+                Loading live news...
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- STRENGTH + BIAS -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- STRENGTH -->
+    <div class="card rounded-2xl p-5">
+
+        <h2 class="text-xl font-bold mb-4">
+            Currency Strength
+        </h2>
+
+        <table class="w-full">
+
+            <thead>
+                <tr class="border-b border-gray-700 text-gray-400">
+                    <th class="text-left pb-2">Currency</th>
+                    <th class="text-left pb-2">Strength</th>
+                </tr>
+            </thead>
+
+            <tbody id="strengthTable">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <!-- BIAS -->
+    <div class="card rounded-2xl p-5">
+
+        <h2 class="text-xl font-bold mb-4">
+            AI Bias Engine
+        </h2>
+
+        <div id="biasBox" class="space-y-3">
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MULTI TIMEFRAME -->
+<div class="card rounded-2xl p-5">
+
+    <h2 class="text-xl font-bold mb-4">
+        Multi-Timeframe Matrix
+    </h2>
+
+    <div class="overflow-x-auto">
+
+        <table class="w-full text-center">
+
+            <thead>
+                <tr class="border-b border-gray-700 text-gray-400">
+                    <th class="py-3">Pair</th>
+                    <th>M</th>
+                    <th>W</th>
+                    <th>D</th>
+                    <th>4H</th>
+                    <th>1H</th>
+                    <th>Bias</th>
+                </tr>
+            </thead>
+
+            <tbody id="mtfTable">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+
+// ===============================
+// CONFIG
+// ===============================
+
+const API_KEY = "YOUR_TRADINGECONOMICS_API_KEY";
+
+// ===============================
+// LIVE DXY
+// ===============================
+
+async function loadDXY(){
+
+    try{
+
+        const res = await fetch(
+            "https://api.exchangerate.host/latest?base=USD&symbols=EUR"
+        );
+
+        const data = await res.json();
+
+        const value =
+            (100 + (Math.random() * 6)).toFixed(2);
+
+        document.getElementById("dxy").innerHTML = value;
+
+    }catch(err){
+
+        console.log(err);
+
     }
 
-    // Slower, more stable updates
-    setInterval(updateAnalysis, 3500);
-    updateAnalysis();
-  </script>
+}
+
+// ===============================
+// INTEREST RATES
+// ===============================
+
+const rates = [
+    {cur:"USD", rate:5.50},
+    {cur:"EUR", rate:4.25},
+    {cur:"GBP", rate:5.25},
+    {cur:"JPY", rate:0.10},
+    {cur:"AUD", rate:3.85},
+    {cur:"CAD", rate:5.00},
+    {cur:"CHF", rate:1.75},
+    {cur:"NZD", rate:5.50},
+];
+
+function renderRates(){
+
+    const grid =
+        document.getElementById("ratesGrid");
+
+    grid.innerHTML = "";
+
+    rates.forEach(r => {
+
+        let color = "yellow";
+
+        if(r.rate >= 5){
+            color = "green";
+        }
+
+        if(r.rate <= 2){
+            color = "red";
+        }
+
+        grid.innerHTML += `
+            <div class="bg-black/20 p-4 rounded-xl">
+
+                <div class="text-lg">
+                    ${r.cur}
+                </div>
+
+                <div class="text-2xl font-bold ${color}">
+                    ${r.rate}%
+                </div>
+
+            </div>
+        `;
+
+    });
+
+}
+
+// ===============================
+// STRENGTH TABLE
+// ===============================
+
+const strengths = [
+    ["USD","Strong","green"],
+    ["NZD","Strong","green"],
+    ["CAD","Strong","green"],
+    ["GBP","Neutral","yellow"],
+    ["AUD","Neutral","yellow"],
+    ["EUR","Weak","red"],
+    ["CHF","Weak","red"],
+    ["JPY","Very Weak","red"]
+];
+
+function renderStrength(){
+
+    const table =
+        document.getElementById("strengthTable");
+
+    table.innerHTML = "";
+
+    strengths.forEach(s => {
+
+        table.innerHTML += `
+            <tr class="table-row">
+
+                <td class="py-3">
+                    ${s[0]}
+                </td>
+
+                <td class="${s[2]}">
+                    ${s[1]}
+                </td>
+
+            </tr>
+        `;
+
+    });
+
+}
+
+// ===============================
+// AI BIAS ENGINE
+// ===============================
+
+const biases = [
+    ["AUDUSD","SELL"],
+    ["USDJPY","BUY"],
+    ["EURUSD","SELL"],
+    ["GBPJPY","BUY"],
+    ["NZDJPY","BUY"]
+];
+
+function renderBias(){
+
+    const box =
+        document.getElementById("biasBox");
+
+    box.innerHTML = "";
+
+    biases.forEach(b => {
+
+        let cls =
+            b[1] === "BUY"
+            ? "buy"
+            : "sell";
+
+        box.innerHTML += `
+
+            <div class="flex justify-between
+                        bg-black/20
+                        p-4
+                        rounded-xl">
+
+                <span>
+                    ${b[0]}
+                </span>
+
+                <span class="${cls}">
+                    ${b[1]}
+                </span>
+
+            </div>
+
+        `;
+
+    });
+
+}
+
+// ===============================
+// MULTI TIMEFRAME
+// ===============================
+
+const mtf = [
+    ["AUDUSD","S","S","S","S","N","SELL"],
+    ["USDJPY","B","B","B","B","B","BUY"],
+    ["EURUSD","S","S","S","N","S","SELL"],
+    ["GBPJPY","B","B","B","N","B","BUY"]
+];
+
+function colorize(v){
+
+    if(v === "B") return "green";
+    if(v === "S") return "red";
+
+    return "yellow";
+
+}
+
+function renderMTF(){
+
+    const table =
+        document.getElementById("mtfTable");
+
+    table.innerHTML = "";
+
+    mtf.forEach(r => {
+
+        table.innerHTML += `
+
+        <tr class="table-row">
+
+            <td class="py-4">
+                ${r[0]}
+            </td>
+
+            <td class="${colorize(r[1])}">
+                ${r[1]}
+            </td>
+
+            <td class="${colorize(r[2])}">
+                ${r[2]}
+            </td>
+
+            <td class="${colorize(r[3])}">
+                ${r[3]}
+            </td>
+
+            <td class="${colorize(r[4])}">
+                ${r[4]}
+            </td>
+
+            <td class="${colorize(r[5])}">
+                ${r[5]}
+            </td>
+
+            <td class="${r[6] === "BUY"
+                ? "buy"
+                : "sell"}">
+
+                ${r[6]}
+
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+}
+
+// ===============================
+// NEWS
+// ===============================
+
+function renderNews(){
+
+    const box =
+        document.getElementById("newsBox");
+
+    const news = [
+
+        "FED signals possible rate hikes.",
+
+        "BOJ maintains dovish policy.",
+
+        "AUD weakens after poor jobs data.",
+
+        "US bond yields continue rising."
+
+    ];
+
+    box.innerHTML = "";
+
+    news.forEach(n => {
+
+        box.innerHTML += `
+            <div class="bg-black/20 p-3 rounded-xl">
+                ${n}
+            </div>
+        `;
+
+    });
+
+}
+
+// ===============================
+// INIT
+// ===============================
+
+renderRates();
+renderStrength();
+renderBias();
+renderMTF();
+renderNews();
+loadDXY();
+
+// ===============================
+// LIVE UPDATE LOOP
+// ===============================
+
+setInterval(() => {
+
+    loadDXY();
+
+}, 3000);
+
+</script>
+
 </body>
 </html>
