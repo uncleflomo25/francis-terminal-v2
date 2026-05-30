@@ -2,51 +2,74 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Gold Macro Regime Dashboard (1945–2026)</title>
+<title>Gold Macro AI Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    body {
-        margin: 0;
-        background: #0a0f1a;
-        color: white;
-        font-family: Arial, sans-serif;
-    }
-
-    h2 {
-        text-align: center;
-        color: gold;
-        padding: 15px;
-    }
-
-    .wrap {
-        padding: 20px;
-    }
-
-    canvas {
-        background: #111827;
-        border-radius: 12px;
-        padding: 10px;
-    }
+body {
+    margin: 0;
+    background: #070b14;
+    color: white;
+    font-family: Arial;
+}
+header {
+    padding: 16px;
+    text-align: center;
+    color: gold;
+    font-size: 20px;
+    font-weight: bold;
+}
+.container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 15px;
+}
+canvas {
+    background: #111827;
+    border-radius: 12px;
+    padding: 10px;
+}
+.panel {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    background: #0f172a;
+    border-radius: 10px;
+}
+.badge {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #1f2937;
+}
 </style>
 </head>
 <body>
 
-<h2>Gold Fundamental Macro Regime Dashboard (1945–2026)</h2>
+<header>GOLD MACRO AI SYSTEM (1945–2026 + Prediction Engine)</header>
 
-<div class="wrap">
+<div class="container">
+
+<div class="panel">
+<div class="badge" id="regime">REGIME: LOADING</div>
+<div class="badge" id="signal">SIGNAL: LOADING</div>
+<div class="badge" id="trend">TREND: LOADING</div>
+</div>
+
 <canvas id="chart"></canvas>
+<canvas id="forecast"></canvas>
+
 </div>
 
 <script>
 
-// ------------------------
-// TIME
-// ------------------------
+// -----------------------------
+// TIME SERIES
+// -----------------------------
 const years = Array.from({length: 2026 - 1945 + 1}, (_, i) => 1945 + i);
 
-// ------------------------
-// GOLD PRICE STRUCTURE
-// ------------------------
+// -----------------------------
+// GOLD PRICE MODEL
+// -----------------------------
 let gold = years.map(y => {
     if (y < 1971) return 35;
     if (y < 1980) return 35 + (y - 1971) * 90;
@@ -56,137 +79,124 @@ let gold = years.map(y => {
     return 2000 + (y - 2020) * 120;
 });
 
+// log transform
 let goldLog = gold.map(v => Math.log(v));
 
-// ------------------------
-// MACRO FACTORS
-// ------------------------
-let realRateInv = years.map(y =>
-    Math.sin((y - 1970) / 8) + (y > 2000 ? 1.2 : 0)
-);
-
-let m2 = years.map(y => {
-    if (y < 1971) return 0.2;
-    if (y < 2000) return 0.5;
-    if (y < 2020) return 1.2;
-    return 2.0;
-});
-
+// -----------------------------
+// MACRO ENGINE (REAL STRUCTURE MODEL)
+// -----------------------------
+let realRates = years.map(y => Math.sin((y - 1970) / 8) + (y > 2000 ? 1.2 : 0));
+let m2 = years.map(y => y < 1971 ? 0.2 : y < 2000 ? 0.5 : y < 2020 ? 1.2 : 2.0);
 let debt = years.map(y => (y - 1945) / 80);
+let cb = years.map(y => y < 2010 ? 0.2 : 1.0);
+let usd = years.map(y => -Math.cos((y - 1985) / 10));
 
-let cb = years.map(y => (y < 2010 ? 0.2 : 1.0));
-
-let usdInv = years.map(y => -Math.cos((y - 1985) / 10));
-
-// ------------------------
+// -----------------------------
 // GOLD STRENGTH INDEX
-// ------------------------
-let strength = years.map((y, i) => {
-    return (
-        0.30 * realRateInv[i] +
-        0.25 * m2[i] +
-        0.20 * debt[i] +
-        0.15 * cb[i] +
-        0.10 * usdInv[i]
-    );
-});
+// -----------------------------
+let strength = years.map((y,i)=>(
+    0.30*realRates[i] +
+    0.25*m2[i] +
+    0.20*debt[i] +
+    0.15*cb[i] +
+    0.10*usd[i]
+));
 
 // normalize
 let min = Math.min(...strength);
 let max = Math.max(...strength);
-strength = strength.map(v => (v - min) / (max - min));
+strength = strength.map(v => (v-min)/(max-min));
 
-// ------------------------
-// REGIME DETECTION
-// ------------------------
-let regime = strength.map(v => {
-    if (v > 0.7) return 2; // bullish expansion
-    if (v > 0.4) return 1; // neutral
-    return 0;              // bearish / compression
+// -----------------------------
+// REGIME CLASSIFIER
+// -----------------------------
+function getRegime(v){
+    if(v > 0.7) return "BULL EXPANSION";
+    if(v > 0.4) return "TRANSITION";
+    return "BEAR / COMPRESSION";
+}
+
+// latest regime
+let current = getRegime(strength[strength.length-1]);
+
+// -----------------------------
+// SIMPLE AI FORECAST (LINEAR MOMENTUM MODEL)
+// -----------------------------
+let forecastYears = Array.from({length:10},(_,i)=>2026+i+1);
+
+let momentum = (strength[strength.length-1] - strength[strength.length-10]) / 10;
+
+let forecast = forecastYears.map((_,i)=>
+    Math.min(1, Math.max(0, strength[strength.length-1] + momentum*(i+1)))
+);
+
+// -----------------------------
+// SIGNAL ENGINE
+// -----------------------------
+function signal(v){
+    if(v > 0.75) return "BUY GOLD / RISK ON HARD ASSETS";
+    if(v > 0.45) return "HOLD / ACCUMULATION";
+    return "RISK OFF / CASH STRENGTH";
+}
+
+let sig = signal(strength[strength.length-1]);
+
+// -----------------------------
+// UI UPDATE
+// -----------------------------
+document.getElementById("regime").innerText = "REGIME: " + current;
+document.getElementById("signal").innerText = "SIGNAL: " + sig;
+document.getElementById("trend").innerText = "TREND MOMENTUM: " + momentum.toFixed(3);
+
+// -----------------------------
+// MAIN CHART
+// -----------------------------
+new Chart(document.getElementById("chart"),{
+type:"line",
+data:{
+labels:years,
+datasets:[
+{
+label:"Gold Price (Log)",
+data:goldLog,
+borderColor:"gold",
+yAxisID:"y"
+},
+{
+label:"Gold Strength Index",
+data:strength,
+borderColor:"cyan",
+yAxisID:"y1"
+}
+]
+},
+options:{
+responsive:true,
+scales:{
+y:{position:"left"},
+y1:{position:"right",grid:{drawOnChartArea:false}}
+}
+}
 });
 
-// ------------------------
-// EVENTS
-// ------------------------
-const events = {
-    1971: "Nixon Shock",
-    1980: "Inflation Peak",
-    2008: "Financial Crisis",
-    2020: "COVID Liquidity",
-    2026: "Debt Supercycle"
-};
-
-// ------------------------
-// CHART
-// ------------------------
-const ctx = document.getElementById('chart');
-
-new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: years,
-        datasets: [
-            {
-                label: 'Gold Price (Log)',
-                data: goldLog,
-                borderColor: 'gold',
-                borderWidth: 2,
-                yAxisID: 'y'
-            },
-            {
-                label: 'Gold Strength Index',
-                data: strength,
-                borderColor: 'cyan',
-                borderWidth: 2,
-                yAxisID: 'y1'
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        scales: {
-            y: {
-                position: 'left',
-                title: { display: true, text: 'Log Gold Price' }
-            },
-            y1: {
-                position: 'right',
-                grid: { drawOnChartArea: false },
-                title: { display: true, text: 'Macro Strength Index' }
-            }
-        },
-        plugins: {
-            legend: { labels: { color: 'white' } }
-        }
-    },
-    plugins: [
-        {
-            id: 'eventLines',
-            afterDraw(chart) {
-                const ctx = chart.ctx;
-                const xAxis = chart.scales.x;
-
-                ctx.save();
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.fillStyle = 'white';
-                ctx.font = '10px Arial';
-
-                Object.keys(events).forEach(year => {
-                    const x = xAxis.getPixelForValue(Number(year));
-
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, chart.height);
-                    ctx.stroke();
-
-                    ctx.fillText(events[year], x + 5, 20);
-                });
-
-                ctx.restore();
-            }
-        }
-    ]
+// -----------------------------
+// FORECAST CHART
+// -----------------------------
+new Chart(document.getElementById("forecast"),{
+type:"line",
+data:{
+labels:[...years.slice(-20),...forecastYears],
+datasets:[
+{
+label:"AI Macro Forecast",
+data:[...strength.slice(-20),...forecast],
+borderColor:"lime"
+}
+]
+},
+options:{
+responsive:true
+}
 });
 
 </script>
