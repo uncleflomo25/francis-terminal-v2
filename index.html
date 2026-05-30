@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>CROSE J Terminal</title>
+<title>CROSE J Chart Terminal v3</title>
+
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
 <style>
 body {
@@ -21,119 +23,102 @@ body {
 }
 
 .box {
+  position: relative;
   background: #111826;
   border: 1px solid #1f2a3a;
-  padding: 10px;
-  position: relative;
 }
 
 .title {
+  position: absolute;
+  top: 5px;
+  left: 8px;
   font-size: 12px;
   color: #aaa;
-  margin-bottom: 10px;
+  z-index: 10;
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-.price {
-  font-size: 26px;
-  margin-top: 10px;
+.chart {
+  width: 100%;
+  height: 100%;
 }
-
-.state {
-  font-size: 13px;
-  margin-top: 8px;
-  color: #888;
-}
-
-.up { color: #00ff88; }
-.down { color: #ff4d4d; }
-.range { color: #f0c674; }
 </style>
-
 </head>
 
 <body>
 
 <div class="grid">
 
-  <div class="box">
-    <div class="title">8D - MACRO STRUCTURE</div>
-    <div id="w1" class="price">---</div>
-    <div id="s1" class="state">loading</div>
-  </div>
-
-  <div class="box">
-    <div class="title">4D - SWING STRUCTURE</div>
-    <div id="w2" class="price">---</div>
-    <div id="s2" class="state">loading</div>
-  </div>
-
-  <div class="box">
-    <div class="title">2D - TRANSITION STRUCTURE</div>
-    <div id="w3" class="price">---</div>
-    <div id="s3" class="state">loading</div>
-  </div>
-
-  <div class="box">
-    <div class="title">EXECUTION (4H / 12H / DAILY)</div>
-    <div id="w4" class="price">---</div>
-    <div id="s4" class="state">loading</div>
-  </div>
+  <div class="box"><div class="title">8D / MACRO</div><div id="c1" class="chart"></div></div>
+  <div class="box"><div class="title">4D / SWING</div><div id="c2" class="chart"></div></div>
+  <div class="box"><div class="title">2D / TRANSITION</div><div id="c3" class="chart"></div></div>
+  <div class="box"><div class="title">EXECUTION (4H)</div><div id="c4" class="chart"></div></div>
 
 </div>
 
 <script>
 
-// ------------------------
-// SIMULATED CROSE J ENGINE
-// ------------------------
-let price = 100;
+// ----------------------------
+// CREATE CHARTS
+// ----------------------------
+function createChart(id){
 
-function move(){
-  price += (Math.random() - 0.5) * 1.2;
-  return price;
+    const chart = LightweightCharts.createChart(document.getElementById(id), {
+        layout: { background: { color: '#111826' }, textColor: '#ccc' },
+        grid: { vertLines: { color: '#1f2a3a' }, horzLines: { color: '#1f2a3a' } },
+        width: document.getElementById(id).clientWidth,
+        height: document.getElementById(id).clientHeight,
+        timeScale: { timeVisible: true }
+    });
+
+    const candleSeries = chart.addCandlestickSeries();
+
+    return candleSeries;
 }
 
-// ------------------------
-// STRUCTURE DETECTION
-// ------------------------
-function structure(p){
-  if(p > 101) return "BULLISH HH / HL";
-  if(p < 99) return "BEARISH LH / LL";
-  return "RANGE / LIQUIDITY BUILD";
+// ----------------------------
+// INIT 4 WINDOWS
+// ----------------------------
+let s1 = createChart("c1");
+let s2 = createChart("c2");
+let s3 = createChart("c3");
+let s4 = createChart("c4");
+
+// ----------------------------
+// GENERATE FAKE MARKET DATA (replace later with MT5)
+// ----------------------------
+function generateData(startPrice){
+    let data = [];
+    let price = startPrice;
+
+    for(let i=0;i<80;i++){
+        let open = price;
+        let close = price + (Math.random()-0.5)*2;
+        let high = Math.max(open,close) + Math.random();
+        let low = Math.min(open,close) - Math.random();
+
+        data.push({
+            time: 1700000000 + i * 86400,
+            open, high, low, close
+        });
+
+        price = close;
+    }
+
+    return data;
 }
 
-// ------------------------
-// UPDATE DASHBOARD
-// ------------------------
-function update(){
+// ----------------------------
+// LOAD DATA INTO CHARTS
+// ----------------------------
+let data = generateData(100);
 
-  let p = move();
-
-  let d8 = p * 1.002;
-  let d4 = p * 1.001;
-  let d2 = p * 0.999;
-
-  document.getElementById("w1").innerText = d8.toFixed(2);
-  document.getElementById("w2").innerText = d4.toFixed(2);
-  document.getElementById("w3").innerText = d2.toFixed(2);
-  document.getElementById("w4").innerText = p.toFixed(2);
-
-  document.getElementById("s1").innerText = structure(d8);
-  document.getElementById("s2").innerText = structure(d4);
-  document.getElementById("s3").innerText = structure(d2);
-
-  // execution bias
-  if(d8 > d4 && d4 > d2){
-    document.getElementById("s4").innerText = "BULLISH FLOW CONFIRMED";
-  } else if(d8 < d4 && d4 < d2){
-    document.getElementById("s4").innerText = "BEARISH FLOW CONFIRMED";
-  } else {
-    document.getElementById("s4").innerText = "MIXED / MANIPULATION PHASE";
-  }
-
-}
-
-setInterval(update, 1000);
+s1.setData(data.map(d => d));
+s2.setData(data.map(d => ({...d, close:d.close*1.01})));
+s3.setData(data.map(d => ({...d, close:d.close*0.99})));
+s4.setData(data.map(d => ({...d, close:d.close*1.005})));
 
 </script>
 
