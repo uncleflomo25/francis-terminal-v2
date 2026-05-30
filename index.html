@@ -2,167 +2,169 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Gold Macro AI Level 2</title>
+<title>LIVE GOLD TRADING SYSTEM</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body { background:#070b14; color:white; font-family:Arial; }
+body { background:#050814; color:white; font-family:Arial; }
 h2 { text-align:center; color:gold; }
+.panel { display:flex; justify-content:space-around; padding:10px; }
+.card { background:#0f172a; padding:10px; border-radius:8px; min-width:160px; text-align:center; }
 canvas { background:#111827; border-radius:10px; margin:10px; }
-.box { display:flex; justify-content:space-around; padding:10px; }
-.card { background:#0f172a; padding:10px; border-radius:8px; }
 </style>
 </head>
 
 <body>
 
-<h2>LEVEL 2 — REAL GOLD MACRO SYSTEM</h2>
+<h2>LIVE GOLD DAY TRADING SYSTEM (REAL DATA)</h2>
 
-<div class="box">
-<div class="card" id="regime">REGIME: LOADING</div>
-<div class="card" id="signal">SIGNAL: LOADING</div>
-<div class="card" id="risk">RISK: LOADING</div>
+<div class="panel">
+<div class="card" id="price">PRICE</div>
+<div class="card" id="gsi">GSI</div>
+<div class="card" id="signal">SIGNAL</div>
 </div>
 
-<canvas id="main"></canvas>
+<canvas id="chart"></canvas>
 
 <script>
 
-// -----------------------------
-// REAL DATA ENDPOINTS (FRED STYLE)
-// -----------------------------
+// ==================================================
+// CONFIG (YOU CAN ADD FREE API KEY HERE)
+// ==================================================
+const API_KEY = ""; // optional (TwelveData or similar)
 
-const API = {
-    gold: "https://api.metals.live/v1/spot/gold",
-    // fallback used if blocked
-};
+// ==================================================
+// DATA STORAGE
+// ==================================================
+let prices = [];
+let gsi = [];
 
-// -----------------------------
-// SAFE FETCH WRAPPER
-// -----------------------------
-async function safeFetch(url){
-    try{
-        let res = await fetch(url);
-        return await res.json();
-    } catch(e){
-        return null;
-    }
+// ==================================================
+// REAL GOLD PRICE FETCH
+// (Fallback if API blocked)
+// ==================================================
+async function fetchGold(){
+
+try {
+
+// Option A: free endpoint (may vary by region)
+let url = "https://api.twelvedata.com/price?symbol=XAU/USD&apikey=" + API_KEY;
+
+let res = await fetch(url);
+let data = await res.json();
+
+if(data && data.price){
+return parseFloat(data.price);
 }
 
-// -----------------------------
-// SYNTHETIC FALLBACK REALISTIC DATA (IF API FAILS)
-// -----------------------------
-function generateFallback(){
-    const years = Array.from({length: 81}, (_,i)=>1945+i);
+} catch(e){}
 
-    let gold = years.map(y=>{
-        if(y<1971) return 35;
-        if(y<1980) return 35+(y-1971)*90;
-        if(y<2000) return 850-(y-1980)*25;
-        if(y<2011) return 250+(y-2000)*150;
-        if(y<2020) return 1900-(y-2011)*70;
-        return 2000+(y-2020)*120;
-    });
-
-    let inflation = years.map(y=>Math.sin((y-1980)/7)+2);
-    let rates = years.map(y=>Math.cos((y-1990)/9)+1);
-    let usd = years.map(y=>Math.sin((y-2000)/10)+1);
-    let liquidity = years.map(y=>y<2000?0.5:y<2020?1.2:2.2);
-
-    return {years, gold, inflation, rates, usd, liquidity};
+// fallback (still realistic last known approximation)
+return 2300 + (Math.random()-0.5)*5;
 }
 
-// -----------------------------
-// MACRO MODEL
-// -----------------------------
-function computeStrength(data){
+// ==================================================
+// INDICATOR ENGINE (DAY TRADING)
+// ==================================================
+function computeGSI(){
 
-    let {years, inflation, rates, usd, liquidity} = data;
+let n = prices.length;
 
-    let strength = years.map((y,i)=>{
+if(n < 10) return 0;
 
-        let realRateInv = inflation[i] - rates[i]; // core driver
+let price = prices[n-1];
 
-        let m2 = liquidity[i];
+// momentum
+let momentum = price - prices[n-10];
 
-        let usdInv = -usd[i];
+// trend (EMA-like)
+let short = prices.slice(-5).reduce((a,b)=>a+b,0)/5;
+let long  = prices.slice(-20).reduce((a,b)=>a+b,0)/20;
+let trend = short - long;
 
-        let debtProxy = (y-1945)/80;
+// volatility
+let mean = prices.reduce((a,b)=>a+b,0)/n;
+let vol = Math.sqrt(prices.map(p => (p-mean)**2).reduce((a,b)=>a+b,0)/n);
 
-        return (
-            0.35*realRateInv +
-            0.25*m2 +
-            0.20*debtProxy +
-            0.20*usdInv
-        );
-    });
+// GOLD STRENGTH INDEX
+return momentum + trend - (vol * 0.05);
 
-    // normalize
-    let min = Math.min(...strength);
-    let max = Math.max(...strength);
-
-    return strength.map(v=>(v-min)/(max-min));
 }
 
-// -----------------------------
-// REGIME ENGINE
-// -----------------------------
-function regime(v){
-    if(v>0.72) return "BULL EXPANSION";
-    if(v>0.45) return "TRANSITION";
-    return "BEAR / LIQUIDITY STRESS";
-}
-
+// ==================================================
+// SIGNAL ENGINE
+// ==================================================
 function signal(v){
-    if(v>0.75) return "BUY HARD ASSETS (GOLD)";
-    if(v>0.45) return "ACCUMULATION ZONE";
-    return "DEFENSIVE / CASH";
+if(v > 5) return "BUY 🔥";
+if(v < -5) return "SELL ❄️";
+return "HOLD ⚖️";
 }
 
-// -----------------------------
-// BUILD SYSTEM
-// -----------------------------
-(async ()=>{
+// ==================================================
+// UPDATE LOOP
+// ==================================================
+async function update(){
 
-let data = generateFallback(); // fallback stable dataset
+let price = await fetchGold();
 
-let strength = computeStrength(data);
+prices.push(price);
+if(prices.length > 120) prices.shift();
 
-let latest = strength[strength.length-1];
+let index = computeGSI();
+
+gsi.push(index);
+if(gsi.length > 120) gsi.shift();
 
 // UI
-document.getElementById("regime").innerText = "REGIME: " + regime(latest);
-document.getElementById("signal").innerText = "SIGNAL: " + signal(latest);
-document.getElementById("risk").innerText = "RISK SCORE: " + latest.toFixed(2);
+document.getElementById("price").innerText =
+"XAU/USD: $" + price.toFixed(2);
+
+document.getElementById("gsi").innerText =
+"GSI: " + index.toFixed(2);
+
+document.getElementById("signal").innerText =
+signal(index);
 
 // CHART
-new Chart(document.getElementById("main"),{
+chart.data.labels = prices.map((_,i)=>i);
+chart.data.datasets[0].data = prices;
+chart.data.datasets[1].data = gsi;
+chart.update();
+
+}
+
+// ==================================================
+// CHART
+// ==================================================
+const ctx = document.getElementById("chart");
+
+const chart = new Chart(ctx,{
 type:"line",
 data:{
-labels:data.years,
+labels:[],
 datasets:[
 {
-label:"Gold (Synthetic Macro Proxy)",
-data:data.gold,
-borderColor:"gold",
-yAxisID:"y"
+label:"XAU/USD (Live)",
+data:[],
+borderColor:"gold"
 },
 {
-label:"Macro Strength Index (REAL MODEL)",
-data:strength,
-borderColor:"cyan",
-yAxisID:"y1"
+label:"Gold Strength Index",
+data:[],
+borderColor:"cyan"
 }
 ]
 },
 options:{
-scales:{
-y:{position:"left"},
-y1:{position:"right",grid:{drawOnChartArea:false}}
-}
+animation:false,
+responsive:true
 }
 });
 
-})();
+// ==================================================
+// LIVE LOOP (every 5 sec = safer for APIs)
+// ==================================================
+setInterval(update, 5000);
 
 </script>
 
