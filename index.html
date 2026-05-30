@@ -1,110 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>CROSE J Chart Terminal FIX</title>
-
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-
+<meta charset="UTF-8">
+<title>Gold Macro Regime Dashboard (1945–2026)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body {
-  margin: 0;
-  background: #0b0f14;
-  font-family: Arial;
-}
+    body {
+        margin: 0;
+        background: #0a0f1a;
+        color: white;
+        font-family: Arial, sans-serif;
+    }
 
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  height: 100vh;
-  gap: 6px;
-  padding: 6px;
-}
+    h2 {
+        text-align: center;
+        color: gold;
+        padding: 15px;
+    }
 
-.box {
-  position: relative;
-  background: #111826;
-  border: 1px solid #1f2a3a;
-  overflow: hidden;
-}
+    .wrap {
+        padding: 20px;
+    }
 
-.chart {
-  width: 100%;
-  height: 100%;
-}
+    canvas {
+        background: #111827;
+        border-radius: 12px;
+        padding: 10px;
+    }
 </style>
 </head>
-
 <body>
 
-<div class="grid">
-  <div class="box"><div id="c1" class="chart"></div></div>
-  <div class="box"><div id="c2" class="chart"></div></div>
-  <div class="box"><div id="c3" class="chart"></div></div>
-  <div class="box"><div id="c4" class="chart"></div></div>
+<h2>Gold Fundamental Macro Regime Dashboard (1945–2026)</h2>
+
+<div class="wrap">
+<canvas id="chart"></canvas>
 </div>
 
 <script>
 
-function makeChart(containerId) {
-    const container = document.getElementById(containerId);
+// ------------------------
+// TIME
+// ------------------------
+const years = Array.from({length: 2026 - 1945 + 1}, (_, i) => 1945 + i);
 
-    const chart = LightweightCharts.createChart(container, {
-        layout: {
-            background: { color: '#111826' },
-            textColor: '#ccc'
-        },
-        grid: {
-            vertLines: { color: '#1f2a3a' },
-            horzLines: { color: '#1f2a3a' }
-        },
-        width: container.clientWidth,
-        height: container.clientHeight
-    });
+// ------------------------
+// GOLD PRICE STRUCTURE
+// ------------------------
+let gold = years.map(y => {
+    if (y < 1971) return 35;
+    if (y < 1980) return 35 + (y - 1971) * 90;
+    if (y < 2000) return 850 - (y - 1980) * 25;
+    if (y < 2011) return 250 + (y - 2000) * 150;
+    if (y < 2020) return 1900 - (y - 2011) * 70;
+    return 2000 + (y - 2020) * 120;
+});
 
-    const series = chart.addCandlestickSeries();
-    return { chart, series };
-}
+let goldLog = gold.map(v => Math.log(v));
 
-// FIXED: wait for layout before rendering
-window.onload = function () {
+// ------------------------
+// MACRO FACTORS
+// ------------------------
+let realRateInv = years.map(y =>
+    Math.sin((y - 1970) / 8) + (y > 2000 ? 1.2 : 0)
+);
 
-    let w1 = makeChart("c1");
-    let w2 = makeChart("c2");
-    let w3 = makeChart("c3");
-    let w4 = makeChart("c4");
+let m2 = years.map(y => {
+    if (y < 1971) return 0.2;
+    if (y < 2000) return 0.5;
+    if (y < 2020) return 1.2;
+    return 2.0;
+});
 
-    function gen(start) {
-        let data = [];
-        let p = start;
+let debt = years.map(y => (y - 1945) / 80);
 
-        for (let i = 0; i < 100; i++) {
-            let open = p;
-            let close = p + (Math.random() - 0.5) * 2;
-            let high = Math.max(open, close) + Math.random();
-            let low = Math.min(open, close) - Math.random();
+let cb = years.map(y => (y < 2010 ? 0.2 : 1.0));
 
-            data.push({
-                time: 1700000000 + i * 86400,
-                open,
-                high,
-                low,
-                close
-            });
+let usdInv = years.map(y => -Math.cos((y - 1985) / 10));
 
-            p = close;
-        }
-        return data;
-    }
+// ------------------------
+// GOLD STRENGTH INDEX
+// ------------------------
+let strength = years.map((y, i) => {
+    return (
+        0.30 * realRateInv[i] +
+        0.25 * m2[i] +
+        0.20 * debt[i] +
+        0.15 * cb[i] +
+        0.10 * usdInv[i]
+    );
+});
 
-    let data = gen(100);
+// normalize
+let min = Math.min(...strength);
+let max = Math.max(...strength);
+strength = strength.map(v => (v - min) / (max - min));
 
-    w1.series.setData(data);
-    w2.series.setData(data.map(d => ({...d, close:d.close*1.01})));
-    w3.series.setData(data.map(d => ({...d, close:d.close*0.99})));
-    w4.series.setData(data.map(d => ({...d, close:d.close*1.005})));
+// ------------------------
+// REGIME DETECTION
+// ------------------------
+let regime = strength.map(v => {
+    if (v > 0.7) return 2; // bullish expansion
+    if (v > 0.4) return 1; // neutral
+    return 0;              // bearish / compression
+});
 
+// ------------------------
+// EVENTS
+// ------------------------
+const events = {
+    1971: "Nixon Shock",
+    1980: "Inflation Peak",
+    2008: "Financial Crisis",
+    2020: "COVID Liquidity",
+    2026: "Debt Supercycle"
 };
+
+// ------------------------
+// CHART
+// ------------------------
+const ctx = document.getElementById('chart');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: years,
+        datasets: [
+            {
+                label: 'Gold Price (Log)',
+                data: goldLog,
+                borderColor: 'gold',
+                borderWidth: 2,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Gold Strength Index',
+                data: strength,
+                borderColor: 'cyan',
+                borderWidth: 2,
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            y: {
+                position: 'left',
+                title: { display: true, text: 'Log Gold Price' }
+            },
+            y1: {
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Macro Strength Index' }
+            }
+        },
+        plugins: {
+            legend: { labels: { color: 'white' } }
+        }
+    },
+    plugins: [
+        {
+            id: 'eventLines',
+            afterDraw(chart) {
+                const ctx = chart.ctx;
+                const xAxis = chart.scales.x;
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillStyle = 'white';
+                ctx.font = '10px Arial';
+
+                Object.keys(events).forEach(year => {
+                    const x = xAxis.getPixelForValue(Number(year));
+
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, chart.height);
+                    ctx.stroke();
+
+                    ctx.fillText(events[year], x + 5, 20);
+                });
+
+                ctx.restore();
+            }
+        }
+    ]
+});
 
 </script>
 
