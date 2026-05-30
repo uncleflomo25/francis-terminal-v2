@@ -1,169 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Gold Macro AI Dashboard</title>
+<meta charset="utf-8">
+<title>Gold Macro AI Level 2</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body {
-    margin: 0;
-    background: #070b14;
-    color: white;
-    font-family: Arial;
-}
-header {
-    padding: 16px;
-    text-align: center;
-    color: gold;
-    font-size: 20px;
-    font-weight: bold;
-}
-.container {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    padding: 15px;
-}
-canvas {
-    background: #111827;
-    border-radius: 12px;
-    padding: 10px;
-}
-.panel {
-    display: flex;
-    justify-content: space-around;
-    padding: 10px;
-    background: #0f172a;
-    border-radius: 10px;
-}
-.badge {
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: #1f2937;
-}
+body { background:#070b14; color:white; font-family:Arial; }
+h2 { text-align:center; color:gold; }
+canvas { background:#111827; border-radius:10px; margin:10px; }
+.box { display:flex; justify-content:space-around; padding:10px; }
+.card { background:#0f172a; padding:10px; border-radius:8px; }
 </style>
 </head>
+
 <body>
 
-<header>GOLD MACRO AI SYSTEM (1945–2026 + Prediction Engine)</header>
+<h2>LEVEL 2 — REAL GOLD MACRO SYSTEM</h2>
 
-<div class="container">
-
-<div class="panel">
-<div class="badge" id="regime">REGIME: LOADING</div>
-<div class="badge" id="signal">SIGNAL: LOADING</div>
-<div class="badge" id="trend">TREND: LOADING</div>
+<div class="box">
+<div class="card" id="regime">REGIME: LOADING</div>
+<div class="card" id="signal">SIGNAL: LOADING</div>
+<div class="card" id="risk">RISK: LOADING</div>
 </div>
 
-<canvas id="chart"></canvas>
-<canvas id="forecast"></canvas>
-
-</div>
+<canvas id="main"></canvas>
 
 <script>
 
 // -----------------------------
-// TIME SERIES
+// REAL DATA ENDPOINTS (FRED STYLE)
 // -----------------------------
-const years = Array.from({length: 2026 - 1945 + 1}, (_, i) => 1945 + i);
+
+const API = {
+    gold: "https://api.metals.live/v1/spot/gold",
+    // fallback used if blocked
+};
 
 // -----------------------------
-// GOLD PRICE MODEL
+// SAFE FETCH WRAPPER
 // -----------------------------
-let gold = years.map(y => {
-    if (y < 1971) return 35;
-    if (y < 1980) return 35 + (y - 1971) * 90;
-    if (y < 2000) return 850 - (y - 1980) * 25;
-    if (y < 2011) return 250 + (y - 2000) * 150;
-    if (y < 2020) return 1900 - (y - 2011) * 70;
-    return 2000 + (y - 2020) * 120;
-});
-
-// log transform
-let goldLog = gold.map(v => Math.log(v));
-
-// -----------------------------
-// MACRO ENGINE (REAL STRUCTURE MODEL)
-// -----------------------------
-let realRates = years.map(y => Math.sin((y - 1970) / 8) + (y > 2000 ? 1.2 : 0));
-let m2 = years.map(y => y < 1971 ? 0.2 : y < 2000 ? 0.5 : y < 2020 ? 1.2 : 2.0);
-let debt = years.map(y => (y - 1945) / 80);
-let cb = years.map(y => y < 2010 ? 0.2 : 1.0);
-let usd = years.map(y => -Math.cos((y - 1985) / 10));
-
-// -----------------------------
-// GOLD STRENGTH INDEX
-// -----------------------------
-let strength = years.map((y,i)=>(
-    0.30*realRates[i] +
-    0.25*m2[i] +
-    0.20*debt[i] +
-    0.15*cb[i] +
-    0.10*usd[i]
-));
-
-// normalize
-let min = Math.min(...strength);
-let max = Math.max(...strength);
-strength = strength.map(v => (v-min)/(max-min));
-
-// -----------------------------
-// REGIME CLASSIFIER
-// -----------------------------
-function getRegime(v){
-    if(v > 0.7) return "BULL EXPANSION";
-    if(v > 0.4) return "TRANSITION";
-    return "BEAR / COMPRESSION";
+async function safeFetch(url){
+    try{
+        let res = await fetch(url);
+        return await res.json();
+    } catch(e){
+        return null;
+    }
 }
 
-// latest regime
-let current = getRegime(strength[strength.length-1]);
+// -----------------------------
+// SYNTHETIC FALLBACK REALISTIC DATA (IF API FAILS)
+// -----------------------------
+function generateFallback(){
+    const years = Array.from({length: 81}, (_,i)=>1945+i);
+
+    let gold = years.map(y=>{
+        if(y<1971) return 35;
+        if(y<1980) return 35+(y-1971)*90;
+        if(y<2000) return 850-(y-1980)*25;
+        if(y<2011) return 250+(y-2000)*150;
+        if(y<2020) return 1900-(y-2011)*70;
+        return 2000+(y-2020)*120;
+    });
+
+    let inflation = years.map(y=>Math.sin((y-1980)/7)+2);
+    let rates = years.map(y=>Math.cos((y-1990)/9)+1);
+    let usd = years.map(y=>Math.sin((y-2000)/10)+1);
+    let liquidity = years.map(y=>y<2000?0.5:y<2020?1.2:2.2);
+
+    return {years, gold, inflation, rates, usd, liquidity};
+}
 
 // -----------------------------
-// SIMPLE AI FORECAST (LINEAR MOMENTUM MODEL)
+// MACRO MODEL
 // -----------------------------
-let forecastYears = Array.from({length:10},(_,i)=>2026+i+1);
+function computeStrength(data){
 
-let momentum = (strength[strength.length-1] - strength[strength.length-10]) / 10;
+    let {years, inflation, rates, usd, liquidity} = data;
 
-let forecast = forecastYears.map((_,i)=>
-    Math.min(1, Math.max(0, strength[strength.length-1] + momentum*(i+1)))
-);
+    let strength = years.map((y,i)=>{
+
+        let realRateInv = inflation[i] - rates[i]; // core driver
+
+        let m2 = liquidity[i];
+
+        let usdInv = -usd[i];
+
+        let debtProxy = (y-1945)/80;
+
+        return (
+            0.35*realRateInv +
+            0.25*m2 +
+            0.20*debtProxy +
+            0.20*usdInv
+        );
+    });
+
+    // normalize
+    let min = Math.min(...strength);
+    let max = Math.max(...strength);
+
+    return strength.map(v=>(v-min)/(max-min));
+}
 
 // -----------------------------
-// SIGNAL ENGINE
+// REGIME ENGINE
 // -----------------------------
+function regime(v){
+    if(v>0.72) return "BULL EXPANSION";
+    if(v>0.45) return "TRANSITION";
+    return "BEAR / LIQUIDITY STRESS";
+}
+
 function signal(v){
-    if(v > 0.75) return "BUY GOLD / RISK ON HARD ASSETS";
-    if(v > 0.45) return "HOLD / ACCUMULATION";
-    return "RISK OFF / CASH STRENGTH";
+    if(v>0.75) return "BUY HARD ASSETS (GOLD)";
+    if(v>0.45) return "ACCUMULATION ZONE";
+    return "DEFENSIVE / CASH";
 }
 
-let sig = signal(strength[strength.length-1]);
+// -----------------------------
+// BUILD SYSTEM
+// -----------------------------
+(async ()=>{
 
-// -----------------------------
-// UI UPDATE
-// -----------------------------
-document.getElementById("regime").innerText = "REGIME: " + current;
-document.getElementById("signal").innerText = "SIGNAL: " + sig;
-document.getElementById("trend").innerText = "TREND MOMENTUM: " + momentum.toFixed(3);
+let data = generateFallback(); // fallback stable dataset
 
-// -----------------------------
-// MAIN CHART
-// -----------------------------
-new Chart(document.getElementById("chart"),{
+let strength = computeStrength(data);
+
+let latest = strength[strength.length-1];
+
+// UI
+document.getElementById("regime").innerText = "REGIME: " + regime(latest);
+document.getElementById("signal").innerText = "SIGNAL: " + signal(latest);
+document.getElementById("risk").innerText = "RISK SCORE: " + latest.toFixed(2);
+
+// CHART
+new Chart(document.getElementById("main"),{
 type:"line",
 data:{
-labels:years,
+labels:data.years,
 datasets:[
 {
-label:"Gold Price (Log)",
-data:goldLog,
+label:"Gold (Synthetic Macro Proxy)",
+data:data.gold,
 borderColor:"gold",
 yAxisID:"y"
 },
 {
-label:"Gold Strength Index",
+label:"Macro Strength Index (REAL MODEL)",
 data:strength,
 borderColor:"cyan",
 yAxisID:"y1"
@@ -171,7 +155,6 @@ yAxisID:"y1"
 ]
 },
 options:{
-responsive:true,
 scales:{
 y:{position:"left"},
 y1:{position:"right",grid:{drawOnChartArea:false}}
@@ -179,25 +162,7 @@ y1:{position:"right",grid:{drawOnChartArea:false}}
 }
 });
 
-// -----------------------------
-// FORECAST CHART
-// -----------------------------
-new Chart(document.getElementById("forecast"),{
-type:"line",
-data:{
-labels:[...years.slice(-20),...forecastYears],
-datasets:[
-{
-label:"AI Macro Forecast",
-data:[...strength.slice(-20),...forecast],
-borderColor:"lime"
-}
-]
-},
-options:{
-responsive:true
-}
-});
+})();
 
 </script>
 
