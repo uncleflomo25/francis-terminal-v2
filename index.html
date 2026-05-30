@@ -1,718 +1,85 @@
-```html
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LIVE Institutional Macro Terminal</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<title>CROSE J TradingView Terminal</title>
 
 <style>
-body{
-    background:#070b14;
-    color:white;
-    font-family:Arial, sans-serif;
+body {
+  margin: 0;
+  background: #0b0f14;
+  font-family: Arial;
 }
 
-.card{
-    background:#111827;
-    border:1px solid #1f2937;
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  height: 100vh;
+  gap: 5px;
+  padding: 5px;
 }
 
-.green{
-    color:#00ff9d;
+.box {
+  position: relative;
+  border: 1px solid #1f2a3a;
+  background: #111826;
 }
 
-.red{
-    color:#ff4d6d;
-}
-
-.yellow{
-    color:#ffd166;
-}
-
-.buy{
-    color:#00ff9d;
-    font-weight:bold;
-}
-
-.sell{
-    color:#ff4d6d;
-    font-weight:bold;
-}
-
-.table-row:hover{
-    background:#1c2538;
-}
-
-.blink-dot{
-    width:10px;
-    height:10px;
-    border-radius:50%;
-    background:#00ff9d;
-    animation:blink 1s infinite;
-    display:inline-block;
-    margin-right:8px;
-}
-
-@keyframes blink{
-    0%,49%,100%{opacity:1;}
-    50%,99%{opacity:0.3;}
-}
-
-.chart-container{
-    position:relative;
-    height:300px;
-}
-
-.stat-box{
-    background:#0a0f1a;
-    border-left:3px solid #00ff9d;
-    padding:12px;
-    border-radius:4px;
+.label {
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  font-size: 12px;
+  color: #aaa;
+  z-index: 10;
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 </style>
 </head>
 
-<body class="p-4">
+<body>
 
-<!-- HEADER -->
-<div class="flex justify-between items-center mb-6">
+<div class="grid">
 
-    <div>
-        <h1 class="text-3xl font-bold flex items-center">
-            <div class="blink-dot"></div>
-            LIVE Institutional Macro Terminal
-        </h1>
+  <!-- 8D -->
+  <div class="box">
+    <div class="label">8D / MACRO BIAS</div>
+    <iframe
+      src="https://s.tradingview.com/widgetembed/?symbol=FX:EURUSD&interval=W&theme=dark"
+      width="100%" height="100%" frameborder="0">
+    </iframe>
+  </div>
 
-        <p class="text-gray-400">
-            WebSocket Real-Time FX + Macro Dashboard
-        </p>
-    </div>
+  <!-- 4D -->
+  <div class="box">
+    <div class="label">4D / SWING STRUCTURE</div>
+    <iframe
+      src="https://s.tradingview.com/widgetembed/?symbol=FX:EURUSD&interval=D&theme=dark"
+      width="100%" height="100%" frameborder="0">
+    </iframe>
+  </div>
 
-    <div class="card rounded-2xl p-4">
+  <!-- 2D -->
+  <div class="box">
+    <div class="label">2D / TRANSITION (12H)</div>
+    <iframe
+      src="https://s.tradingview.com/widgetembed/?symbol=FX:EURUSD&interval=720&theme=dark"
+      width="100%" height="100%" frameborder="0">
+    </iframe>
+  </div>
 
-        <div class="text-gray-400 text-sm">
-            DXY Index
-        </div>
-
-        <div id="dxy" class="text-3xl font-bold green">
-            Loading...
-        </div>
-
-        <div id="dxyChange" class="text-xs text-gray-400 mt-1">
-            Change: --
-        </div>
-
-    </div>
-
-</div>
-
-<!-- TOP GRID -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-
-    <!-- LIVE RATES -->
-    <div class="card rounded-2xl p-5 lg:col-span-2">
-
-        <h2 class="text-xl font-bold mb-4">
-            Live FX Prices
-        </h2>
-
-        <div id="ratesGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
-
-    </div>
-
-    <!-- NEWS -->
-    <div class="card rounded-2xl p-5">
-
-        <h2 class="text-xl font-bold mb-4">
-            Macro News Feed
-        </h2>
-
-        <div id="newsBox" class="space-y-3 max-h-64 overflow-y-auto">
-            <div class="bg-black/20 p-3 rounded-xl text-sm">
-                Loading live news...
-            </div>
-        </div>
-
-    </div>
+  <!-- EXECUTION -->
+  <div class="box">
+    <div class="label">EXECUTION (4H / DAILY)</div>
+    <iframe
+      src="https://s.tradingview.com/widgetembed/?symbol=FX:EURUSD&interval=240&theme=dark"
+      width="100%" height="100%" frameborder="0">
+    </iframe>
+  </div>
 
 </div>
-
-<!-- STRENGTH + BIAS -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-    <!-- STRENGTH -->
-    <div class="card rounded-2xl p-5">
-
-        <h2 class="text-xl font-bold mb-4">
-            Currency Strength Index
-        </h2>
-
-        <table class="w-full text-sm">
-
-            <thead>
-                <tr class="border-b border-gray-700 text-gray-400">
-                    <th class="text-left pb-2">Currency</th>
-                    <th class="text-left pb-2">Strength</th>
-                    <th class="text-right pb-2">Score</th>
-                </tr>
-            </thead>
-
-            <tbody id="strengthTable"></tbody>
-
-        </table>
-
-    </div>
-
-    <!-- BIAS -->
-    <div class="card rounded-2xl p-5">
-
-        <h2 class="text-xl font-bold mb-4">
-            Macro Bias Engine
-        </h2>
-
-        <div id="biasBox" class="space-y-2"></div>
-
-    </div>
-
-</div>
-
-<!-- MULTI TIMEFRAME -->
-<div class="card rounded-2xl p-5 mb-6">
-
-    <h2 class="text-xl font-bold mb-4">
-        Multi-Timeframe Matrix
-    </h2>
-
-    <div class="overflow-x-auto">
-
-        <table class="w-full text-center text-sm">
-
-            <thead>
-                <tr class="border-b border-gray-700 text-gray-400">
-                    <th class="py-3">Pair</th>
-                    <th>M</th>
-                    <th>W</th>
-                    <th>D</th>
-                    <th>4H</th>
-                    <th>1H</th>
-                    <th>Bias</th>
-                </tr>
-            </thead>
-
-            <tbody id="mtfTable"></tbody>
-
-        </table>
-
-    </div>
-
-</div>
-
-<!-- CHARTS -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-    <div class="card rounded-2xl p-5">
-        <h2 class="text-xl font-bold mb-4">DXY Trend</h2>
-        <div class="chart-container">
-            <canvas id="dxyChart"></canvas>
-        </div>
-    </div>
-
-    <div class="card rounded-2xl p-5">
-        <h2 class="text-xl font-bold mb-4">Currency Pair Performance</h2>
-        <div class="chart-container">
-            <canvas id="pairsChart"></canvas>
-        </div>
-    </div>
-
-</div>
-
-<!-- FOOTER -->
-<div class="mt-6 text-gray-500 text-xs flex justify-between items-center">
-
-    <div>
-        <span id="lastUpdate">Last updated: --</span>
-    </div>
-
-    <div id="connectionStatus" class="flex items-center">
-        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-        <span>Connected</span>
-    </div>
-
-</div>
-
-<script>
-
-// =====================================
-// CONFIG
-// =====================================
-
-const TWELVE_API_KEY = "YOUR_TWELVEDATA_API_KEY";
-const NEWS_API_KEY = "YOUR_NEWSAPI_KEY";
-
-let livePrices = {};
-let dxyHistory = [104.50];
-let maxHistoryPoints = 50;
-let previousDxy = 104.50;
-let charts = {};
-let socket;
-
-// =====================================
-// CONNECT WEBSOCKET
-// =====================================
-
-function connectSocket(){
-
-    socket = new WebSocket(
-        `wss://ws.twelvedata.com/v1/quotes/price?apikey=${TWELVE_API_KEY}`
-    );
-
-    socket.onopen = () => {
-
-        console.log("WebSocket Connected");
-
-        document.getElementById("connectionStatus").innerHTML = `
-            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-            <span>Connected</span>
-        `;
-
-        socket.send(JSON.stringify({
-            action: "subscribe",
-            params: {
-                symbols:
-                    "EUR/USD,USD/JPY,GBP/USD,AUD/USD,NZD/USD,USD/CAD,USD/CHF"
-            }
-        }));
-    };
-
-    socket.onmessage = (event) => {
-
-        const msg = JSON.parse(event.data);
-
-        if(msg.symbol && msg.price){
-
-            livePrices[msg.symbol] = parseFloat(msg.price);
-
-            updateRealtimeDashboard();
-        }
-    };
-
-    socket.onerror = (err) => {
-        console.log(err);
-    };
-
-    socket.onclose = () => {
-
-        document.getElementById("connectionStatus").innerHTML = `
-            <div class="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-            <span>Reconnecting...</span>
-        `;
-
-        setTimeout(() => {
-            connectSocket();
-        }, 3000);
-    };
-}
-
-// =====================================
-// REAL DXY
-// =====================================
-
-function calculateRealDXY(){
-
-    const eurusd = livePrices["EUR/USD"] || 1.08;
-    const usdjpy = livePrices["USD/JPY"] || 150;
-    const gbpusd = livePrices["GBP/USD"] || 1.27;
-    const usdcad = livePrices["USD/CAD"] || 1.36;
-    const usdchf = livePrices["USD/CHF"] || 0.89;
-
-    const dxy = 50.14348112 *
-        Math.pow(eurusd, -0.576) *
-        Math.pow(usdjpy, 0.136) *
-        Math.pow(gbpusd, -0.119) *
-        Math.pow(usdcad, 0.091) *
-        Math.pow(usdchf, 0.036);
-
-    return dxy;
-}
-
-// =====================================
-// UPDATE DASHBOARD
-// =====================================
-
-function updateRealtimeDashboard(){
-
-    renderRates();
-
-    const dxy = calculateRealDXY();
-
-    document.getElementById("dxy").innerHTML = dxy.toFixed(2);
-
-    const change = dxy - previousDxy;
-
-    document.getElementById("dxyChange").innerHTML = `
-        ${change >= 0 ? '+' : ''}${change.toFixed(2)}
-    `;
-
-    document.getElementById("dxyChange").className =
-        change >= 0
-        ? "text-xs text-green-500 mt-1"
-        : "text-xs text-red-500 mt-1";
-
-    previousDxy = dxy;
-
-    dxyHistory.push(dxy);
-
-    if(dxyHistory.length > maxHistoryPoints){
-        dxyHistory.shift();
-    }
-
-    updateDxyChart();
-    updateStrengthEngine();
-    updateBiasEngine();
-    updateTimestamp();
-}
-
-// =====================================
-// LIVE FX GRID
-// =====================================
-
-function renderRates(){
-
-    const grid = document.getElementById("ratesGrid");
-
-    grid.innerHTML = "";
-
-    Object.keys(livePrices).forEach(pair => {
-
-        const price = livePrices[pair];
-
-        grid.innerHTML += `
-            <div class="bg-black/20 p-4 rounded-xl">
-                <div class="text-lg font-semibold">${pair}</div>
-                <div class="text-2xl font-bold green">
-                    ${price}
-                </div>
-            </div>
-        `;
-    });
-}
-
-// =====================================
-// STRENGTH ENGINE
-// =====================================
-
-function updateStrengthEngine(){
-
-    const table = document.getElementById("strengthTable");
-
-    const eurusd = livePrices["EUR/USD"] || 1;
-    const usdjpy = livePrices["USD/JPY"] || 150;
-    const gbpusd = livePrices["GBP/USD"] || 1;
-
-    const strengths = [
-        {
-            cur: "USD",
-            score: ((usdjpy / 150) + (1 / eurusd) + (1 / gbpusd)) * 30
-        },
-        {
-            cur: "EUR",
-            score: eurusd * 40
-        },
-        {
-            cur: "JPY",
-            score: (1 / usdjpy) * 5000
-        }
-    ];
-
-    table.innerHTML = "";
-
-    strengths.forEach(s => {
-
-        const strengthLabel =
-            s.score >= 70
-            ? "Strong"
-            : s.score >= 50
-            ? "Neutral"
-            : "Weak";
-
-        const color =
-            s.score >= 70
-            ? "green"
-            : s.score >= 50
-            ? "yellow"
-            : "red";
-
-        table.innerHTML += `
-            <tr class="table-row">
-                <td class="py-3">${s.cur}</td>
-                <td class="${color}">${strengthLabel}</td>
-                <td class="text-right ${color}">
-                    ${s.score.toFixed(0)}
-                </td>
-            </tr>
-        `;
-    });
-}
-
-// =====================================
-// BIAS ENGINE
-// =====================================
-
-function updateBiasEngine(){
-
-    const box = document.getElementById("biasBox");
-
-    box.innerHTML = "";
-
-    const pairs = [
-        "EUR/USD",
-        "USD/JPY",
-        "GBP/USD"
-    ];
-
-    const dxy = calculateRealDXY();
-
-    pairs.forEach(pair => {
-
-        let signal = "SELL";
-
-        if(pair.includes("USD") && dxy > 103){
-            signal = "BUY";
-        }
-
-        const cls = signal === "BUY" ? "buy" : "sell";
-
-        box.innerHTML += `
-            <div class="flex justify-between bg-black/20 p-3 rounded-xl">
-                <div>
-                    <div class="font-semibold">${pair}</div>
-                    <div class="text-xs text-gray-400">
-                        Live Macro Bias
-                    </div>
-                </div>
-                <div class="${cls}">${signal}</div>
-            </div>
-        `;
-    });
-}
-
-// =====================================
-// MTF MATRIX
-// =====================================
-
-function renderMTF(){
-
-    const table = document.getElementById("mtfTable");
-
-    const rows = [
-        ["EUR/USD","S","S","S","S","N","SELL"],
-        ["USD/JPY","B","B","B","B","B","BUY"],
-        ["GBP/USD","S","N","S","S","S","SELL"]
-    ];
-
-    table.innerHTML = "";
-
-    rows.forEach(r => {
-
-        table.innerHTML += `
-            <tr class="table-row">
-                <td class="py-4 font-semibold">${r[0]}</td>
-                <td class="green">${r[1]}</td>
-                <td class="green">${r[2]}</td>
-                <td class="green">${r[3]}</td>
-                <td class="green">${r[4]}</td>
-                <td class="yellow">${r[5]}</td>
-                <td class="${r[6] === 'BUY' ? 'buy' : 'sell'}">
-                    ${r[6]}
-                </td>
-            </tr>
-        `;
-    });
-}
-
-// =====================================
-// LIVE NEWS
-// =====================================
-
-async function loadLiveNews(){
-
-    try{
-
-        const res = await fetch(
-            `https://newsapi.org/v2/everything?q=forex OR inflation OR federal reserve&language=en&sortBy=publishedAt&apiKey=${NEWS_API_KEY}`
-        );
-
-        const data = await res.json();
-
-        renderNews(data.articles.slice(0, 5));
-
-    }catch(err){
-        console.log(err);
-    }
-}
-
-function renderNews(news){
-
-    const box = document.getElementById("newsBox");
-
-    box.innerHTML = "";
-
-    news.forEach(n => {
-
-        box.innerHTML += `
-            <div class="bg-black/20 p-3 rounded-xl text-sm hover:bg-black/30 transition">
-                <div class="font-semibold mb-1">${n.title}</div>
-                <div class="text-gray-400 text-xs">
-                    ${new Date(n.publishedAt).toLocaleTimeString()}
-                </div>
-            </div>
-        `;
-    });
-}
-
-// =====================================
-// CHARTS
-// =====================================
-
-function initDxyChart(){
-
-    const ctx = document.getElementById("dxyChart").getContext("2d");
-
-    charts.dxy = new Chart(ctx, {
-
-        type:"line",
-
-        data:{
-            labels:Array(dxyHistory.length).fill(""),
-            datasets:[{
-                label:"DXY",
-                data:dxyHistory,
-                borderColor:"#00ff9d",
-                backgroundColor:"rgba(0,255,157,0.1)",
-                tension:0.4,
-                fill:true,
-                pointRadius:0
-            }]
-        },
-
-        options:{
-            responsive:true,
-            maintainAspectRatio:false,
-            plugins:{
-                legend:{display:false}
-            },
-            scales:{
-                y:{
-                    ticks:{color:"#999"},
-                    grid:{color:"#1f2937"}
-                },
-                x:{
-                    ticks:{color:"#999"},
-                    grid:{color:"#1f2937"}
-                }
-            }
-        }
-    });
-}
-
-function updateDxyChart(){
-
-    if(!charts.dxy) return;
-
-    charts.dxy.data.labels = Array(dxyHistory.length).fill("");
-
-    charts.dxy.data.datasets[0].data = dxyHistory;
-
-    charts.dxy.update();
-}
-
-function initPairsChart(){
-
-    const ctx = document.getElementById("pairsChart").getContext("2d");
-
-    charts.pairs = new Chart(ctx, {
-
-        type:"bar",
-
-        data:{
-            labels:["EUR/USD","USD/JPY","GBP/USD"],
-            datasets:[{
-                label:"Performance",
-                data:[-1.2,2.3,-0.8],
-                backgroundColor:[
-                    "#ff4d6d",
-                    "#00ff9d",
-                    "#ff4d6d"
-                ]
-            }]
-        },
-
-        options:{
-            responsive:true,
-            maintainAspectRatio:false,
-            plugins:{
-                legend:{display:false}
-            },
-            scales:{
-                y:{
-                    ticks:{color:"#999"},
-                    grid:{color:"#1f2937"}
-                },
-                x:{
-                    ticks:{color:"#999"},
-                    grid:{color:"#1f2937"}
-                }
-            }
-        }
-    });
-}
-
-// =====================================
-// TIMESTAMP
-// =====================================
-
-function updateTimestamp(){
-
-    const now = new Date();
-
-    document.getElementById("lastUpdate").innerHTML =
-        `Last updated: ${now.toLocaleTimeString()}`;
-}
-
-// =====================================
-// INIT
-// =====================================
-
-function init(){
-
-    initDxyChart();
-    initPairsChart();
-    renderMTF();
-    loadLiveNews();
-    connectSocket();
-    updateTimestamp();
-}
-
-init();
-
-// =====================================
-// LOOPS
-// =====================================
-
-setInterval(() => {
-    updateTimestamp();
-}, 1000);
-
-setInterval(() => {
-    loadLiveNews();
-}, 60000);
-
-</script>
 
 </body>
 </html>
-```
