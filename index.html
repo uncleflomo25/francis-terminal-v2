@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>CROSE J Chart Terminal v3</title>
+<title>CROSE J Chart Terminal FIX</title>
 
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
@@ -10,7 +10,6 @@ body {
   margin: 0;
   background: #0b0f14;
   font-family: Arial;
-  color: white;
 }
 
 .grid {
@@ -26,18 +25,7 @@ body {
   position: relative;
   background: #111826;
   border: 1px solid #1f2a3a;
-}
-
-.title {
-  position: absolute;
-  top: 5px;
-  left: 8px;
-  font-size: 12px;
-  color: #aaa;
-  z-index: 10;
-  background: rgba(0,0,0,0.4);
-  padding: 2px 6px;
-  border-radius: 4px;
+  overflow: hidden;
 }
 
 .chart {
@@ -50,75 +38,73 @@ body {
 <body>
 
 <div class="grid">
-
-  <div class="box"><div class="title">8D / MACRO</div><div id="c1" class="chart"></div></div>
-  <div class="box"><div class="title">4D / SWING</div><div id="c2" class="chart"></div></div>
-  <div class="box"><div class="title">2D / TRANSITION</div><div id="c3" class="chart"></div></div>
-  <div class="box"><div class="title">EXECUTION (4H)</div><div id="c4" class="chart"></div></div>
-
+  <div class="box"><div id="c1" class="chart"></div></div>
+  <div class="box"><div id="c2" class="chart"></div></div>
+  <div class="box"><div id="c3" class="chart"></div></div>
+  <div class="box"><div id="c4" class="chart"></div></div>
 </div>
 
 <script>
 
-// ----------------------------
-// CREATE CHARTS
-// ----------------------------
-function createChart(id){
+function makeChart(containerId) {
+    const container = document.getElementById(containerId);
 
-    const chart = LightweightCharts.createChart(document.getElementById(id), {
-        layout: { background: { color: '#111826' }, textColor: '#ccc' },
-        grid: { vertLines: { color: '#1f2a3a' }, horzLines: { color: '#1f2a3a' } },
-        width: document.getElementById(id).clientWidth,
-        height: document.getElementById(id).clientHeight,
-        timeScale: { timeVisible: true }
+    const chart = LightweightCharts.createChart(container, {
+        layout: {
+            background: { color: '#111826' },
+            textColor: '#ccc'
+        },
+        grid: {
+            vertLines: { color: '#1f2a3a' },
+            horzLines: { color: '#1f2a3a' }
+        },
+        width: container.clientWidth,
+        height: container.clientHeight
     });
 
-    const candleSeries = chart.addCandlestickSeries();
-
-    return candleSeries;
+    const series = chart.addCandlestickSeries();
+    return { chart, series };
 }
 
-// ----------------------------
-// INIT 4 WINDOWS
-// ----------------------------
-let s1 = createChart("c1");
-let s2 = createChart("c2");
-let s3 = createChart("c3");
-let s4 = createChart("c4");
+// FIXED: wait for layout before rendering
+window.onload = function () {
 
-// ----------------------------
-// GENERATE FAKE MARKET DATA (replace later with MT5)
-// ----------------------------
-function generateData(startPrice){
-    let data = [];
-    let price = startPrice;
+    let w1 = makeChart("c1");
+    let w2 = makeChart("c2");
+    let w3 = makeChart("c3");
+    let w4 = makeChart("c4");
 
-    for(let i=0;i<80;i++){
-        let open = price;
-        let close = price + (Math.random()-0.5)*2;
-        let high = Math.max(open,close) + Math.random();
-        let low = Math.min(open,close) - Math.random();
+    function gen(start) {
+        let data = [];
+        let p = start;
 
-        data.push({
-            time: 1700000000 + i * 86400,
-            open, high, low, close
-        });
+        for (let i = 0; i < 100; i++) {
+            let open = p;
+            let close = p + (Math.random() - 0.5) * 2;
+            let high = Math.max(open, close) + Math.random();
+            let low = Math.min(open, close) - Math.random();
 
-        price = close;
+            data.push({
+                time: 1700000000 + i * 86400,
+                open,
+                high,
+                low,
+                close
+            });
+
+            p = close;
+        }
+        return data;
     }
 
-    return data;
-}
+    let data = gen(100);
 
-// ----------------------------
-// LOAD DATA INTO CHARTS
-// ----------------------------
-let data = generateData(100);
+    w1.series.setData(data);
+    w2.series.setData(data.map(d => ({...d, close:d.close*1.01})));
+    w3.series.setData(data.map(d => ({...d, close:d.close*0.99})));
+    w4.series.setData(data.map(d => ({...d, close:d.close*1.005})));
 
-s1.setData(data.map(d => d));
-s2.setData(data.map(d => ({...d, close:d.close*1.01})));
-s3.setData(data.map(d => ({...d, close:d.close*0.99})));
-s4.setData(data.map(d => ({...d, close:d.close*1.005})));
+};
 
 </script>
 
