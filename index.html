@@ -3,78 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pure 12-Asset Composite Candlestick Chart</title>
-    <!-- Load TradingView Lightweight Charts Library -->
+    <title>Francis Terminal PRO - 12-Asset Composite Chart</title>
+    <!-- TradingView Lightweight Charts Stable Engine -->
     <script src="https://unpkg.com"></script>
     <style>
-        body { margin: 0; padding: 0; background-color: #131722; font-family: sans-serif; }
-        #chart-container { width: 100vw; height: 90vh; }
-        #header { color: #ffffff; padding: 15px; font-size: 18px; font-weight: bold; background: #1c2030; }
+        body { margin: 0; padding: 0; background-color: #131722; font-family: sans-serif; overflow: hidden; }
+        #chart-container { width: 100vw; height: 92vh; }
+        #header { color: #ffffff; padding: 15px; font-size: 16px; font-weight: bold; background: #1c2030; border-bottom: 1px solid #2b2b43; }
     </style>
 </head>
 <body>
-    <div id="header">12-Asset Crypto Composite Index (Pure Price Action)</div>
+    <div id="header">📊 Francis Terminal PRO - Pure 12-Asset Composite Index (Indicator-Free)</div>
     <div id="chart-container"></div>
 
     <script>
         const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'ADAUSDT', 'SUIUSDT', 'LINKUSDT', 'AVAXUSDT', 'PEPEUSDT', 'BCHUSDT'];
         
-        // Initialize the interactive chart canvas
+        // 1. Initialize Interactive Canvas
         const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
             width: window.innerWidth,
-            height: window.innerHeight * 0.9,
-            layout: { backgroundColor: '#131722', textColor: '#d1d4dc' },
-            grid: { vertLines: { color: '#2b2b43' }, horzLines: { color: '#2b2b43' } },
+            height: window.innerHeight * 0.92,
+            layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
+            grid: { vertLines: { color: '#242835' }, horzLines: { color: '#242835' } },
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            priceScale: { borderColor: '#2b2b43' },
+            priceScale: { borderColor: '#2b2b43', autoScale: true },
             timeScale: { borderColor: '#2b2b43', timeVisible: true }
         });
 
-        // Add pure candlestick series
+        // 2. Set Structural Candle Profiles
         const candleSeries = chart.addCandlestickSeries({
             upColor: '#00f0ff', downColor: '#ff007a',
             borderUpColor: '#00f0ff', borderDownColor: '#ff007a',
             wickUpColor: '#00f0ff', wickDownColor: '#ff007a'
         });
 
-        // Fetch historical data for all 12 tokens simultaneously
+        // 3. Execution Data Pipeline
         async function fetchCompositeData() {
-            const fetchPromises = symbols.map(sym => 
-                fetch(`https://binance.com{sym}&interval=1d&limit=100`)
-                    .then(res => res.json())
-            );
+            try {
+                const fetchPromises = symbols.map(sym => 
+                    fetch(`https://binance.com{sym}&interval=1d&limit=150`)
+                        .then(res => {
+                            if (!res.ok) throw new Error(`API Connection Failed for ${sym}`);
+                            return res.json();
+                        })
+                );
 
-            const allData = await Promise.all(fetchPromises);
-            const formattedData = [];
-            const numCandles = allData[0].length;
+                const allData = await Promise.all(fetchPromises);
+                const formattedData = [];
+                
+                // Find the exact maximum available overlapping candles across all arrays
+                const minAvailableCandles = Math.min(...allData.map(d => d.length));
 
-            // Compute the real geometric composite values for each candle interval
-            for (let t = 0; t < numCandles; t++) {
-                let time = allData[0][t][0] / 1000; // Convert to seconds
-                let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
+                // 4. Mathematical Reconstruction Loop
+                for (let t = 0; t < minAvailableCandles; t++) {
+                    // Extract safe epoch timestamp from the first asset (BTCUSDT)
+                    let timestampSeconds = Math.floor(allData[0][t][0] / 1000); 
+                    
+                    let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
 
-                for (let i = 0; i < symbols.length; i++) {
-                    logOpen += Math.log(parseFloat(allData[i][t][1]));
-                    logHigh += Math.log(parseFloat(allData[i][t][2]));
-                    logLow += Math.log(parseFloat(allData[i][t][3]));
-                    logClose += Math.log(parseFloat(allData[i][t][4]));
+                    // Accumulate log values to apply pure Geometric Mean logic safely
+                    for (let i = 0; i < symbols.length; i++) {
+                        const candle = allData[i][t];
+                        logOpen  += Math.log(parseFloat(candle[1])); // 1 = Open Price
+                        logHigh  += Math.log(parseFloat(candle[2])); // 2 = High Price
+                        logLow   += Math.log(parseFloat(candle[3])); // 3 = Low Price
+                        logClose += Math.log(parseFloat(candle[4])); // 4 = Close Price
+                    }
+
+                    // Push completed structural geometric OHLC bar
+                    formattedData.push({
+                        time: timestampSeconds,
+                        open:  Math.exp(logOpen / symbols.length),
+                        high:  Math.exp(logHigh / symbols.length),
+                        low:   Math.exp(logLow / symbols.length),
+                        close: Math.exp(logClose / symbols.length)
+                    });
                 }
 
-                formattedData.push({
-                    time: time,
-                    open: Math.exp(logOpen / symbols.length),
-                    high: Math.exp(logHigh / symbols.length),
-                    low: Math.exp(logLow / symbols.length),
-                    close: Math.exp(logClose / symbols.length)
-                });
-            }
+                // 5. Commit coordinates directly to structural chart layout
+                candleSeries.setData(formattedData);
+                chart.timeScale().fitContent();
 
-            candleSeries.setData(formattedData);
+            } catch (error) {
+                console.error("Pipeline Execution Crash: ", error);
+                document.getElementById('header').innerText = `⚠️ Connection Error: Failed to compile index data from Binance API. Check browser console.`;
+            }
         }
 
         fetchCompositeData();
+
+        // Keep view responsive
         window.addEventListener('resize', () => {
-            chart.resize(window.innerWidth, window.innerHeight * 0.9);
+            chart.resize(window.innerWidth, window.innerHeight * 0.92);
         });
     </script>
 </body>
