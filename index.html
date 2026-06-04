@@ -1,172 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>LIVE GOLD TRADING SYSTEM</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body { background:#050814; color:white; font-family:Arial; }
-h2 { text-align:center; color:gold; }
-.panel { display:flex; justify-content:space-around; padding:10px; }
-.card { background:#0f172a; padding:10px; border-radius:8px; min-width:160px; text-align:center; }
-canvas { background:#111827; border-radius:10px; margin:10px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pure 12-Asset Composite Candlestick Chart</title>
+    <!-- Load TradingView Lightweight Charts Library -->
+    <script src="https://unpkg.com"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #131722; font-family: sans-serif; }
+        #chart-container { width: 100vw; height: 90vh; }
+        #header { color: #ffffff; padding: 15px; font-size: 18px; font-weight: bold; background: #1c2030; }
+    </style>
 </head>
-
 <body>
+    <div id="header">12-Asset Crypto Composite Index (Pure Price Action)</div>
+    <div id="chart-container"></div>
 
-<h2>LIVE GOLD DAY TRADING SYSTEM (REAL DATA)</h2>
+    <script>
+        const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'ADAUSDT', 'SUIUSDT', 'LINKUSDT', 'AVAXUSDT', 'PEPEUSDT', 'BCHUSDT'];
+        
+        // Initialize the interactive chart canvas
+        const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+            width: window.innerWidth,
+            height: window.innerHeight * 0.9,
+            layout: { backgroundColor: '#131722', textColor: '#d1d4dc' },
+            grid: { vertLines: { color: '#2b2b43' }, horzLines: { color: '#2b2b43' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            priceScale: { borderColor: '#2b2b43' },
+            timeScale: { borderColor: '#2b2b43', timeVisible: true }
+        });
 
-<div class="panel">
-<div class="card" id="price">PRICE</div>
-<div class="card" id="gsi">GSI</div>
-<div class="card" id="signal">SIGNAL</div>
-</div>
+        // Add pure candlestick series
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#00f0ff', downColor: '#ff007a',
+            borderUpColor: '#00f0ff', borderDownColor: '#ff007a',
+            wickUpColor: '#00f0ff', wickDownColor: '#ff007a'
+        });
 
-<canvas id="chart"></canvas>
+        // Fetch historical data for all 12 tokens simultaneously
+        async function fetchCompositeData() {
+            const fetchPromises = symbols.map(sym => 
+                fetch(`https://binance.com{sym}&interval=1d&limit=100`)
+                    .then(res => res.json())
+            );
 
-<script>
+            const allData = await Promise.all(fetchPromises);
+            const formattedData = [];
+            const numCandles = allData[0].length;
 
-// ==================================================
-// CONFIG (YOU CAN ADD FREE API KEY HERE)
-// ==================================================
-const API_KEY = ""; // optional (TwelveData or similar)
+            // Compute the real geometric composite values for each candle interval
+            for (let t = 0; t < numCandles; t++) {
+                let time = allData[0][t][0] / 1000; // Convert to seconds
+                let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
 
-// ==================================================
-// DATA STORAGE
-// ==================================================
-let prices = [];
-let gsi = [];
+                for (let i = 0; i < symbols.length; i++) {
+                    logOpen += Math.log(parseFloat(allData[i][t][1]));
+                    logHigh += Math.log(parseFloat(allData[i][t][2]));
+                    logLow += Math.log(parseFloat(allData[i][t][3]));
+                    logClose += Math.log(parseFloat(allData[i][t][4]));
+                }
 
-// ==================================================
-// REAL GOLD PRICE FETCH
-// (Fallback if API blocked)
-// ==================================================
-async function fetchGold(){
+                formattedData.push({
+                    time: time,
+                    open: Math.exp(logOpen / symbols.length),
+                    high: Math.exp(logHigh / symbols.length),
+                    low: Math.exp(logLow / symbols.length),
+                    close: Math.exp(logClose / symbols.length)
+                });
+            }
 
-try {
+            candleSeries.setData(formattedData);
+        }
 
-// Option A: free endpoint (may vary by region)
-let url = "https://api.twelvedata.com/price?symbol=XAU/USD&apikey=" + API_KEY;
-
-let res = await fetch(url);
-let data = await res.json();
-
-if(data && data.price){
-return parseFloat(data.price);
-}
-
-} catch(e){}
-
-// fallback (still realistic last known approximation)
-return 2300 + (Math.random()-0.5)*5;
-}
-
-// ==================================================
-// INDICATOR ENGINE (DAY TRADING)
-// ==================================================
-function computeGSI(){
-
-let n = prices.length;
-
-if(n < 10) return 0;
-
-let price = prices[n-1];
-
-// momentum
-let momentum = price - prices[n-10];
-
-// trend (EMA-like)
-let short = prices.slice(-5).reduce((a,b)=>a+b,0)/5;
-let long  = prices.slice(-20).reduce((a,b)=>a+b,0)/20;
-let trend = short - long;
-
-// volatility
-let mean = prices.reduce((a,b)=>a+b,0)/n;
-let vol = Math.sqrt(prices.map(p => (p-mean)**2).reduce((a,b)=>a+b,0)/n);
-
-// GOLD STRENGTH INDEX
-return momentum + trend - (vol * 0.05);
-
-}
-
-// ==================================================
-// SIGNAL ENGINE
-// ==================================================
-function signal(v){
-if(v > 5) return "BUY 🔥";
-if(v < -5) return "SELL ❄️";
-return "HOLD ⚖️";
-}
-
-// ==================================================
-// UPDATE LOOP
-// ==================================================
-async function update(){
-
-let price = await fetchGold();
-
-prices.push(price);
-if(prices.length > 120) prices.shift();
-
-let index = computeGSI();
-
-gsi.push(index);
-if(gsi.length > 120) gsi.shift();
-
-// UI
-document.getElementById("price").innerText =
-"XAU/USD: $" + price.toFixed(2);
-
-document.getElementById("gsi").innerText =
-"GSI: " + index.toFixed(2);
-
-document.getElementById("signal").innerText =
-signal(index);
-
-// CHART
-chart.data.labels = prices.map((_,i)=>i);
-chart.data.datasets[0].data = prices;
-chart.data.datasets[1].data = gsi;
-chart.update();
-
-}
-
-// ==================================================
-// CHART
-// ==================================================
-const ctx = document.getElementById("chart");
-
-const chart = new Chart(ctx,{
-type:"line",
-data:{
-labels:[],
-datasets:[
-{
-label:"XAU/USD (Live)",
-data:[],
-borderColor:"gold"
-},
-{
-label:"Gold Strength Index",
-data:[],
-borderColor:"cyan"
-}
-]
-},
-options:{
-animation:false,
-responsive:true
-}
-});
-
-// ==================================================
-// LIVE LOOP (every 5 sec = safer for APIs)
-// ==================================================
-setInterval(update, 5000);
-
-</script>
-
+        fetchCompositeData();
+        window.addEventListener('resize', () => {
+            chart.resize(window.innerWidth, window.innerHeight * 0.9);
+        });
+    </script>
 </body>
 </html>
