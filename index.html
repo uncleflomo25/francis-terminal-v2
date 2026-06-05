@@ -1,78 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+<title>Macro Flow Dashboard</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+background:#111;
+color:white;
+font-family:Arial;
+}
+
+canvas{
+max-width:1400px;
+height:600px;
+}
+</style>
 </head>
+
 <body>
+
+<h2>Macro Flow Index</h2>
 
 <canvas id="macroChart"></canvas>
 
 <script>
-const ctx = document.getElementById('macroChart');
 
-new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [
-            '2025-01',
-            '2025-03',
-            '2025-05',
-            '2025-07',
-            '2025-09',
-            '2025-11',
-            '2026-01',
-            '2026-03',
-            '2026-05'
-        ],
-        datasets: [
-        {
-            label: 'US Unemployment',
-            data: [4.0,4.1,4.2,4.3,4.4,4.5,4.3,4.3,4.3],
-            yAxisID:'y'
-        },
-        {
-            label: 'DXY',
-            data: [108,107,106,105,104,103,102,101,100],
-            yAxisID:'y1'
-        },
-        {
-            label: 'Macro Flow Score',
-            data: [-60,-45,-30,-15,10,25,40,55,70],
-            yAxisID:'y2'
-        }]
-    },
-    options:{
-        responsive:true,
-        interaction:{
-            mode:'index',
-            intersect:false
-        },
-        scales:{
-            y:{
-                position:'left',
-                title:{
-                    display:true,
-                    text:'Unemployment %'
-                }
-            },
-            y1:{
-                position:'right',
-                grid:{
-                    drawOnChartArea:false
-                },
-                title:{
-                    display:true,
-                    text:'DXY'
-                }
-            },
-            y2:{
-                min:-100,
-                max:100,
-                display:false
-            }
-        }
-    }
+const FRED_KEY = "YOUR_FRED_API_KEY";
+
+async function fred(series){
+
+const url =
+`https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED_KEY}&file_type=json`;
+
+const r = await fetch(url);
+const d = await r.json();
+
+return d.observations.slice(-24);
+}
+
+async function load(){
+
+const unrate = await fred("UNRATE");
+const cpi = await fred("CPIAUCSL");
+const fed = await fred("FEDFUNDS");
+
+const labels = unrate.map(x => x.date);
+
+const unemployment =
+unrate.map(x => Number(x.value));
+
+const inflation =
+cpi.map(x => Number(x.value));
+
+const rates =
+fed.map(x => Number(x.value));
+
+new Chart(
+document.getElementById("macroChart"),
+{
+type:"line",
+data:{
+labels,
+datasets:[
+{
+label:"UNRATE",
+data:unemployment
+},
+{
+label:"CPI",
+data:inflation
+},
+{
+label:"FEDFUNDS",
+data:rates
+}
+]
+}
 });
+
+}
+
+load();
+
 </script>
 
 </body>
