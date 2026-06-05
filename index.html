@@ -3,15 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Francis Terminal PRO - 12-Asset Composite Chart (Real-Time)</title>
-    <!-- TradingView Lightweight Charts Stable Engine -->
+    <title>Francis Terminal PRO - Multi-Timeframe Composite Chart</title>
+    <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        body { margin: 0; padding: 0; background-color: #131722; font-family: sans-serif; overflow: hidden; }
-        #chart-container { width: 100vw; height: 92vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background-color: #131722; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            overflow: hidden; 
+            color: #d1d4dc;
+        }
         #header { 
             color: #ffffff; 
-            padding: 15px; 
+            padding: 15px 20px; 
             font-size: 16px; 
             font-weight: bold; 
             background: #1c2030; 
@@ -19,10 +24,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 20px;
+        }
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         #status {
             font-size: 12px;
             color: #00f0ff;
+            font-weight: 500;
         }
         .connecting {
             color: #ffd700;
@@ -33,59 +45,255 @@
         .error {
             color: #ff007a;
         }
+        .timeframe-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .timeframe-btn {
+            padding: 8px 14px;
+            background: #2b2b43;
+            border: 1px solid #3a3a52;
+            color: #a0a0b0;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .timeframe-btn:hover {
+            background: #3a3a52;
+            border-color: #00f0ff;
+        }
+        .timeframe-btn.active {
+            background: #00f0ff;
+            color: #131722;
+            border-color: #00f0ff;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+        #chart-container { 
+            width: 100vw; 
+            height: calc(100vh - 80px);
+        }
     </style>
 </head>
 <body>
     <div id="header">
-        <div>📊 Francis Terminal PRO - Real-Time 12-Asset Composite Index</div>
-        <div id="status" class="connecting">● Connecting...</div>
+        <div class="title-section">
+            <div>📊 Francis Terminal PRO - Multi-Timeframe Composite Index</div>
+            <div id="status" class="connecting">● Connecting...</div>
+        </div>
+        <div class="timeframe-selector" id="timeframeSelector"></div>
     </div>
     <div id="chart-container"></div>
 
     <script>
         const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'ADAUSDT', 'SUIUSDT', 'LINKUSDT', 'AVAXUSDT', 'PEPEUSDT', 'BCHUSDT'];
         
-        // 1. Initialize Interactive Canvas
-        const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-            width: window.innerWidth,
-            height: window.innerHeight * 0.92,
-            layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
-            grid: { vertLines: { color: '#242835' }, horzLines: { color: '#242835' } },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            priceScale: { borderColor: '#2b2b43', autoScale: true },
-            timeScale: { borderColor: '#2b2b43', timeVisible: true }
-        });
+        // Timeframe configurations
+        const timeframes = [
+            { id: '30m', label: '30m', minutes: 30, interval: '30m', klineInterval: '30m' },
+            { id: '1h', label: '1H', minutes: 60, interval: '1h', klineInterval: '1h' },
+            { id: '2h', label: '2H', minutes: 120, interval: '2h', klineInterval: '2h' },
+            { id: '4h', label: '4H', minutes: 240, interval: '4h', klineInterval: '4h' },
+            { id: '6h', label: '6H', minutes: 360, interval: '6h', klineInterval: '6h' },
+            { id: '12h', label: '12H', minutes: 720, interval: '12h', klineInterval: '12h' },
+            { id: '1d', label: '1D', minutes: 1440, interval: '1d', klineInterval: '1d' },
+            { id: '2d', label: '2D', minutes: 2880, interval: '2d', klineInterval: '1d', multiplier: 2 },
+            { id: '4d', label: '4D', minutes: 5760, interval: '4d', klineInterval: '1d', multiplier: 4 },
+            { id: '8d', label: '8D', minutes: 11520, interval: '8d', klineInterval: '1d', multiplier: 8 }
+        ];
 
-        // 2. Set Structural Candle Profiles
-        const candleSeries = chart.addCandlestickSeries({
-            upColor: '#00f0ff', downColor: '#ff007a',
-            borderUpColor: '#00f0ff', borderDownColor: '#ff007a',
-            wickUpColor: '#00f0ff', wickDownColor: '#ff007a'
-        });
+        let currentTimeframe = '1d';
+        let chart = null;
+        let candleSeries = null;
+        let candleData = [];
+        let realtimeData = {};
+        let ws = null;
+        let activeWebSocketTimeframe = null;
 
-        // Real-time data management
-        const realtimeData = {};
-        const candleData = [];
-        let isConnected = false;
+        // Initialize timeframe selector buttons
+        function initTimeframeSelector() {
+            const selector = document.getElementById('timeframeSelector');
+            timeframes.forEach(tf => {
+                const btn = document.createElement('button');
+                btn.className = 'timeframe-btn' + (tf.id === '1d' ? ' active' : '');
+                btn.textContent = tf.label;
+                btn.onclick = () => switchTimeframe(tf.id);
+                selector.appendChild(btn);
+            });
+        }
 
-        // Initialize real-time data structure for each symbol
-        symbols.forEach(sym => {
-            realtimeData[sym] = {
-                open: 0, high: 0, low: 0, close: 0, time: 0
-            };
-        });
+        // Switch timeframe
+        async function switchTimeframe(timeframeId) {
+            currentTimeframe = timeframeId;
+            
+            // Update active button
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
 
-        // 3. Connect to Binance WebSocket for Real-Time Updates
-        function initWebSocket() {
-            const streams = symbols.map(sym => `${sym.toLowerCase()}@kline_1m`).join('/');
+            // Close old WebSocket
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+
+            // Clear chart
+            candleData = [];
+            realtimeData = {};
+            candleSeries.setData([]);
+
+            // Fetch new data and initialize WebSocket
+            await fetchHistoricalData(timeframeId);
+            initWebSocket(timeframeId);
+        }
+
+        // Initialize Chart
+        function initChart() {
+            const container = document.getElementById('chart-container');
+            chart = LightweightCharts.createChart(container, {
+                width: window.innerWidth,
+                height: window.innerHeight - 80,
+                layout: { 
+                    background: { type: 'solid', color: '#131722' }, 
+                    textColor: '#d1d4dc' 
+                },
+                grid: { 
+                    vertLines: { color: '#242835' }, 
+                    horzLines: { color: '#242835' } 
+                },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                priceScale: { borderColor: '#2b2b43', autoScale: true },
+                timeScale: { borderColor: '#2b2b43', timeVisible: true }
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#00f0ff', 
+                downColor: '#ff007a',
+                borderUpColor: '#00f0ff', 
+                borderDownColor: '#ff007a',
+                wickUpColor: '#00f0ff', 
+                wickDownColor: '#ff007a'
+            });
+        }
+
+        // Get candle limit based on timeframe
+        function getCandleLimit(timeframeId) {
+            const tf = timeframes.find(t => t.id === timeframeId);
+            if (['30m', '1h', '2h', '4h', '6h', '12h'].includes(timeframeId)) {
+                return 1000; // More data for intraday
+            } else if (timeframeId === '1d') {
+                return 150;
+            } else {
+                return Math.ceil(150 / (tf?.multiplier || 1)); // Adjust for multi-day
+            }
+        }
+
+        // Fetch Historical Data
+        async function fetchHistoricalData(timeframeId) {
+            const tf = timeframes.find(t => t.id === timeframeId);
+            const limit = getCandleLimit(timeframeId);
+
+            try {
+                const fetchPromises = symbols.map(sym => 
+                    fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf.klineInterval}&limit=${limit}`)
+                        .then(res => {
+                            if (!res.ok) throw new Error(`Failed to fetch ${sym}`);
+                            return res.json();
+                        })
+                );
+
+                const allData = await Promise.all(fetchPromises);
+                const minCandles = Math.min(...allData.map(d => d.length));
+
+                // Group candles for multi-day timeframes
+                if (tf.multiplier && tf.multiplier > 1) {
+                    const groupedData = [];
+                    for (let i = 0; i < allData.length; i++) {
+                        const grouped = [];
+                        for (let j = 0; j < allData[i].length; j += tf.multiplier) {
+                            grouped.push(allData[i].slice(j, j + tf.multiplier));
+                        }
+                        groupedData.push(grouped);
+                    }
+
+                    const groupedMinCandles = Math.min(...groupedData.map(d => d.length));
+                    
+                    for (let t = 0; t < groupedMinCandles; t++) {
+                        let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
+
+                        for (let i = 0; i < symbols.length; i++) {
+                            const candleGroup = groupedData[i][t];
+                            const openPrice = parseFloat(candleGroup[0][1]);
+                            const highPrice = Math.max(...candleGroup.map(c => parseFloat(c[2])));
+                            const lowPrice = Math.min(...candleGroup.map(c => parseFloat(c[3])));
+                            const closePrice = parseFloat(candleGroup[candleGroup.length - 1][4]);
+
+                            logOpen += Math.log(openPrice);
+                            logHigh += Math.log(highPrice);
+                            logLow += Math.log(lowPrice);
+                            logClose += Math.log(closePrice);
+                        }
+
+                        candleData.push({
+                            time: Math.floor(groupedData[0][t][groupedData[0][t].length - 1][6] / 1000),
+                            open: Math.exp(logOpen / symbols.length),
+                            high: Math.exp(logHigh / symbols.length),
+                            low: Math.exp(logLow / symbols.length),
+                            close: Math.exp(logClose / symbols.length)
+                        });
+                    }
+                } else {
+                    // Standard processing for same-interval timeframes
+                    for (let t = 0; t < minCandles; t++) {
+                        let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
+
+                        for (let i = 0; i < symbols.length; i++) {
+                            const candle = allData[i][t];
+                            logOpen += Math.log(parseFloat(candle[1]));
+                            logHigh += Math.log(parseFloat(candle[2]));
+                            logLow += Math.log(parseFloat(candle[3]));
+                            logClose += Math.log(parseFloat(candle[4]));
+                        }
+
+                        candleData.push({
+                            time: Math.floor(allData[0][t][0] / 1000),
+                            open: Math.exp(logOpen / symbols.length),
+                            high: Math.exp(logHigh / symbols.length),
+                            low: Math.exp(logLow / symbols.length),
+                            close: Math.exp(logClose / symbols.length)
+                        });
+                    }
+                }
+
+                candleSeries.setData(candleData);
+                chart.timeScale().fitContent();
+                updateStatus('Loaded', 'connected');
+
+            } catch (error) {
+                console.error('Error fetching historical data:', error);
+                updateStatus('Error fetching data', 'error');
+            }
+        }
+
+        // Initialize WebSocket
+        function initWebSocket(timeframeId) {
+            const tf = timeframes.find(t => t.id === timeframeId);
+            
+            // For multi-day timeframes, use daily candles and aggregate
+            const wsInterval = (tf.multiplier && tf.multiplier > 1) ? '1d' : tf.klineInterval;
+            const streams = symbols.map(sym => `${sym.toLowerCase()}@kline_${wsInterval}`).join('/');
             const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streams}`;
 
-            const ws = new WebSocket(wsUrl);
+            ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
-                console.log('✅ WebSocket connected');
-                updateStatus('Connected', 'connected');
-                fetchHistoricalData();
+                console.log(`✅ WebSocket connected for ${timeframeId}`);
+                updateStatus(`Connected (${timeframeId})`, 'connected');
             };
 
             ws.onmessage = (event) => {
@@ -102,10 +310,7 @@
                         time: Math.floor(kline.T / 1000)
                     };
 
-                    // Check if all symbols have data at same time
-                    const allSymbolsReady = symbols.every(sym => 
-                        realtimeData[sym].time === realtimeData[symbol].time
-                    );
+                    const allSymbolsReady = symbols.every(sym => realtimeData[sym].time === realtimeData[symbol].time);
 
                     if (allSymbolsReady) {
                         updateCompositeCandle();
@@ -114,82 +319,39 @@
             };
 
             ws.onerror = (error) => {
-                console.error('❌ WebSocket error:', error);
-                updateStatus('Error - Retrying...', 'error');
+                console.error('WebSocket error:', error);
+                updateStatus('Connection Error', 'error');
             };
 
             ws.onclose = () => {
-                console.log('WebSocket disconnected. Reconnecting...');
-                updateStatus('Disconnected - Reconnecting...', 'connecting');
-                setTimeout(initWebSocket, 3000);
+                console.log('WebSocket disconnected');
+                updateStatus('Reconnecting...', 'connecting');
+                setTimeout(() => initWebSocket(timeframeId), 3000);
             };
         }
 
-        // 4. Fetch Historical Data (Last 150 days)
-        async function fetchHistoricalData() {
-            try {
-                const fetchPromises = symbols.map(sym => 
-                    fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=150`)
-                        .then(res => {
-                            if (!res.ok) throw new Error(`Failed to fetch ${sym}`);
-                            return res.json();
-                        })
-                );
-
-                const allData = await Promise.all(fetchPromises);
-                const minCandles = Math.min(...allData.map(d => d.length));
-
-                // Process historical data
-                for (let t = 0; t < minCandles; t++) {
-                    let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
-
-                    for (let i = 0; i < symbols.length; i++) {
-                        const candle = allData[i][t];
-                        logOpen  += Math.log(parseFloat(candle[1]));
-                        logHigh  += Math.log(parseFloat(candle[2]));
-                        logLow   += Math.log(parseFloat(candle[3]));
-                        logClose += Math.log(parseFloat(candle[4]));
-                    }
-
-                    candleData.push({
-                        time: Math.floor(allData[0][t][0] / 1000),
-                        open:  Math.exp(logOpen / symbols.length),
-                        high:  Math.exp(logHigh / symbols.length),
-                        low:   Math.exp(logLow / symbols.length),
-                        close: Math.exp(logClose / symbols.length)
-                    });
-                }
-
-                candleSeries.setData(candleData);
-                chart.timeScale().fitContent();
-
-            } catch (error) {
-                console.error('Error fetching historical data:', error);
-                updateStatus('Error fetching data', 'error');
-            }
-        }
-
-        // 5. Calculate and Update Composite Candle
+        // Update Composite Candle
         function updateCompositeCandle() {
             let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
 
             for (let i = 0; i < symbols.length; i++) {
                 const data = realtimeData[symbols[i]];
-                logOpen  += Math.log(data.open);
-                logHigh  += Math.log(data.high);
-                logLow   += Math.log(data.low);
-                logClose += Math.log(data.close);
+                if (data) {
+                    logOpen += Math.log(data.open);
+                    logHigh += Math.log(data.high);
+                    logLow += Math.log(data.low);
+                    logClose += Math.log(data.close);
+                }
             }
 
             const compositeCandle = {
                 time: realtimeData[symbols[0]].time,
-                open:  Math.exp(logOpen / symbols.length),
-                high:  Math.exp(logHigh / symbols.length),
-                low:   Math.exp(logLow / symbols.length),
+                open: Math.exp(logOpen / symbols.length),
+                high: Math.exp(logHigh / symbols.length),
+                low: Math.exp(logLow / symbols.length),
                 close: Math.exp(logClose / symbols.length)
             };
 
-            // Update or add candle
             const existingIndex = candleData.findIndex(c => c.time === compositeCandle.time);
             if (existingIndex !== -1) {
                 candleData[existingIndex] = compositeCandle;
@@ -200,20 +362,30 @@
             candleSeries.update(compositeCandle);
         }
 
-        // 6. Update Status Display
+        // Update Status
         function updateStatus(text, classname) {
             const statusEl = document.getElementById('status');
             statusEl.textContent = `● ${text}`;
             statusEl.className = classname;
         }
 
-        // 7. Responsive Resize
+        // Handle Resize
         window.addEventListener('resize', () => {
-            chart.resize(window.innerWidth, window.innerHeight * 0.92);
+            if (chart) {
+                chart.resize(window.innerWidth, window.innerHeight - 80);
+            }
         });
 
-        // Initialize WebSocket connection
-        initWebSocket();
+        // Initialize everything
+        function init() {
+            initChart();
+            initTimeframeSelector();
+            fetchHistoricalData('1d');
+            initWebSocket('1d');
+        }
+
+        // Start when page loads
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
