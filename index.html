@@ -1,185 +1,37 @@
+const express = require("express");
+const axios = require("axios");
+const cors = require("cors");
+require("dotenv").config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const BASE_URL = "https://testnet.binance.vision";
+
+const API_KEY = process.env.BINANCE_API_KEY;
+
+// =====================
+// FRONTEND (SINGLE PAGE)
+// =====================
+const frontend = `
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FRANCIS TERMINAL</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>FRANCIS TERMINAL LIVE</title>
 
 <style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:'Inter',sans-serif;
-}
-
-body{
-background:#0b0f14;
-color:#fff;
-height:100vh;
-overflow:hidden;
-}
-
-/* MAIN LAYOUT */
-
-.container{
-display:grid;
-grid-template-columns:260px 1fr 320px;
-grid-template-rows:60px 1fr;
-height:100vh;
-gap:1px;
-background:#1f2937;
-}
-
-.panel{
-background:#111827;
-}
-
-/* TOP BAR */
-
-.topbar{
-grid-column:1/4;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 20px;
-}
-
-.logo{
-font-size:22px;
-font-weight:700;
-color:#00d4ff;
-}
-
-.balance{
-font-size:18px;
-font-weight:600;
-}
-
-/* LEFT MARKETS */
-
-.sidebar{
-padding:12px;
-overflow-y:auto;
-}
-
-.market{
-background:#1f2937;
-padding:14px;
-margin-bottom:8px;
-border-radius:8px;
-cursor:pointer;
-transition:.2s;
-}
-
-.market:hover{
-background:#263445;
-}
-
-.symbol{
-font-weight:600;
-font-size:15px;
-}
-
-.price{
-font-size:13px;
-color:#9ca3af;
-margin-top:4px;
-}
-
-/* CENTER CHART */
-
-.chart-panel{
-display:flex;
-flex-direction:column;
-}
-
-.chart-header{
-height:50px;
-display:flex;
-align-items:center;
-padding-left:15px;
-border-bottom:1px solid #1f2937;
-font-weight:600;
-}
-
-.chart-area{
-flex:1;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:24px;
-color:#6b7280;
-}
-
-/* RIGHT PANEL */
-
-.trade-panel{
-padding:15px;
-overflow-y:auto;
-}
-
-.trade-panel h3{
-margin-bottom:12px;
-}
-
-.input{
-width:100%;
-padding:12px;
-margin-bottom:10px;
-background:#1f2937;
-border:none;
-border-radius:8px;
-color:white;
-outline:none;
-}
-
-.btn{
-width:100%;
-padding:12px;
-border:none;
-border-radius:8px;
-font-weight:700;
-cursor:pointer;
-margin-bottom:10px;
-}
-
-.buy{
-background:#16a34a;
-color:white;
-}
-
-.sell{
-background:#dc2626;
-color:white;
-}
-
-.section{
-margin-top:20px;
-padding-top:15px;
-border-top:1px solid #1f2937;
-}
-
-.pnl{
-color:#16a34a;
-font-size:18px;
-font-weight:700;
-}
-
-/* SCROLLBAR */
-
-::-webkit-scrollbar{
-width:6px;
-}
-
-::-webkit-scrollbar-thumb{
-background:#333;
-border-radius:10px;
-}
-
+body{margin:0;font-family:Arial;background:#0b0f14;color:#fff;}
+.container{display:flex;height:100vh;}
+.left{width:220px;background:#111827;padding:10px;}
+.center{flex:1;padding:20px;}
+.right{width:260px;background:#111827;padding:10px;}
+.market{padding:10px;background:#1f2937;margin-bottom:8px;cursor:pointer;}
+input,button{width:100%;padding:10px;margin-top:10px;}
+button{cursor:pointer;}
+.buy{background:green;color:white;}
+.sell{background:red;color:white;}
 </style>
 </head>
 
@@ -187,125 +39,128 @@ border-radius:10px;
 
 <div class="container">
 
-<!-- TOP BAR -->
+<div class="left" id="markets"></div>
 
-<div class="panel topbar">
-
-<div class="logo">
-FRANCIS TERMINAL
+<div class="center">
+<h2 id="pair">BTCUSDT</h2>
+<h1 id="price">Loading...</h1>
 </div>
 
-<div class="balance">
-AED Balance: 100,000
-</div>
-
-</div>
-
-<!-- LEFT SIDE -->
-
-<div class="panel sidebar">
-
-<div class="market">
-<div class="symbol">BTC/AED</div>
-<div class="price">394,500 AED</div>
-</div>
-
-<div class="market">
-<div class="symbol">ETH/AED</div>
-<div class="price">14,200 AED</div>
-</div>
-
-<div class="market">
-<div class="symbol">SOL/AED</div>
-<div class="price">645 AED</div>
-</div>
-
-<div class="market">
-<div class="symbol">LINK/AED</div>
-<div class="price">62 AED</div>
-</div>
-
-<div class="market">
-<div class="symbol">SUI/AED</div>
-<div class="price">15 AED</div>
-</div>
-
-<div class="market">
-<div class="symbol">XAU/AED</div>
-<div class="price">12,400 AED</div>
+<div class="right">
+<input id="qty" placeholder="Quantity">
+<button class="buy" onclick="buy()">BUY</button>
+<button class="sell" onclick="sell()">SELL</button>
+<p id="log"></p>
 </div>
 
 </div>
 
-<!-- CENTER -->
+<script>
+let current = "BTCUSDT";
 
-<div class="panel chart-panel">
+const markets = ["BTCUSDT","ETHUSDT","SOLUSDT","LINKUSDT"];
 
-<div class="chart-header">
-BTC/AED
-</div>
+const list = document.getElementById("markets");
+markets.forEach(m=>{
+let d=document.createElement("div");
+d.className="market";
+d.innerText=m;
+d.onclick=()=>{current=m;document.getElementById("pair").innerText=m;}
+list.appendChild(d);
+});
 
-<div class="chart-area">
+async function price(){
+let r = await fetch("/price/"+current);
+let d = await r.json();
+document.getElementById("price").innerText = d.price;
+}
 
-TRADINGVIEW CHART AREA
+setInterval(price,2000);
 
-</div>
+async function buy(){
+let qty=document.getElementById("qty").value;
+let r=await fetch("/order",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({symbol:current,side:"BUY",quantity:qty})
+});
+let d=await r.json();
+document.getElementById("log").innerText="BUY SENT";
+}
 
-</div>
-
-<!-- RIGHT -->
-
-<div class="panel trade-panel">
-
-<h3>Order Entry</h3>
-
-<input class="input" placeholder="Price">
-
-<input class="input" placeholder="Quantity">
-
-<button class="btn buy">
-BUY
-</button>
-
-<button class="btn sell">
-SELL
-</button>
-
-<div class="section">
-
-<h3>Portfolio</h3>
-
-<p>BTC : 0.50</p>
-<p>ETH : 5.00</p>
-<p>SOL : 100</p>
-<p>LINK : 50</p>
-<p>SUI : 1000</p>
-
-</div>
-
-<div class="section">
-
-<h3>Profit & Loss</h3>
-
-<div class="pnl">
-+4,532 AED
-</div>
-
-</div>
-
-<div class="section">
-
-<h3>Recent Trades</h3>
-
-<p>BUY BTC 0.10</p>
-<p>SELL ETH 1.00</p>
-<p>BUY SOL 20</p>
-
-</div>
-
-</div>
-
-</div>
+async function sell(){
+let qty=document.getElementById("qty").value;
+let r=await fetch("/order",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({symbol:current,side:"SELL",quantity:qty})
+});
+let d=await r.json();
+document.getElementById("log").innerText="SELL SENT";
+}
+</script>
 
 </body>
 </html>
+`;
+
+// =====================
+// SERVE FRONTEND
+// =====================
+app.get("/", (req,res)=>{
+res.send(frontend);
+});
+
+// =====================
+// LIVE PRICE (BINANCE)
+// =====================
+app.get("/price/:symbol", async (req,res)=>{
+try{
+const symbol = req.params.symbol;
+
+const r = await axios.get(
+`${BASE_URL}/api/v3/ticker/price?symbol=${symbol}`
+);
+
+res.json(r.data);
+
+}catch(e){
+res.json({error:"price failed"});
+}
+});
+
+// =====================
+// PLACE ORDER (TESTNET)
+// =====================
+app.post("/order", async (req,res)=>{
+try{
+const {symbol,side,quantity} = req.body;
+
+const r = await axios.post(
+`${BASE_URL}/api/v3/order`,
+null,
+{
+params:{
+symbol,
+side,
+type:"MARKET",
+quantity,
+timestamp:Date.now()
+},
+headers:{
+"X-MBX-APIKEY": API_KEY
+}
+}
+);
+
+res.json(r.data);
+
+}catch(e){
+res.json({error:"order failed",msg:e.message});
+}
+});
+
+// =====================
+app.listen(3000,()=>{
+console.log("TRADING TERMINAL RUNNING http://localhost:3000");
+});
