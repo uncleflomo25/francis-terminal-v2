@@ -1,121 +1,219 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>DXY Macro Monitor</title>
-<script src="https://jsdelivr.net"></script>
-
-<style>
-body{
-    background:#111;
-    color:white;
-    font-family:Arial;
-    padding:20px;
-}
-.card{
-    margin-bottom:40px;
-}
-canvas{
-    max-height:300px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Francis Terminal PRO - 12-Asset Composite Chart (Real-Time)</title>
+    <!-- TradingView Lightweight Charts Stable Engine -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #131722; font-family: sans-serif; overflow: hidden; }
+        #chart-container { width: 100vw; height: 92vh; }
+        #header { 
+            color: #ffffff; 
+            padding: 15px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            background: #1c2030; 
+            border-bottom: 1px solid #2b2b43;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #status {
+            font-size: 12px;
+            color: #00f0ff;
+        }
+        .connecting {
+            color: #ffd700;
+        }
+        .connected {
+            color: #00f0ff;
+        }
+        .error {
+            color: #ff007a;
+        }
+    </style>
 </head>
 <body>
+    <div id="header">
+        <div>📊 Francis Terminal PRO - Real-Time 12-Asset Composite Index</div>
+        <div id="status" class="connecting">● Connecting...</div>
+    </div>
+    <div id="chart-container"></div>
 
-<h1>DXY Impact Dashboard</h1>
+    <script>
+        const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'ADAUSDT', 'SUIUSDT', 'LINKUSDT', 'AVAXUSDT', 'PEPEUSDT', 'BCHUSDT'];
+        
+        // 1. Initialize Interactive Canvas
+        const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+            width: window.innerWidth,
+            height: window.innerHeight * 0.92,
+            layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
+            grid: { vertLines: { color: '#242835' }, horzLines: { color: '#242835' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            priceScale: { borderColor: '#2b2b43', autoScale: true },
+            timeScale: { borderColor: '#2b2b43', timeVisible: true }
+        });
 
-<div class="card">
-    <h2>DXY</h2>
-    <canvas id="dxyChart"></canvas>
-</div>
+        // 2. Set Structural Candle Profiles
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#00f0ff', downColor: '#ff007a',
+            borderUpColor: '#00f0ff', borderDownColor: '#ff007a',
+            wickUpColor: '#00f0ff', wickDownColor: '#ff007a'
+        });
 
-<div class="card">
-    <h2>US CPI</h2>
-    <canvas id="cpiChart"></canvas>
-</div>
+        // Real-time data management
+        const realtimeData = {};
+        const candleData = [];
+        let isConnected = false;
 
-<div class="card">
-    <h2>US Unemployment Rate</h2>
-    <canvas id="unemploymentChart"></canvas>
-</div>
+        // Initialize real-time data structure for each symbol
+        symbols.forEach(sym => {
+            realtimeData[sym] = {
+                open: 0, high: 0, low: 0, close: 0, time: 0
+            };
+        });
 
-<div class="card">
-    <h2>Fed Interest Rate</h2>
-    <canvas id="rateChart"></canvas>
-</div>
+        // 3. Connect to Binance WebSocket for Real-Time Updates
+        function initWebSocket() {
+            const streams = symbols.map(sym => `${sym.toLowerCase()}@kline_1m`).join('/');
+            const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streams}`;
 
-<script>
-const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            const ws = new WebSocket(wsUrl);
 
-// Stable baseline historical trends to guarantee charts initialize under any network state
-const fallbackData = {
-    dxy: [103, 104, 105, 104, 103, 102, 101, 100, 101, 102, 103, 104],
-    cpi: [3.5, 3.4, 3.3, 3.2, 3.0, 2.9, 2.8, 2.7, 2.8, 2.9, 3.0, 3.1],
-    unemployment: [4.0, 4.0, 4.1, 4.1, 4.2, 4.2, 4.3, 4.3, 4.4, 4.4, 4.3, 4.3],
-    rate: [5.50, 5.50, 5.50, 5.50, 5.25, 5.25, 5.00, 5.00, 4.75, 4.75, 4.50, 4.50]
-};
+            ws.onopen = () => {
+                console.log('✅ WebSocket connected');
+                updateStatus('Connected', 'connected');
+                fetchHistoricalData();
+            };
 
-function renderChart(canvasId, labelText, dataArray) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
-    
-    new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: months,
-            datasets: [{
-                label: labelText,
-                data: dataArray,
-                borderColor: 'rgba(255, 255, 255, 0.8)',
-                borderWidth: 2,
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { ticks: { color: '#fff' } },
-                x: { ticks: { color: '#fff' } }
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                const kline = message.data.k;
+                const symbol = message.data.s;
+
+                if (kline.x) { // Candle closed
+                    realtimeData[symbol] = {
+                        open: parseFloat(kline.o),
+                        high: parseFloat(kline.h),
+                        low: parseFloat(kline.l),
+                        close: parseFloat(kline.c),
+                        time: Math.floor(kline.T / 1000)
+                    };
+
+                    // Check if all symbols have data at same time
+                    const allSymbolsReady = symbols.every(sym => 
+                        realtimeData[sym].time === realtimeData[symbol].time
+                    );
+
+                    if (allSymbolsReady) {
+                        updateCompositeCandle();
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', error);
+                updateStatus('Error - Retrying...', 'error');
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected. Reconnecting...');
+                updateStatus('Disconnected - Reconnecting...', 'connecting');
+                setTimeout(initWebSocket, 3000);
+            };
+        }
+
+        // 4. Fetch Historical Data (Last 150 days)
+        async function fetchHistoricalData() {
+            try {
+                const fetchPromises = symbols.map(sym => 
+                    fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1d&limit=150`)
+                        .then(res => {
+                            if (!res.ok) throw new Error(`Failed to fetch ${sym}`);
+                            return res.json();
+                        })
+                );
+
+                const allData = await Promise.all(fetchPromises);
+                const minCandles = Math.min(...allData.map(d => d.length));
+
+                // Process historical data
+                for (let t = 0; t < minCandles; t++) {
+                    let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
+
+                    for (let i = 0; i < symbols.length; i++) {
+                        const candle = allData[i][t];
+                        logOpen  += Math.log(parseFloat(candle[1]));
+                        logHigh  += Math.log(parseFloat(candle[2]));
+                        logLow   += Math.log(parseFloat(candle[3]));
+                        logClose += Math.log(parseFloat(candle[4]));
+                    }
+
+                    candleData.push({
+                        time: Math.floor(allData[0][t][0] / 1000),
+                        open:  Math.exp(logOpen / symbols.length),
+                        high:  Math.exp(logHigh / symbols.length),
+                        low:   Math.exp(logLow / symbols.length),
+                        close: Math.exp(logClose / symbols.length)
+                    });
+                }
+
+                candleSeries.setData(candleData);
+                chart.timeScale().fitContent();
+
+            } catch (error) {
+                console.error('Error fetching historical data:', error);
+                updateStatus('Error fetching data', 'error');
             }
         }
-    });
-}
 
-async function loadRealTimeData() {
-    // Standard variables loaded with robust baselines
-    let finalDxy = [...fallbackData.dxy];
-    let finalCpi = [...fallbackData.cpi];
-    let finalUnemp = [...fallbackData.unemployment];
-    let finalRate = [...fallbackData.rate];
+        // 5. Calculate and Update Composite Candle
+        function updateCompositeCandle() {
+            let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
 
-    try {
-        // Universal open economic proxy endpoint (No-auth endpoint framework)
-        const dxyUrl = 'https://financeapi.com';
-        
-        const dxyResponse = await fetch(dxyUrl).then(r => r.json()).catch(() => null);
-        
-        if (dxyResponse?.chart?.result?.[0]?.indicators?.quote?.[0]?.close) {
-            const dynamicPrices = dxyResponse.chart.result[0].indicators.quote[0].close;
-            const cleanedPrices = dynamicPrices.filter(v => v !== null).slice(-12);
-            if (cleanedPrices.length === 12) {
-                finalDxy = cleanedPrices;
+            for (let i = 0; i < symbols.length; i++) {
+                const data = realtimeData[symbols[i]];
+                logOpen  += Math.log(data.open);
+                logHigh  += Math.log(data.high);
+                logLow   += Math.log(data.low);
+                logClose += Math.log(data.close);
             }
+
+            const compositeCandle = {
+                time: realtimeData[symbols[0]].time,
+                open:  Math.exp(logOpen / symbols.length),
+                high:  Math.exp(logHigh / symbols.length),
+                low:   Math.exp(logLow / symbols.length),
+                close: Math.exp(logClose / symbols.length)
+            };
+
+            // Update or add candle
+            const existingIndex = candleData.findIndex(c => c.time === compositeCandle.time);
+            if (existingIndex !== -1) {
+                candleData[existingIndex] = compositeCandle;
+            } else {
+                candleData.push(compositeCandle);
+            }
+
+            candleSeries.update(compositeCandle);
         }
-    } catch (error) {
-        console.warn("Live pipeline fetch skipped or blocked. Using dashboard internal baselines safely:", error);
-    } finally {
-        // Structural generation executed here to verify elements are drawn 
-        renderChart("dxyChart", "DXY", finalDxy);
-        renderChart("cpiChart", "CPI YoY %", finalCpi);
-        renderChart("unemploymentChart", "Unemployment %", finalUnemp);
-        renderChart("rateChart", "Fed Funds %", finalRate);
-    }
-}
 
-// Initial safety trigger executed immediately when body elements match
-window.addEventListener("DOMContentLoaded", loadRealTimeData);
-</script>
+        // 6. Update Status Display
+        function updateStatus(text, classname) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = `● ${text}`;
+            statusEl.className = classname;
+        }
 
+        // 7. Responsive Resize
+        window.addEventListener('resize', () => {
+            chart.resize(window.innerWidth, window.innerHeight * 0.92);
+        });
+
+        // Initialize WebSocket connection
+        initWebSocket();
+    </script>
 </body>
 </html>
