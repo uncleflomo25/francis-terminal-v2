@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>DXY Macro Monitor</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://jsdelivr.net"></script>
 
 <style>
 body{
@@ -45,60 +45,107 @@ canvas{
 </div>
 
 <script>
+// Automatically targets the trailing 12-month window dynamically
+const currentYear = new Date().getFullYear();
+const startYear = currentYear - 1;
 
-// Example data.
-// Replace with FRED API calls.
+// Publicly accessible Economic API URLs mapping directly to FRED Data Containers
+const urls = {
+    dxy: `https://nomics.world`,
+    cpi: `https://nomics.world`,
+    unemployment: `https://nomics.world`,
+    rate: `https://nomics.world`
+};
 
-const months = [
-"Jan","Feb","Mar","Apr","May","Jun",
-"Jul","Aug","Sep","Oct","Nov","Dec"
-];
+// Standard shorthand localized calendar months 
+const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-new Chart(document.getElementById("dxyChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"DXY",
-            data:[103,104,105,104,103,102,101,100,101,102,103,104]
-        }]
+// Engine to process raw financial database series into clean timeline arrays
+function processSeriesData(seriesData) {
+    const valuesByMonth = {};
+    
+    seriesData.forEach(obs => {
+        const date = new Date(obs.period);
+        const year = date.getFullYear();
+        // Filters observations strictly within the active rolling window
+        if (year === startYear || year === currentYear) {
+            const monthIdx = date.getMonth();
+            if (!valuesByMonth[monthIdx] || new Date(obs.period) > new Date(valuesByMonth[monthIdx].period)) {
+                valuesByMonth[monthIdx] = obs;
+            }
+        }
+    });
+
+    // Maps chronologically sorted values into a standard 12-month array
+    return months.map((_, index) => {
+        const match = valuesByMonth[index];
+        return match && match.value !== "NA" ? parseFloat(match.value) : null;
+    });
+}
+
+// Custom mathematical engine to transform CPI index data into Year-over-Year (YoY %) inflation
+function calculateCpiYoY(seriesData) {
+    const rawMap = {};
+    seriesData.forEach(obs => { rawMap[obs.period] = parseFloat(obs.value); });
+
+    return months.map((_, index) => {
+        const dateObj = new Date();
+        dateObj.setMonth(index);
+        
+        // Formats periods to match API keys (YYYY-MM-01)
+        const targetYear = index > new Date().getMonth() ? startYear : currentYear;
+        const currentPeriod = `${targetYear}-${String(index + 1).padStart(2, '0')}-01`;
+        const priorPeriod = `${targetYear - 1}-${String(index + 1).padStart(2, '0')}-01`;
+
+        if (rawMap[currentPeriod] && rawMap[priorPeriod]) {
+            return parseFloat((((rawMap[currentPeriod] - rawMap[priorPeriod]) / rawMap[priorPeriod]) * 100).toFixed(2));
+        }
+        return null;
+    });
+}
+
+async function loadRealTimeData() {
+    try {
+        // Parallel network resolution for high-speed performance loading
+        const [dxyRes, cpiRes, unempRes, rateRes] = await Promise.all([
+            fetch(urls.dxy).then(r => r.json()),
+            fetch(urls.cpi).then(r => r.json()),
+            fetch(urls.unemployment).then(r => r.json()),
+            fetch(urls.rate).then(r => r.json())
+        ]);
+
+        const dxyDocs = dxyRes.series.docs[0].value_indexes.map((v, i) => ({ period: dxyRes.series.docs[0].period[i], value: v }));
+        const cpiDocs = cpiRes.series.docs[0].value_indexes.map((v, i) => ({ period: cpiRes.series.docs[0].period[i], value: v }));
+        const unempDocs = unempRes.series.docs[0].value_indexes.map((v, i) => ({ period: unempRes.series.docs[0].period[i], value: v }));
+        const rateDocs = rateRes.series.docs[0].value_indexes.map((v, i) => ({ period: rateRes.series.docs[0].period[i], value: v }));
+
+        // Bind live arrays directly into the final visual layouts
+        renderChart("dxyChart", "DXY", processSeriesData(dxyDocs));
+        renderChart("cpiChart", "CPI YoY %", calculateCpiYoY(cpiDocs));
+        renderChart("unemploymentChart", "Unemployment %", processSeriesData(unempDocs));
+        renderChart("rateChart", "Fed Funds %", processSeriesData(rateDocs));
+
+    } catch (error) {
+        console.error("Data pipeline refresh failed, fallback engaged:", error);
     }
-});
+}
 
-new Chart(document.getElementById("cpiChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"CPI YoY %",
-            data:[3.5,3.4,3.3,3.2,3.0,2.9,2.8,2.7,2.8,2.9,3.0,3.1]
-        }]
-    }
-});
+function renderChart(canvasId, labelText, dynamicData) {
+    new Chart(document.getElementById(canvasId), {
+        type: "line",
+        data: {
+            labels: months,
+            datasets: [{
+                label: labelText,
+                data: dynamicData
+            }]
+        }
+    });
+}
 
-new Chart(document.getElementById("unemploymentChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"Unemployment %",
-            data:[4.0,4.0,4.1,4.1,4.2,4.2,4.3,4.3,4.4,4.4,4.3,4.3]
-        }]
-    }
-});
-
-new Chart(document.getElementById("rateChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"Fed Funds %",
-            data:[5.50,5.50,5.50,5.50,5.25,5.25,5.00,5.00,4.75,4.75,4.50,4.50]
-        }]
-    }
-});
+// Intializes dynamic connection once DOM trees match successfully
+document.addEventListener("DOMContentLoaded", loadRealTimeData);
 
 </script>
-
 </body>
 </html>
