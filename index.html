@@ -224,6 +224,12 @@
             background: #3a3a52;
             border-color: #00f0ff;
         }
+        
+        /* Loading indicator */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -333,6 +339,7 @@
         let ws = null;
         let indicators = [];
         let indicatorSeries = [];
+        let isLoading = false;
 
         // Preset Indicators
         const presetIndicators = {
@@ -411,7 +418,6 @@
             indicators.push({ ...preset, id: Date.now() });
             recalculateIndicators();
             updateActiveIndicatorsList();
-            alert(`✅ ${preset.name} added!`);
         }
 
         function createCustomIndicator() {
@@ -435,17 +441,17 @@
 
             recalculateIndicators();
             updateActiveIndicatorsList();
-            alert(`✅ ${name} added!`);
         }
 
         function removeIndicator(idx) {
             const removed = indicators.splice(idx, 1);
-            indicatorSeries.forEach(ser => {
-                if (ser.indicator.id === removed[0].id) {
-                    chart.removeSeries(ser.series);
+            indicatorSeries = indicatorSeries.filter(s => {
+                if (s.indicator.id === removed[0].id) {
+                    chart.removeSeries(s.series);
+                    return false;
                 }
+                return true;
             });
-            indicatorSeries = indicatorSeries.filter(s => s.indicator.id !== removed[0].id);
             updateActiveIndicatorsList();
         }
 
@@ -566,24 +572,55 @@
                 const btn = document.createElement('button');
                 btn.className = 'timeframe-btn' + (tf.id === '1d' ? ' active' : '');
                 btn.textContent = tf.label;
-                btn.onclick = () => switchTimeframe(tf.id, btn);
+                btn.setAttribute('data-timeframe', tf.id);
+                btn.onclick = () => switchTimeframe(tf.id);
                 selector.appendChild(btn);
             });
         }
 
-        async function switchTimeframe(timeframeId, btn) {
+        async function switchTimeframe(timeframeId) {
+            if (isLoading || currentTimeframe === timeframeId) return;
+            
+            isLoading = true;
+            updateStatus(`Loading ${timeframeId}...`, 'connecting');
+            
             currentTimeframe = timeframeId;
-            document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            
+            // Update button styles
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-timeframe') === timeframeId) {
+                    btn.classList.add('active');
+                }
+            });
 
-            if (ws) ws.close();
+            // Close old WebSocket
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+
+            // Clear chart data
             candleData = [];
             realtimeData = {};
             candleSeries.setData([]);
+            
+            // Clear indicators
+            indicatorSeries.forEach(s => chart.removeSeries(s.series));
+            indicatorSeries = [];
 
+            // Load new data
             await fetchHistoricalData(timeframeId);
-            recalculateIndicators();
+            
+            // Recalculate indicators for new timeframe
+            if (indicators.length > 0) {
+                recalculateIndicators();
+            }
+            
+            // Initialize WebSocket for real-time updates
             initWebSocket(timeframeId);
+            
+            isLoading = false;
         }
 
         function getCandleLimit(timeframeId) {
@@ -604,11 +641,18 @@
             try {
                 const fetchPromises = symbols.map(sym => 
                     fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf.klineInterval}&limit=${limit}`)
-                        .then(res => res.ok ? res.json() : Promise.reject())
+                        .then(res => res.ok ? res.json() : Promise.reject(`Failed: ${sym}`))
+                        .catch(err => { console.error(err); return []; })
                 );
 
                 const allData = await Promise.all(fetchPromises);
-                const minCandles = Math.min(...allData.map(d => d.length));
+                const minCandles = Math.min(...allData.filter(d => d.length).map(d => d.length));
+
+                if (minCandles === 0) {
+                    updateStatus('No data available', 'error');
+                    isLoading = false;
+                    return;
+                }
 
                 if (tf.multiplier && tf.multiplier > 1) {
                     const groupedData = [];
@@ -625,6 +669,8 @@
                         let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
                         for (let i = 0; i < symbols.length; i++) {
                             const candleGroup = groupedData[i][t];
+                            if (candleGroup.length === 0) continue;
+                            
                             const openPrice = parseFloat(candleGroup[0][1]);
                             const highPrice = Math.max(...candleGroup.map(c => parseFloat(c[2])));
                             const lowPrice = Math.min(...candleGroup.map(c => parseFloat(c[3])));
@@ -649,6 +695,7 @@
                         let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
                         for (let i = 0; i < symbols.length; i++) {
                             const candle = allData[i][t];
+                            if (!candle) continue;
                             logOpen += Math.log(parseFloat(candle[1]));
                             logHigh += Math.log(parseFloat(candle[2]));
                             logLow += Math.log(parseFloat(candle[3]));
@@ -667,7 +714,7 @@
 
                 candleSeries.setData(candleData);
                 chart.timeScale().fitContent();
-                updateStatus('Loaded', 'connected');
+                updateStatus(`Loaded ${candleData.length} candles (${timeframeId})`, 'connected');
 
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -683,7 +730,7 @@
             ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
 
             ws.onopen = () => {
-                console.log(`✅ Connected (${timeframeId})`);
+                console.log(`✅ Connected to ${timeframeId}`);
                 updateStatus(`Connected (${timeframeId})`, 'connected');
             };
 
@@ -701,7 +748,7 @@
                         time: Math.floor(kline.T / 1000)
                     };
 
-                    const allSymbolsReady = symbols.every(sym => realtimeData[sym].time === realtimeData[symbol].time);
+                    const allSymbolsReady = symbols.every(sym => realtimeData[sym] && realtimeData[sym].time === realtimeData[symbol].time);
                     if (allSymbolsReady) {
                         let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
                         for (let i = 0; i < symbols.length; i++) {
@@ -728,18 +775,25 @@
                         }
 
                         candleSeries.update(compositeCandle);
-                        recalculateIndicators();
+                        
+                        if (indicators.length > 0) {
+                            recalculateIndicators();
+                        }
                     }
                 }
             };
 
-            ws.onerror = () => {
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
                 updateStatus('Connection Error', 'error');
             };
 
             ws.onclose = () => {
-                updateStatus('Reconnecting...', 'connecting');
-                setTimeout(() => initWebSocket(timeframeId), 3000);
+                console.log('WebSocket disconnected');
+                if (currentTimeframe === timeframeId && !isLoading) {
+                    updateStatus('Reconnecting...', 'connecting');
+                    setTimeout(() => initWebSocket(timeframeId), 3000);
+                }
             };
         }
 
