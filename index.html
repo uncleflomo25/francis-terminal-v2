@@ -2,100 +2,187 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>DXY Macro Monitor</title>
+<title>Francis Terminal PRO</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
 body{
-    background:#111;
+    background:#0a0a0a;
     color:white;
     font-family:Arial;
-    padding:20px;
+    overflow:hidden;
 }
-.card{
-    margin-bottom:40px;
+
+.wrapper{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
 }
+
+.panel{
+    flex:1;
+    position:relative;
+    border-bottom:1px solid #1f1f1f;
+    padding:2px;
+}
+
+.panel:last-child{
+    border-bottom:none;
+}
+
+.title{
+    position:absolute;
+    top:5px;
+    left:10px;
+    z-index:10;
+    font-size:12px;
+    font-weight:bold;
+    color:#00d4ff;
+}
+
 canvas{
-    max-height:300px;
+    width:100% !important;
+    height:100% !important;
 }
+
 </style>
+
 </head>
+
 <body>
 
-<h1>DXY Impact Dashboard</h1>
+<div class="wrapper">
 
-<div class="card">
-    <h2>DXY</h2>
-    <canvas id="dxyChart"></canvas>
+<div class="panel">
+<div class="title">DXY</div>
+<canvas id="dxy"></canvas>
 </div>
 
-<div class="card">
-    <h2>US CPI</h2>
-    <canvas id="cpiChart"></canvas>
+<div class="panel">
+<div class="title">US CPI YoY</div>
+<canvas id="cpi"></canvas>
 </div>
 
-<div class="card">
-    <h2>US Unemployment Rate</h2>
-    <canvas id="unemploymentChart"></canvas>
+<div class="panel">
+<div class="title">US Unemployment Rate</div>
+<canvas id="unemployment"></canvas>
 </div>
 
-<div class="card">
-    <h2>Fed Interest Rate</h2>
-    <canvas id="rateChart"></canvas>
+<div class="panel">
+<div class="title">Fed Interest Rate</div>
+<canvas id="interest"></canvas>
+</div>
+
 </div>
 
 <script>
 
-// Example data.
-// Replace with FRED API calls.
+const labels =
+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-const months = [
-"Jan","Feb","Mar","Apr","May","Jun",
-"Jul","Aug","Sep","Oct","Nov","Dec"
-];
+const commonOptions = {
 
-new Chart(document.getElementById("dxyChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"DXY",
-            data:[103,104,105,104,103,102,101,100,101,102,103,104]
-        }]
-    }
+responsive:true,
+
+maintainAspectRatio:false,
+
+plugins:{
+legend:{
+display:false
+}
+},
+
+interaction:{
+mode:'index',
+intersect:false
+},
+
+scales:{
+
+x:{
+ticks:{
+color:'#999'
+},
+grid:{
+color:'#151515'
+}
+},
+
+y:{
+ticks:{
+color:'#999'
+},
+grid:{
+color:'#151515'
+}
+}
+
+}
+
+};
+
+new Chart(document.getElementById('dxy'),{
+type:'line',
+data:{
+labels,
+datasets:[{
+data:[104,105,106,105,104,103,102,101,102,103,104,105],
+borderColor:'#00d4ff',
+borderWidth:2,
+pointRadius:0
+}]
+},
+options:commonOptions
 });
 
-new Chart(document.getElementById("cpiChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"CPI YoY %",
-            data:[3.5,3.4,3.3,3.2,3.0,2.9,2.8,2.7,2.8,2.9,3.0,3.1]
-        }]
-    }
+new Chart(document.getElementById('cpi'),{
+type:'line',
+data:{
+labels,
+datasets:[{
+data:[3.4,3.3,3.2,3.1,2.9,2.8,2.7,2.6,2.7,2.8,2.9,3.0],
+borderColor:'#00d4ff',
+borderWidth:2,
+pointRadius:0
+}]
+},
+options:commonOptions
 });
 
-new Chart(document.getElementById("unemploymentChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"Unemployment %",
-            data:[4.0,4.0,4.1,4.1,4.2,4.2,4.3,4.3,4.4,4.4,4.3,4.3]
-        }]
-    }
+new Chart(document.getElementById('unemployment'),{
+type:'line',
+data:{
+labels,
+datasets:[{
+data:[4.0,4.1,4.0,4.1,4.2,4.2,4.3,4.3,4.4,4.4,4.3,4.3],
+borderColor:'#00d4ff',
+borderWidth:2,
+pointRadius:0
+}]
+},
+options:commonOptions
 });
 
-new Chart(document.getElementById("rateChart"),{
-    type:"line",
-    data:{
-        labels:months,
-        datasets:[{
-            label:"Fed Funds %",
-            data:[5.50,5.50,5.50,5.50,5.25,5.25,5.00,5.00,4.75,4.75,4.50,4.50]
-        }]
-    }
+new Chart(document.getElementById('interest'),{
+type:'line',
+data:{
+labels,
+datasets:[{
+data:[5.50,5.50,5.50,5.50,5.25,5.25,5.00,5.00,4.75,4.75,4.50,4.50],
+borderColor:'#00d4ff',
+borderWidth:2,
+pointRadius:0
+}]
+},
+options:commonOptions
 });
 
 </script>
