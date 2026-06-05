@@ -2,88 +2,101 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Macro Flow Dashboard</title>
-
+<title>DXY Macro Monitor</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body{
-background:#111;
-color:white;
-font-family:Arial;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    padding:20px;
 }
-
+.card{
+    margin-bottom:40px;
+}
 canvas{
-max-width:1400px;
-height:600px;
+    max-height:300px;
 }
 </style>
 </head>
-
 <body>
 
-<h2>Macro Flow Index</h2>
+<h1>DXY Impact Dashboard</h1>
 
-<canvas id="macroChart"></canvas>
+<div class="card">
+    <h2>DXY</h2>
+    <canvas id="dxyChart"></canvas>
+</div>
+
+<div class="card">
+    <h2>US CPI</h2>
+    <canvas id="cpiChart"></canvas>
+</div>
+
+<div class="card">
+    <h2>US Unemployment Rate</h2>
+    <canvas id="unemploymentChart"></canvas>
+</div>
+
+<div class="card">
+    <h2>Fed Interest Rate</h2>
+    <canvas id="rateChart"></canvas>
+</div>
 
 <script>
 
-const FRED_KEY = "YOUR_FRED_API_KEY";
+// Example data.
+// Replace with FRED API calls.
 
-async function fred(series){
+const months = [
+"Jan","Feb","Mar","Apr","May","Jun",
+"Jul","Aug","Sep","Oct","Nov","Dec"
+];
 
-const url =
-`https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED_KEY}&file_type=json`;
-
-const r = await fetch(url);
-const d = await r.json();
-
-return d.observations.slice(-24);
-}
-
-async function load(){
-
-const unrate = await fred("UNRATE");
-const cpi = await fred("CPIAUCSL");
-const fed = await fred("FEDFUNDS");
-
-const labels = unrate.map(x => x.date);
-
-const unemployment =
-unrate.map(x => Number(x.value));
-
-const inflation =
-cpi.map(x => Number(x.value));
-
-const rates =
-fed.map(x => Number(x.value));
-
-new Chart(
-document.getElementById("macroChart"),
-{
-type:"line",
-data:{
-labels,
-datasets:[
-{
-label:"UNRATE",
-data:unemployment
-},
-{
-label:"CPI",
-data:inflation
-},
-{
-label:"FEDFUNDS",
-data:rates
-}
-]
-}
+new Chart(document.getElementById("dxyChart"),{
+    type:"line",
+    data:{
+        labels:months,
+        datasets:[{
+            label:"DXY",
+            data:[103,104,105,104,103,102,101,100,101,102,103,104]
+        }]
+    }
 });
 
-}
+new Chart(document.getElementById("cpiChart"),{
+    type:"line",
+    data:{
+        labels:months,
+        datasets:[{
+            label:"CPI YoY %",
+            data:[3.5,3.4,3.3,3.2,3.0,2.9,2.8,2.7,2.8,2.9,3.0,3.1]
+        }]
+    }
+});
 
-load();
+new Chart(document.getElementById("unemploymentChart"),{
+    type:"line",
+    data:{
+        labels:months,
+        datasets:[{
+            label:"Unemployment %",
+            data:[4.0,4.0,4.1,4.1,4.2,4.2,4.3,4.3,4.4,4.4,4.3,4.3]
+        }]
+    }
+});
+
+new Chart(document.getElementById("rateChart"),{
+    type:"line",
+    data:{
+        labels:months,
+        datasets:[{
+            label:"Fed Funds %",
+            data:[5.50,5.50,5.50,5.50,5.25,5.25,5.00,5.00,4.75,4.75,4.50,4.50]
+        }]
+    }
+});
 
 </script>
 
