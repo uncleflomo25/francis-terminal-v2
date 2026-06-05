@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Francis Terminal PRO - Multi-Timeframe Composite Chart</title>
+    <title>Francis Terminal PRO - Multi-Timeframe Composite Chart with Indicators</title>
     <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <style>
@@ -16,15 +16,16 @@
         }
         #header { 
             color: #ffffff; 
-            padding: 15px 20px; 
-            font-size: 16px; 
+            padding: 12px 15px; 
+            font-size: 14px; 
             font-weight: bold; 
             background: #1c2030; 
             border-bottom: 1px solid #2b2b43;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
         }
         .title-section {
             display: flex;
@@ -32,33 +33,27 @@
             gap: 15px;
         }
         #status {
-            font-size: 12px;
+            font-size: 11px;
             color: #00f0ff;
             font-weight: 500;
         }
-        .connecting {
-            color: #ffd700;
-        }
-        .connected {
-            color: #00f0ff;
-        }
-        .error {
-            color: #ff007a;
-        }
+        .connecting { color: #ffd700; }
+        .connected { color: #00f0ff; }
+        .error { color: #ff007a; }
         .timeframe-selector {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: center;
         }
         .timeframe-btn {
-            padding: 8px 14px;
+            padding: 6px 11px;
             background: #2b2b43;
             border: 1px solid #3a3a52;
             color: #a0a0b0;
             cursor: pointer;
-            border-radius: 4px;
-            font-size: 12px;
+            border-radius: 3px;
+            font-size: 11px;
             font-weight: 500;
             transition: all 0.2s ease;
             white-space: nowrap;
@@ -73,26 +68,250 @@
             border-color: #00f0ff;
             box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
         }
+        .indicator-btn {
+            padding: 6px 11px;
+            background: #2b2b43;
+            border: 1px solid #3a3a52;
+            color: #a0a0b0;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .indicator-btn:hover {
+            background: #3a3a52;
+            border-color: #ff007a;
+        }
         #chart-container { 
             width: 100vw; 
             height: calc(100vh - 80px);
+            position: relative;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+        }
+        .modal.active { display: block; }
+        .modal-content {
+            background-color: #1c2030;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #2b2b43;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+        }
+        .close {
+            color: #a0a0b0;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover { color: #00f0ff; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #d1d4dc;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            background: #242835;
+            border: 1px solid #3a3a52;
+            color: #d1d4dc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #00f0ff;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 10px;
+            background: #00f0ff;
+            color: #131722;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            background: #00d4d4;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+        }
+        .cancel-btn {
+            background: #3a3a52;
+            color: #d1d4dc;
+        }
+        .cancel-btn:hover {
+            background: #4a4a62;
+            box-shadow: none;
+        }
+        .indicator-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .indicator-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #242835;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .remove-indicator {
+            background: #ff007a;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        .remove-indicator:hover {
+            background: #ff3388;
+        }
+        .preset-indicators {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .preset-btn {
+            padding: 10px;
+            background: #242835;
+            border: 1px solid #3a3a52;
+            color: #d1d4dc;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .preset-btn:hover {
+            background: #3a3a52;
+            border-color: #00f0ff;
         }
     </style>
 </head>
 <body>
     <div id="header">
         <div class="title-section">
-            <div>📊 Francis Terminal PRO - Multi-Timeframe Composite Index</div>
+            <div>📊 Francis Terminal PRO - Multi-Timeframe Composite + Indicators</div>
             <div id="status" class="connecting">● Connecting...</div>
         </div>
         <div class="timeframe-selector" id="timeframeSelector"></div>
+        <button class="indicator-btn" onclick="openIndicatorModal()">➕ Add Indicator</button>
     </div>
     <div id="chart-container"></div>
+
+    <!-- Custom Indicator Modal -->
+    <div id="indicatorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeIndicatorModal()">&times;</span>
+            <h2 style="color: #00f0ff; margin-bottom: 20px;">Add Custom Indicator</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: #d1d4dc; font-size: 13px; margin-bottom: 10px;">Quick Presets:</h3>
+                <div class="preset-indicators">
+                    <button class="preset-btn" onclick="addPresetIndicator('sma')">SMA</button>
+                    <button class="preset-btn" onclick="addPresetIndicator('ema')">EMA</button>
+                    <button class="preset-btn" onclick="addPresetIndicator('rsi')">RSI</button>
+                    <button class="preset-btn" onclick="addPresetIndicator('macd')">MACD</button>
+                    <button class="preset-btn" onclick="addPresetIndicator('bb')">Bollinger Bands</button>
+                    <button class="preset-btn" onclick="addPresetIndicator('stoch')">Stochastic</button>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #2b2b43; margin: 20px 0;">
+
+            <h3 style="color: #d1d4dc; font-size: 13px; margin-bottom: 15px;">Custom Indicator Builder:</h3>
+
+            <div class="form-group">
+                <label>Indicator Name:</label>
+                <input type="text" id="indicatorName" placeholder="e.g., My RSI">
+            </div>
+
+            <div class="form-group">
+                <label>Indicator Type:</label>
+                <select id="indicatorType">
+                    <option value="line">Line Overlay</option>
+                    <option value="histogram">Histogram</option>
+                    <option value="bands">Upper/Lower Bands</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Formula (JavaScript):</label>
+                <textarea id="indicatorFormula" placeholder="Example: closes.slice(-20).reduce((a,b)=>a+b)/20&#10;&#10;Available variables:&#10;- closes: array of close prices&#10;- opens: array of open prices&#10;- highs: array of high prices&#10;- lows: array of low prices&#10;- volume: array of volumes&#10;- period: lookback period" style="height: 120px; font-family: monospace; font-size: 11px;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Period (default 20):</label>
+                <input type="number" id="indicatorPeriod" value="20" min="2" max="500">
+            </div>
+
+            <div class="form-group">
+                <label>Color:</label>
+                <select id="indicatorColor">
+                    <option value="#00f0ff">Cyan</option>
+                    <option value="#ff007a">Pink</option>
+                    <option value="#ffd700">Gold</option>
+                    <option value="#00ff00">Green</option>
+                    <option value="#ff6b6b">Red</option>
+                    <option value="#a0ff00">Lime</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button onclick="createCustomIndicator()">Add Indicator</button>
+                <button class="cancel-btn" onclick="closeIndicatorModal()">Cancel</button>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #2b2b43; margin: 20px 0;">
+
+            <div style="margin-top: 15px;">
+                <h3 style="color: #d1d4dc; font-size: 13px; margin-bottom: 10px;">Active Indicators:</h3>
+                <div class="indicator-list" id="activeIndicatorsList"></div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'ADAUSDT', 'SUIUSDT', 'LINKUSDT', 'AVAXUSDT', 'PEPEUSDT', 'BCHUSDT'];
         
-        // Timeframe configurations
         const timeframes = [
             { id: '30m', label: '30m', minutes: 30, interval: '30m', klineInterval: '30m' },
             { id: '1h', label: '1H', minutes: 60, interval: '1h', klineInterval: '1h' },
@@ -112,44 +331,122 @@
         let candleData = [];
         let realtimeData = {};
         let ws = null;
-        let activeWebSocketTimeframe = null;
+        let indicators = [];
+        let indicatorSeries = [];
 
-        // Initialize timeframe selector buttons
-        function initTimeframeSelector() {
-            const selector = document.getElementById('timeframeSelector');
-            timeframes.forEach(tf => {
-                const btn = document.createElement('button');
-                btn.className = 'timeframe-btn' + (tf.id === '1d' ? ' active' : '');
-                btn.textContent = tf.label;
-                btn.onclick = () => switchTimeframe(tf.id);
-                selector.appendChild(btn);
+        // Preset Indicators
+        const presetIndicators = {
+            sma: {
+                name: 'SMA 20',
+                type: 'line',
+                formula: 'closes.slice(-period).reduce((a,b)=>a+b)/period',
+                period: 20,
+                color: '#00f0ff'
+            },
+            ema: {
+                name: 'EMA 12',
+                type: 'line',
+                formula: 'emaCalc(closes, period)',
+                period: 12,
+                color: '#ffd700'
+            },
+            rsi: {
+                name: 'RSI 14',
+                type: 'line',
+                formula: 'rsiCalc(closes, period)',
+                period: 14,
+                color: '#ff007a'
+            },
+            macd: {
+                name: 'MACD',
+                type: 'line',
+                formula: 'macdCalc(closes)',
+                period: 26,
+                color: '#00ff00'
+            },
+            bb: {
+                name: 'Bollinger Bands',
+                type: 'bands',
+                formula: 'bbCalc(closes, period)',
+                period: 20,
+                color: '#a0ff00'
+            },
+            stoch: {
+                name: 'Stochastic',
+                type: 'line',
+                formula: 'stochCalc(closes, period)',
+                period: 14,
+                color: '#ff6b6b'
+            }
+        };
+
+        // Modal functions
+        function openIndicatorModal() {
+            document.getElementById('indicatorModal').classList.add('active');
+            updateActiveIndicatorsList();
+        }
+
+        function closeIndicatorModal() {
+            document.getElementById('indicatorModal').classList.remove('active');
+        }
+
+        function updateActiveIndicatorsList() {
+            const list = document.getElementById('activeIndicatorsList');
+            list.innerHTML = '';
+            indicators.forEach((ind, idx) => {
+                const item = document.createElement('div');
+                item.className = 'indicator-item';
+                item.innerHTML = `
+                    <div>
+                        <span style="color: ${ind.color};">●</span> ${ind.name} (P${ind.period})
+                    </div>
+                    <button class="remove-indicator" onclick="removeIndicator(${idx})">Remove</button>
+                `;
+                list.appendChild(item);
             });
         }
 
-        // Switch timeframe
-        async function switchTimeframe(timeframeId) {
-            currentTimeframe = timeframeId;
-            
-            // Update active button
-            document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
+        function addPresetIndicator(type) {
+            const preset = presetIndicators[type];
+            indicators.push({ ...preset, id: Date.now() });
+            recalculateIndicators();
+            updateActiveIndicatorsList();
+            alert(`✅ ${preset.name} added!`);
+        }
 
-            // Close old WebSocket
-            if (ws) {
-                ws.close();
-                ws = null;
+        function createCustomIndicator() {
+            const name = document.getElementById('indicatorName').value;
+            const type = document.getElementById('indicatorType').value;
+            const formula = document.getElementById('indicatorFormula').value;
+            const period = parseInt(document.getElementById('indicatorPeriod').value);
+            const color = document.getElementById('indicatorColor').value;
+
+            if (!name || !formula) {
+                alert('❌ Please fill in indicator name and formula');
+                return;
             }
 
-            // Clear chart
-            candleData = [];
-            realtimeData = {};
-            candleSeries.setData([]);
+            indicators.push({ name, type, formula, period, color, id: Date.now() });
+            
+            // Clear form
+            document.getElementById('indicatorName').value = '';
+            document.getElementById('indicatorFormula').value = '';
+            document.getElementById('indicatorPeriod').value = '20';
 
-            // Fetch new data and initialize WebSocket
-            await fetchHistoricalData(timeframeId);
-            initWebSocket(timeframeId);
+            recalculateIndicators();
+            updateActiveIndicatorsList();
+            alert(`✅ ${name} added!`);
+        }
+
+        function removeIndicator(idx) {
+            const removed = indicators.splice(idx, 1);
+            indicatorSeries.forEach(ser => {
+                if (ser.indicator.id === removed[0].id) {
+                    chart.removeSeries(ser.series);
+                }
+            });
+            indicatorSeries = indicatorSeries.filter(s => s.indicator.id !== removed[0].id);
+            updateActiveIndicatorsList();
         }
 
         // Initialize Chart
@@ -181,19 +478,125 @@
             });
         }
 
-        // Get candle limit based on timeframe
+        // Indicator Calculations
+        function emaCalc(data, period) {
+            const k = 2 / (period + 1);
+            let ema = data[0];
+            for (let i = 1; i < data.length; i++) {
+                ema = data[i] * k + ema * (1 - k);
+            }
+            return ema;
+        }
+
+        function rsiCalc(data, period) {
+            let gains = 0, losses = 0;
+            for (let i = 1; i < Math.min(period + 1, data.length); i++) {
+                const diff = data[i] - data[i - 1];
+                if (diff > 0) gains += diff;
+                else losses -= diff;
+            }
+            gains /= period;
+            losses /= period;
+            const rs = gains / losses;
+            return 100 - (100 / (1 + rs));
+        }
+
+        function macdCalc(data) {
+            const ema12 = emaCalc(data, 12);
+            const ema26 = emaCalc(data, 26);
+            return ema12 - ema26;
+        }
+
+        function bbCalc(data, period) {
+            const sma = data.slice(-period).reduce((a,b)=>a+b)/period;
+            const variance = data.slice(-period).reduce((a,b)=>a+Math.pow(b-sma,2))/period;
+            const stdDev = Math.sqrt(variance);
+            return { upper: sma + 2*stdDev, lower: sma - 2*stdDev, middle: sma };
+        }
+
+        function stochCalc(data, period) {
+            const low = Math.min(...data.slice(-period));
+            const high = Math.max(...data.slice(-period));
+            return ((data[data.length-1] - low) / (high - low)) * 100;
+        }
+
+        // Recalculate all indicators
+        function recalculateIndicators() {
+            indicatorSeries.forEach(s => chart.removeSeries(s.series));
+            indicatorSeries = [];
+
+            indicators.forEach(ind => {
+                const seriesType = ind.type === 'line' ? 'addLineSeries' : 'addHistogramSeries';
+                const series = chart[seriesType]({
+                    color: ind.color,
+                    lineWidth: 2,
+                    title: ind.name
+                });
+
+                const data = [];
+                candleData.forEach(candle => {
+                    try {
+                        const closes = candleData.map(c => c.close);
+                        const opens = candleData.map(c => c.open);
+                        const highs = candleData.map(c => c.high);
+                        const lows = candleData.map(c => c.low);
+                        const period = ind.period;
+
+                        let value = eval(ind.formula);
+                        
+                        if (ind.type === 'bands' && value && value.middle) {
+                            data.push({ time: candle.time, value: value.middle });
+                        } else if (typeof value === 'number') {
+                            data.push({ time: candle.time, value: value });
+                        }
+                    } catch (e) {
+                        console.warn(`Indicator ${ind.name} calculation error:`, e);
+                    }
+                });
+
+                series.setData(data);
+                indicatorSeries.push({ series, indicator: ind });
+            });
+        }
+
+        // Timeframe functions
+        function initTimeframeSelector() {
+            const selector = document.getElementById('timeframeSelector');
+            timeframes.forEach(tf => {
+                const btn = document.createElement('button');
+                btn.className = 'timeframe-btn' + (tf.id === '1d' ? ' active' : '');
+                btn.textContent = tf.label;
+                btn.onclick = () => switchTimeframe(tf.id, btn);
+                selector.appendChild(btn);
+            });
+        }
+
+        async function switchTimeframe(timeframeId, btn) {
+            currentTimeframe = timeframeId;
+            document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (ws) ws.close();
+            candleData = [];
+            realtimeData = {};
+            candleSeries.setData([]);
+
+            await fetchHistoricalData(timeframeId);
+            recalculateIndicators();
+            initWebSocket(timeframeId);
+        }
+
         function getCandleLimit(timeframeId) {
             const tf = timeframes.find(t => t.id === timeframeId);
             if (['30m', '1h', '2h', '4h', '6h', '12h'].includes(timeframeId)) {
-                return 1000; // More data for intraday
+                return 1000;
             } else if (timeframeId === '1d') {
                 return 150;
             } else {
-                return Math.ceil(150 / (tf?.multiplier || 1)); // Adjust for multi-day
+                return Math.ceil(150 / (tf?.multiplier || 1));
             }
         }
 
-        // Fetch Historical Data
         async function fetchHistoricalData(timeframeId) {
             const tf = timeframes.find(t => t.id === timeframeId);
             const limit = getCandleLimit(timeframeId);
@@ -201,16 +604,12 @@
             try {
                 const fetchPromises = symbols.map(sym => 
                     fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf.klineInterval}&limit=${limit}`)
-                        .then(res => {
-                            if (!res.ok) throw new Error(`Failed to fetch ${sym}`);
-                            return res.json();
-                        })
+                        .then(res => res.ok ? res.json() : Promise.reject())
                 );
 
                 const allData = await Promise.all(fetchPromises);
                 const minCandles = Math.min(...allData.map(d => d.length));
 
-                // Group candles for multi-day timeframes
                 if (tf.multiplier && tf.multiplier > 1) {
                     const groupedData = [];
                     for (let i = 0; i < allData.length; i++) {
@@ -222,10 +621,8 @@
                     }
 
                     const groupedMinCandles = Math.min(...groupedData.map(d => d.length));
-                    
                     for (let t = 0; t < groupedMinCandles; t++) {
                         let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
-
                         for (let i = 0; i < symbols.length; i++) {
                             const candleGroup = groupedData[i][t];
                             const openPrice = parseFloat(candleGroup[0][1]);
@@ -248,10 +645,8 @@
                         });
                     }
                 } else {
-                    // Standard processing for same-interval timeframes
                     for (let t = 0; t < minCandles; t++) {
                         let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
-
                         for (let i = 0; i < symbols.length; i++) {
                             const candle = allData[i][t];
                             logOpen += Math.log(parseFloat(candle[1]));
@@ -275,24 +670,20 @@
                 updateStatus('Loaded', 'connected');
 
             } catch (error) {
-                console.error('Error fetching historical data:', error);
-                updateStatus('Error fetching data', 'error');
+                console.error('Error fetching data:', error);
+                updateStatus('Error loading data', 'error');
             }
         }
 
-        // Initialize WebSocket
         function initWebSocket(timeframeId) {
             const tf = timeframes.find(t => t.id === timeframeId);
-            
-            // For multi-day timeframes, use daily candles and aggregate
             const wsInterval = (tf.multiplier && tf.multiplier > 1) ? '1d' : tf.klineInterval;
             const streams = symbols.map(sym => `${sym.toLowerCase()}@kline_${wsInterval}`).join('/');
-            const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streams}`;
 
-            ws = new WebSocket(wsUrl);
+            ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
 
             ws.onopen = () => {
-                console.log(`✅ WebSocket connected for ${timeframeId}`);
+                console.log(`✅ Connected (${timeframeId})`);
                 updateStatus(`Connected (${timeframeId})`, 'connected');
             };
 
@@ -301,7 +692,7 @@
                 const kline = message.data.k;
                 const symbol = message.data.s;
 
-                if (kline.x) { // Candle closed
+                if (kline.x) {
                     realtimeData[symbol] = {
                         open: parseFloat(kline.o),
                         high: parseFloat(kline.h),
@@ -311,81 +702,68 @@
                     };
 
                     const allSymbolsReady = symbols.every(sym => realtimeData[sym].time === realtimeData[symbol].time);
-
                     if (allSymbolsReady) {
-                        updateCompositeCandle();
+                        let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
+                        for (let i = 0; i < symbols.length; i++) {
+                            const data = realtimeData[symbols[i]];
+                            logOpen += Math.log(data.open);
+                            logHigh += Math.log(data.high);
+                            logLow += Math.log(data.low);
+                            logClose += Math.log(data.close);
+                        }
+
+                        const compositeCandle = {
+                            time: realtimeData[symbols[0]].time,
+                            open: Math.exp(logOpen / symbols.length),
+                            high: Math.exp(logHigh / symbols.length),
+                            low: Math.exp(logLow / symbols.length),
+                            close: Math.exp(logClose / symbols.length)
+                        };
+
+                        const existingIndex = candleData.findIndex(c => c.time === compositeCandle.time);
+                        if (existingIndex !== -1) {
+                            candleData[existingIndex] = compositeCandle;
+                        } else {
+                            candleData.push(compositeCandle);
+                        }
+
+                        candleSeries.update(compositeCandle);
+                        recalculateIndicators();
                     }
                 }
             };
 
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
+            ws.onerror = () => {
                 updateStatus('Connection Error', 'error');
             };
 
             ws.onclose = () => {
-                console.log('WebSocket disconnected');
                 updateStatus('Reconnecting...', 'connecting');
                 setTimeout(() => initWebSocket(timeframeId), 3000);
             };
         }
 
-        // Update Composite Candle
-        function updateCompositeCandle() {
-            let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
-
-            for (let i = 0; i < symbols.length; i++) {
-                const data = realtimeData[symbols[i]];
-                if (data) {
-                    logOpen += Math.log(data.open);
-                    logHigh += Math.log(data.high);
-                    logLow += Math.log(data.low);
-                    logClose += Math.log(data.close);
-                }
-            }
-
-            const compositeCandle = {
-                time: realtimeData[symbols[0]].time,
-                open: Math.exp(logOpen / symbols.length),
-                high: Math.exp(logHigh / symbols.length),
-                low: Math.exp(logLow / symbols.length),
-                close: Math.exp(logClose / symbols.length)
-            };
-
-            const existingIndex = candleData.findIndex(c => c.time === compositeCandle.time);
-            if (existingIndex !== -1) {
-                candleData[existingIndex] = compositeCandle;
-            } else {
-                candleData.push(compositeCandle);
-            }
-
-            candleSeries.update(compositeCandle);
-        }
-
-        // Update Status
         function updateStatus(text, classname) {
             const statusEl = document.getElementById('status');
             statusEl.textContent = `● ${text}`;
             statusEl.className = classname;
         }
 
-        // Handle Resize
         window.addEventListener('resize', () => {
-            if (chart) {
-                chart.resize(window.innerWidth, window.innerHeight - 80);
-            }
+            if (chart) chart.resize(window.innerWidth, window.innerHeight - 80);
         });
 
-        // Initialize everything
-        function init() {
+        window.addEventListener('DOMContentLoaded', () => {
             initChart();
             initTimeframeSelector();
             fetchHistoricalData('1d');
             initWebSocket('1d');
-        }
+        });
 
-        // Start when page loads
-        window.addEventListener('DOMContentLoaded', init);
+        window.onclick = (event) => {
+            const modal = document.getElementById('indicatorModal');
+            if (event.target == modal) closeIndicatorModal();
+        };
     </script>
 </body>
 </html>
