@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Francis Terminal PRO - Multi-Timeframe Composite Chart with Indicators</title>
+    <title>Francis Terminal PRO - Macro Composite Chart</title>
     <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <style>
@@ -31,6 +31,23 @@
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+        .data-display {
+            display: flex;
+            gap: 20px;
+            font-size: 11px;
+        }
+        .data-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .data-label {
+            color: #a0a0b0;
+        }
+        .data-value {
+            color: #00f0ff;
+            font-weight: bold;
         }
         #status {
             font-size: 11px;
@@ -224,19 +241,27 @@
             background: #3a3a52;
             border-color: #00f0ff;
         }
-        
-        /* Loading indicator */
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
     <div id="header">
         <div class="title-section">
-            <div>📊 Francis Terminal PRO - Multi-Timeframe Composite + Indicators</div>
+            <div>📊 Francis Terminal PRO - Macro Composite (USDT.D + TOTAL + TOTAL2)</div>
             <div id="status" class="connecting">● Connecting...</div>
+        </div>
+        <div class="data-display">
+            <div class="data-item">
+                <span class="data-label">USDT.D:</span>
+                <span class="data-value" id="usdtValue">--</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">TOTAL:</span>
+                <span class="data-value" id="totalValue">--</span>
+            </div>
+            <div class="data-item">
+                <span class="data-label">TOTAL2:</span>
+                <span class="data-value" id="total2Value">--</span>
+            </div>
         </div>
         <div class="timeframe-selector" id="timeframeSelector"></div>
         <button class="indicator-btn" onclick="openIndicatorModal()">➕ Add Indicator</button>
@@ -281,7 +306,7 @@
 
             <div class="form-group">
                 <label>Formula (JavaScript):</label>
-                <textarea id="indicatorFormula" placeholder="Example: closes.slice(-20).reduce((a,b)=>a+b)/20&#10;&#10;Available variables:&#10;- closes: array of close prices&#10;- opens: array of open prices&#10;- highs: array of high prices&#10;- lows: array of low prices&#10;- volume: array of volumes&#10;- period: lookback period" style="height: 120px; font-family: monospace; font-size: 11px;"></textarea>
+                <textarea id="indicatorFormula" placeholder="Example: closes.slice(-20).reduce((a,b)=>a+b)/20&#10;&#10;Available variables:&#10;- closes: array of close prices&#10;- opens: array of open prices&#10;- highs: array of high prices&#10;- lows: array of low prices&#10;- period: lookback period" style="height: 120px; font-family: monospace; font-size: 11px;"></textarea>
             </div>
 
             <div class="form-group">
@@ -316,19 +341,18 @@
     </div>
 
     <script>
-        const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'DOGEUSDT', 'ADAUSDT', 'SUIUSDT', 'LINKUSDT', 'AVAXUSDT', 'PEPEUSDT', 'BCHUSDT'];
+        // Three macro indices
+        const symbols = ['USDT.D', 'TOTAL', 'TOTAL2'];
         
         const timeframes = [
-            { id: '30m', label: '30m', minutes: 30, interval: '30m', klineInterval: '30m' },
             { id: '1h', label: '1H', minutes: 60, interval: '1h', klineInterval: '1h' },
             { id: '2h', label: '2H', minutes: 120, interval: '2h', klineInterval: '2h' },
             { id: '4h', label: '4H', minutes: 240, interval: '4h', klineInterval: '4h' },
             { id: '6h', label: '6H', minutes: 360, interval: '6h', klineInterval: '6h' },
             { id: '12h', label: '12H', minutes: 720, interval: '12h', klineInterval: '12h' },
             { id: '1d', label: '1D', minutes: 1440, interval: '1d', klineInterval: '1d' },
-            { id: '2d', label: '2D', minutes: 2880, interval: '2d', klineInterval: '1d', multiplier: 2 },
-            { id: '4d', label: '4D', minutes: 5760, interval: '4d', klineInterval: '1d', multiplier: 4 },
-            { id: '8d', label: '8D', minutes: 11520, interval: '8d', klineInterval: '1d', multiplier: 8 }
+            { id: '3d', label: '3D', minutes: 4320, interval: '3d', klineInterval: '1d', multiplier: 3 },
+            { id: '1w', label: '1W', minutes: 10080, interval: '1w', klineInterval: '1d', multiplier: 7 }
         ];
 
         let currentTimeframe = '1d';
@@ -434,7 +458,6 @@
 
             indicators.push({ name, type, formula, period, color, id: Date.now() });
             
-            // Clear form
             document.getElementById('indicatorName').value = '';
             document.getElementById('indicatorFormula').value = '';
             document.getElementById('indicatorPeriod').value = '20';
@@ -625,8 +648,8 @@
 
         function getCandleLimit(timeframeId) {
             const tf = timeframes.find(t => t.id === timeframeId);
-            if (['30m', '1h', '2h', '4h', '6h', '12h'].includes(timeframeId)) {
-                return 1000;
+            if (['1h', '2h', '4h', '6h', '12h'].includes(timeframeId)) {
+                return 500;
             } else if (timeframeId === '1d') {
                 return 150;
             } else {
@@ -640,7 +663,7 @@
 
             try {
                 const fetchPromises = symbols.map(sym => 
-                    fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf.klineInterval}&limit=${limit}`)
+                    fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}USDT&interval=${tf.klineInterval}&limit=${limit}`)
                         .then(res => res.ok ? res.json() : Promise.reject(`Failed: ${sym}`))
                         .catch(err => { console.error(err); return []; })
                 );
@@ -725,7 +748,7 @@
         function initWebSocket(timeframeId) {
             const tf = timeframes.find(t => t.id === timeframeId);
             const wsInterval = (tf.multiplier && tf.multiplier > 1) ? '1d' : tf.klineInterval;
-            const streams = symbols.map(sym => `${sym.toLowerCase()}@kline_${wsInterval}`).join('/');
+            const streams = symbols.map(sym => `${sym.toLowerCase()}usdt@kline_${wsInterval}`).join('/');
 
             ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
 
@@ -740,7 +763,8 @@
                 const symbol = message.data.s;
 
                 if (kline.x) {
-                    realtimeData[symbol] = {
+                    const symbolKey = symbol.replace('usdt', '').toUpperCase();
+                    realtimeData[symbolKey] = {
                         open: parseFloat(kline.o),
                         high: parseFloat(kline.h),
                         low: parseFloat(kline.l),
@@ -748,7 +772,12 @@
                         time: Math.floor(kline.T / 1000)
                     };
 
-                    const allSymbolsReady = symbols.every(sym => realtimeData[sym] && realtimeData[sym].time === realtimeData[symbol].time);
+                    // Update live values
+                    document.getElementById('usdtValue').textContent = realtimeData['USDT.D'] ? realtimeData['USDT.D'].close.toFixed(2) : '--';
+                    document.getElementById('totalValue').textContent = realtimeData['TOTAL'] ? realtimeData['TOTAL'].close.toFixed(2) : '--';
+                    document.getElementById('total2Value').textContent = realtimeData['TOTAL2'] ? realtimeData['TOTAL2'].close.toFixed(2) : '--';
+
+                    const allSymbolsReady = symbols.every(sym => realtimeData[sym] && realtimeData[sym].time === realtimeData[symbols[0]].time);
                     if (allSymbolsReady) {
                         let logOpen = 0, logHigh = 0, logLow = 0, logClose = 0;
                         for (let i = 0; i < symbols.length; i++) {
